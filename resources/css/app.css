@@ -1,0 +1,91 @@
+@import 'tailwindcss';
+@import 'tailwindcss/preflight' layer(base);
+@import 'tailwindcss/utilities' layer(utilities);
+
+@source '../views';
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*';
+
+@theme {
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
+    --color-green-50: #f0fdf4;
+    --color-green-100: #dcfce7;
+    --color-green-200: #bbf7d0;
+    --color-green-300: #86efac;
+    --color-green-400: #4ade80;
+    --color-green-500: #22c55e;
+    --color-green-600: #16a34a;
+    --color-green-700: #15803d;
+    --color-green-800: #166534;
+    --color-green-900: #14532d;
+    --color-green-950: #052e16;
+}
+
+:root {
+    --background: #ffffff;
+    --foreground: #09090b;
+    --card: #ffffff;
+    --card-foreground: #09090b;
+    --popover: #ffffff;
+    --popover-foreground: #09090b;
+    --primary: #16a34a;
+    --primary-foreground: #ffffff;
+    --secondary: #f4f4f5;
+    --secondary-foreground: #18181b;
+    --muted: #f4f4f5;
+    --muted-foreground: #71717a;
+    --accent: #f4f4f5;
+    --accent-foreground: #18181b;
+    --destructive: #ef4444;
+    --destructive-foreground: #fafafa;
+    --border: #e4e4e7;
+    --input: #e4e4e7;
+    --ring: #16a34a;
+    --radius: 0.5rem;
+    --sidebar-background: #f8fafc;
+    --sidebar-foreground: #334155;
+    --sidebar-primary: #16a34a;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #f1f5f9;
+    --sidebar-accent-foreground: #0f172a;
+    --sidebar-border: #e2e8f0;
+    --sidebar-ring: #16a34a;
+}
+
+.dark {
+    --background: #09090b;
+    --foreground: #fafafa;
+    --card: #18181b;
+    --card-foreground: #fafafa;
+    --popover: #18181b;
+    --popover-foreground: #fafafa;
+    --primary: #22c55e;
+    --primary-foreground: #052e16;
+    --secondary: #27272a;
+    --secondary-foreground: #fafafa;
+    --muted: #27272a;
+    --muted-foreground: #a1a1aa;
+    --accent: #27272a;
+    --accent-foreground: #fafafa;
+    --destructive: #7f1d1d;
+    --destructive-foreground: #fafafa;
+    --border: #27272a;
+    --input: #27272a;
+    --ring: #22c55e;
+    --sidebar-background: #111827;
+    --sidebar-foreground: #cbd5e1;
+    --sidebar-primary: #22c55e;
+    --sidebar-primary-foreground: #052e16;
+    --sidebar-accent: #1e293b;
+    --sidebar-accent-foreground: #f8fafc;
+    --sidebar-border: #1e293b;
+    --sidebar-ring: #22c55e;
+}
+
+* {
+    border-color: var(--border);
+}
+
+body {
+    background-color: var(--background);
+    color: var(--foreground);
+}

@@ -43,6 +43,6 @@ class AuthController extends Controller
     {
         $appearance = $request->get('appearance', 'light');
         $request->session()->put('appearance', $appearance);
-        return back();
+        return back()->withCookie(cookie('appearance', $appearance, 60 * 24 * 365));
     }
 }

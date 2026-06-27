@@ -25,10 +25,10 @@ function Dialog({ open, onClose, title, description, children, className, maxWid
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+            <div className="fixed inset-0 bg-black/80" onClick={onClose} />
             <div
                 className={cn(
-                    'relative z-50 w-full rounded-lg border bg-card p-6 shadow-lg animate-in fade-in zoom-in-95',
+                    'relative z-50 w-full mx-4 rounded-lg border bg-card p-6 shadow-lg',
                     maxWidthClasses[maxWidth],
                     className,
                 )}

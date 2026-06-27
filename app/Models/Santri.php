@@ -45,11 +45,6 @@ class Santri extends Model
 
     public function getTotalShalawatAttribute()
     {
-        return $this->pelanggaran()->sum('jumlah') * 100;
-    }
-
-    public function getJumlahPanggilanAttribute()
-    {
-        return $this->pembinaan()->count();
+        return $this->pembinaan()->sum('shalawat_tertulis');
     }
 }

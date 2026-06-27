@@ -4,14 +4,13 @@ import { AppLayout } from '@/components/layout/app-layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
-import { Card, CardContent } from '@/components/ui/card';
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
-import { Pagination } from '@/components/ui/pagination';
-import { Dialog } from '@/components/ui/dialog';
-import { Edit2, Trash2, Plus, Search, Eye, Upload } from 'lucide-react';
+import { Modal } from '@/components/ui/modal';
+import { DataTable, type Column } from '@/components/shared/data-table';
+import { Edit2, Trash2, Plus, Eye, Upload } from 'lucide-react';
 
 export default function SantriIndex() {
     const { santri, daerah, asrama, filters } = usePage<any>().props;
+    const [perPage, setPerPage] = useState(15);
     const [showModal, setShowModal] = useState(false);
     const [showImport, setShowImport] = useState(false);
     const [editing, setEditing] = useState<any>(null);
@@ -19,28 +18,46 @@ export default function SantriIndex() {
     const [filterAsrama, setFilterAsrama] = useState(filters?.asrama_id || '');
     const [filterIksass, setFilterIksass] = useState(filters?.iksass || '');
     const [search, setSearch] = useState(filters?.search || '');
+    const [sortColumn, setSortColumn] = useState('');
+    const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | 'none'>('none');
+    const [selectedIds, setSelectedIds] = useState<(string | number)[]>([]);
 
-    const [form, setForm] = useState({ nama: '', nis: '', iksass: '', asrama_id: '' });
+    const [form, setForm] = useState({ nama: '', nis: '', iksass: '', daerah_id: '', asrama_id: '' });
+    const [formDaerah, setFormDaerah] = useState('');
+
+    const filteredAsrama = asrama.filter((a: any) => {
+        if (formDaerah) return String(a.daerah_id) === String(formDaerah);
+        return true;
+    });
+
+    const filteredAsramaFilter = asrama.filter((a: any) => {
+        if (filterDaerah) return String(a.daerah_id) === String(filterDaerah);
+        return true;
+    });
 
     const openCreate = () => {
         setEditing(null);
-        setForm({ nama: '', nis: '', iksass: '', asrama_id: '' });
+        setForm({ nama: '', nis: '', iksass: '', daerah_id: '', asrama_id: '' });
+        setFormDaerah('');
         setShowModal(true);
     };
 
     const openEdit = (s: any) => {
         setEditing(s);
-        setForm({ nama: s.nama, nis: s.nis || '', iksass: s.iksass || '', asrama_id: s.asrama_id });
+        const daerahId = s.asrama?.daerah_id ? String(s.asrama.daerah_id) : '';
+        setFormDaerah(daerahId);
+        setForm({ nama: s.nama, nis: s.nis || '', iksass: s.iksass || '', daerah_id: daerahId, asrama_id: s.asrama_id });
         setShowModal(true);
     };
 
     const submit = () => {
+        const payload = { nama: form.nama, nis: form.nis, iksass: form.iksass, asrama_id: form.asrama_id };
         if (editing) {
-            router.put(`/santri/${editing.id}`, form, {
+            router.put(`/santri/${editing.id}`, payload, {
                 onSuccess: () => setShowModal(false),
             });
         } else {
-            router.post('/santri', form, {
+            router.post('/santri', payload, {
                 onSuccess: () => setShowModal(false),
             });
         }
@@ -52,13 +69,30 @@ export default function SantriIndex() {
         }
     };
 
-    const applyFilter = () => {
+    const bulkDelete = () => {
+        if (confirm(`Yakin ingin menghapus ${selectedIds.length} santri?`)) {
+            router.post('/santri/bulk-delete', { ids: selectedIds }, {
+                onSuccess: () => setSelectedIds([]),
+            });
+        }
+    };
+
+    const handleSort = (column: string) => {
+        let nextDir: 'asc' | 'desc' | 'none' = 'asc';
+        if (sortColumn === column) {
+            nextDir = sortDirection === 'none' ? 'asc' : sortDirection === 'asc' ? 'desc' : 'none';
+        }
+        setSortColumn(nextDir === 'none' ? '' : column);
+        setSortDirection(nextDir);
         router.get('/santri', {
+            sort_column: nextDir === 'none' ? undefined : column,
+            sort_direction: nextDir === 'none' ? undefined : nextDir,
             daerah_id: filterDaerah || undefined,
             asrama_id: filterAsrama || undefined,
             iksass: filterIksass || undefined,
             search: search || undefined,
-        });
+            per_page: perPage,
+        }, { preserveState: true, preserveScroll: true });
     };
 
     const handleImport = (e: React.FormEvent) => {
@@ -68,6 +102,36 @@ export default function SantriIndex() {
             onSuccess: () => setShowImport(false),
         });
     };
+
+    const columns: Column<any>[] = [
+        { key: 'no', label: '#', render: (_s: any, idx: number) => <span>{santri.from + idx}</span>, className: 'text-muted-foreground text-xs w-10' },
+        { key: 'nama', label: 'Nama', sortable: true, render: (s) => <span className="font-medium">{s.nama}</span> },
+        { key: 'nis', label: 'NIS', sortable: true },
+        { key: 'iksass', label: 'IKSASS', sortable: true },
+        { key: 'daerah', label: 'Daerah', render: (s) => s.asrama?.daerah?.nama_daerah || '-', hideable: true },
+        { key: 'asrama', label: 'Nomor', render: (s) => s.asrama?.nomor || '-', hideable: true },
+        {
+            key: 'aksi',
+            label: 'Aksi',
+            headClassName: 'text-right',
+            className: 'text-right',
+            render: (s) => (
+                <div className="flex justify-end gap-2">
+                    <Link href={`/santri/${s.id}`}>
+                        <Button variant="ghost" size="sm">
+                            <Eye className="h-4 w-4" />
+                        </Button>
+                    </Link>
+                    <Button variant="ghost" size="sm" onClick={() => openEdit(s)}>
+                        <Edit2 className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => destroy(s.id)}>
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                    </Button>
+                </div>
+            ),
+        },
+    ];
 
     return (
         <AppLayout>
@@ -90,21 +154,45 @@ export default function SantriIndex() {
                     </div>
                 </div>
 
-                <Card>
-                    <CardContent className="p-6">
-                        <div className="flex flex-wrap items-center gap-4 mb-4">
-                            <div className="relative flex-1 min-w-[200px]">
-                                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                                <Input
-                                    placeholder="Cari nama/NIS..."
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                    className="pl-9"
-                                />
-                            </div>
+                <DataTable
+                    columns={columns}
+                    data={santri.data}
+                    meta={santri}
+                    keyExtractor={(s) => s.id}
+                    onPageChange={(page) => router.get('/santri', { page, search: search || undefined, daerah_id: filterDaerah || undefined, asrama_id: filterAsrama || undefined, iksass: filterIksass || undefined, sort_column: sortColumn || undefined, sort_direction: sortDirection === 'none' ? undefined : sortDirection, per_page: perPage }, { preserveState: true, preserveScroll: true })}
+                    search={search}
+                    onSearchChange={(q) => {
+                        setSearch(q);
+                        router.get('/santri', { search: q || undefined, page: 1, per_page: perPage, sort_column: sortColumn || undefined, sort_direction: sortDirection === 'none' ? undefined : sortDirection }, { preserveState: true, preserveScroll: true });
+                    }}
+                    searchPlaceholder="Cari nama/NIS..."
+                    sortColumn={sortColumn}
+                    sortDirection={sortDirection}
+                    onSort={handleSort}
+                    perPage={perPage}
+                    onPerPageChange={(p) => {
+                        setPerPage(p);
+                        if (p !== perPage) {
+                            router.get('/santri', { per_page: p, page: 1, search: search || undefined, daerah_id: filterDaerah || undefined, asrama_id: filterAsrama || undefined, iksass: filterIksass || undefined, sort_column: sortColumn || undefined, sort_direction: sortDirection === 'none' ? undefined : sortDirection }, { preserveState: true, preserveScroll: true });
+                        }
+                    }}
+                    onSelectionChange={setSelectedIds}
+                    bulkActions={
+                        selectedIds.length > 0 && (
+                            <Button variant="destructive" size="sm" onClick={bulkDelete}>
+                                <Trash2 className="h-4 w-4" />
+                                Hapus ({selectedIds.length})
+                            </Button>
+                        )
+                    }
+                    filters={
+                        <>
                             <Select
                                 value={filterDaerah}
-                                onChange={(e) => setFilterDaerah(e.target.value)}
+                                onChange={(e) => {
+                                    setFilterDaerah(e.target.value);
+                                    setFilterAsrama('');
+                                }}
                                 placeholder="Semua Daerah"
                                 options={daerah.map((d: any) => ({ value: d.id, label: d.nama_daerah }))}
                                 className="min-w-[150px]"
@@ -113,70 +201,22 @@ export default function SantriIndex() {
                                 value={filterAsrama}
                                 onChange={(e) => setFilterAsrama(e.target.value)}
                                 placeholder="Semua Asrama"
-                                options={asrama.map((a: any) => ({ value: a.id, label: a.nomor }))}
+                                options={filteredAsramaFilter.map((a: any) => ({ value: a.id, label: `${a.nomor}` }))}
                                 className="min-w-[150px]"
                             />
                             <Input
                                 value={filterIksass}
                                 onChange={(e) => setFilterIksass(e.target.value)}
-                                placeholder="IKSASS"
-                                className="max-w-[100px]"
+                                placeholder="Cari asal..."
+                                className="max-w-[130px]"
                             />
-                            <Button variant="outline" onClick={applyFilter}>Filter</Button>
-                        </div>
+                            <Button variant="outline" size="sm" onClick={() => router.get('/santri', { daerah_id: filterDaerah || undefined, asrama_id: filterAsrama || undefined, iksass: filterIksass || undefined, search: search || undefined, per_page: perPage, sort_column: sortColumn || undefined, sort_direction: sortDirection === 'none' ? undefined : sortDirection }, { preserveState: true, preserveScroll: true })}>Filter</Button>
+                        </>
+                    }
+                />
+                </div>
 
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Nama</TableHead>
-                                    <TableHead>NIS</TableHead>
-                                    <TableHead>IKSASS</TableHead>
-                                    <TableHead>Daerah</TableHead>
-                                    <TableHead>Asrama</TableHead>
-                                    <TableHead className="text-right">Aksi</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {santri.data.map((s: any) => (
-                                    <TableRow key={s.id}>
-                                        <TableCell className="font-medium">{s.nama}</TableCell>
-                                        <TableCell>{s.nis}</TableCell>
-                                        <TableCell>{s.iksass}</TableCell>
-                                        <TableCell>{s.asrama?.daerah?.nama_daerah}</TableCell>
-                                        <TableCell>{s.asrama?.nomor}</TableCell>
-                                        <TableCell className="text-right">
-                                            <div className="flex justify-end gap-2">
-                                                <Link href={`/santri/${s.id}`}>
-                                                    <Button variant="ghost" size="sm">
-                                                        <Eye className="h-4 w-4" />
-                                                    </Button>
-                                                </Link>
-                                                <Button variant="ghost" size="sm" onClick={() => openEdit(s)}>
-                                                    <Edit2 className="h-4 w-4" />
-                                                </Button>
-                                                <Button variant="ghost" size="sm" onClick={() => destroy(s.id)}>
-                                                    <Trash2 className="h-4 w-4 text-red-500" />
-                                                </Button>
-                                            </div>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-
-                        <Pagination
-                            currentPage={santri.current_page}
-                            lastPage={santri.last_page}
-                            total={santri.total}
-                            from={santri.from}
-                            to={santri.to}
-                            onPageChange={(page) => router.get('/santri', { page })}
-                        />
-                    </CardContent>
-                </Card>
-            </div>
-
-            <Dialog
+            <Modal
                 open={showModal}
                 onClose={() => setShowModal(false)}
                 title={editing ? 'Edit Santri' : 'Tambah Santri'}
@@ -199,11 +239,24 @@ export default function SantriIndex() {
                         />
                     </div>
                     <div className="space-y-2">
-                        <label className="text-sm font-medium">IKSASS</label>
+                        <label className="text-sm font-medium">Asal (IKSASS)</label>
                         <Input
                             value={form.iksass}
                             onChange={(e) => setForm({ ...form, iksass: e.target.value })}
-                            placeholder="Tahun masuk"
+                            placeholder="Contoh: Situbondo, Bondowoso"
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium">Daerah</label>
+                        <Select
+                            value={formDaerah}
+                            onChange={(e) => {
+                                const val = e.target.value;
+                                setFormDaerah(val);
+                                setForm({ ...form, daerah_id: val, asrama_id: '' });
+                            }}
+                            placeholder="Pilih Daerah"
+                            options={daerah.map((d: any) => ({ value: d.id, label: d.nama_daerah }))}
                         />
                     </div>
                     <div className="space-y-2">
@@ -212,7 +265,7 @@ export default function SantriIndex() {
                             value={form.asrama_id}
                             onChange={(e) => setForm({ ...form, asrama_id: e.target.value })}
                             placeholder="Pilih Asrama"
-                            options={asrama.map((a: any) => ({ value: a.id, label: a.nomor }))}
+                            options={filteredAsrama.map((a: any) => ({ value: a.id, label: `${a.nomor}` }))}
                         />
                     </div>
                     <div className="flex justify-end gap-3 pt-2">
@@ -220,9 +273,9 @@ export default function SantriIndex() {
                         <Button onClick={submit}>{editing ? 'Simpan' : 'Tambah'}</Button>
                     </div>
                 </div>
-            </Dialog>
+            </Modal>
 
-            <Dialog open={showImport} onClose={() => setShowImport(false)} title="Import Santri" description="Upload file Excel">
+            <Modal open={showImport} onClose={() => setShowImport(false)} title="Import Santri" description="Upload file Excel">
                 <form onSubmit={handleImport} className="space-y-4">
                     <input type="file" name="file" accept=".xlsx,.xls" required className="block w-full text-sm" />
                     <div className="flex justify-end gap-3 pt-2">
@@ -230,7 +283,7 @@ export default function SantriIndex() {
                         <Button type="submit">Import</Button>
                     </div>
                 </form>
-            </Dialog>
+            </Modal>
         </AppLayout>
     );
 }

@@ -18,11 +18,32 @@ class AsramaController extends Controller
     {
         $query = Asrama::with('daerah')->withCount('santri');
 
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where('nomor', 'like', "%{$search}%");
+        }
+
         if ($request->filled('daerah_id')) {
             $query->where('daerah_id', $request->daerah_id);
         }
 
-        $asrama = $query->latest()->paginate(10);
+        $sortColumn = $request->input('sort_column', 'created_at');
+        $sortDirection = $request->input('sort_direction', 'desc');
+        $allowedSorts = ['nomor', 'daerah_id', 'santri_count', 'daerah'];
+        if (in_array($sortColumn, $allowedSorts)) {
+            if ($sortColumn === 'daerah') {
+                $query->orderBy(
+                    Daerah::select('nama_daerah')->whereColumn('daerah.id', 'asrama.daerah_id'),
+                    $sortDirection === 'asc' ? 'asc' : 'desc'
+                );
+            } else {
+                $query->orderBy($sortColumn, $sortDirection === 'asc' ? 'asc' : 'desc');
+            }
+        } else {
+            $query->latest();
+        }
+
+        $asrama = $query->paginate((int) $request->input("per_page", 10));
         $daerah = Daerah::all();
 
         return Inertia::render('asrama/index', [
@@ -47,6 +68,13 @@ class AsramaController extends Controller
     public function destroy(Asrama $asrama): RedirectResponse
     {
         $asrama->delete();
+        return redirect()->route('asrama.index')->with('success', 'Asrama berhasil dihapus.');
+    }
+
+    public function bulkDelete(Request $request): RedirectResponse
+    {
+        $ids = $request->input('ids', []);
+        Asrama::whereIn('id', $ids)->delete();
         return redirect()->route('asrama.index')->with('success', 'Asrama berhasil dihapus.');
     }
 }

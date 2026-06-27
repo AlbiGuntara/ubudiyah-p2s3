@@ -28,7 +28,10 @@ class SantriSeeder extends Seeder
                 $santri[] = [
                     'nama' => $namaSantri[$index % count($namaSantri)],
                     'nis' => (string) ($nis++),
-                    'iksass' => rand(2019, 2025),
+                    'iksass' => (function() {
+                        $asal = ['Situbondo', 'Bondowoso', 'Jember', 'Banyuwangi', 'Probolinggo', 'Lumajang'];
+                        return $asal[array_rand($asal)];
+                    })(),
                     'asrama_id' => $asramaId,
                 ];
                 $index++;

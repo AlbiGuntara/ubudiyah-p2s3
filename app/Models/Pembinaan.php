@@ -1,8 +1,9 @@
 <?php
+
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class Pembinaan extends Model
 {
@@ -12,20 +13,28 @@ class Pembinaan extends Model
 
     protected $fillable = [
         'santri_id',
-        'panggilan',
-        'tanggal_panggilan',
+        'asrama_id',
         'sanksi',
+        'shalawat_tertulis',
+        'sisa_sanksi',
     ];
 
     protected function casts(): array
     {
         return [
-            'tanggal_panggilan' => 'date',
+            'sanksi' => 'integer',
+            'shalawat_tertulis' => 'integer',
+            'sisa_sanksi' => 'integer',
         ];
     }
 
     public function santri()
     {
         return $this->belongsTo(Santri::class);
+    }
+
+    public function asrama()
+    {
+        return $this->belongsTo(Asrama::class);
     }
 }

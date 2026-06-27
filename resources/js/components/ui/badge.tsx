@@ -1,12 +1,12 @@
 import { cn } from '@/lib/utils';
 
 const variants = {
-    default: 'bg-primary/10 text-primary border-transparent',
+    default: 'bg-primary text-primary-foreground border-transparent',
     secondary: 'bg-secondary text-secondary-foreground',
-    destructive: 'bg-destructive/10 text-destructive border-transparent',
+    destructive: 'bg-destructive text-destructive-foreground border-transparent',
     outline: 'text-foreground',
-    success: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-    warning: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
+    success: 'bg-green-600 text-white border-transparent',
+    warning: 'bg-yellow-600 text-white border-transparent',
 } as const;
 
 interface BadgeProps extends React.HTMLAttributes<HTMLDivElement> {

@@ -3,9 +3,8 @@ import { Head, usePage, router } from '@inertiajs/react';
 import { AppLayout } from '@/components/layout/app-layout';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
-import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
+import { DataTable, type Column } from '@/components/shared/data-table';
 
 export default function LaporanPerAsrama() {
     const { data, asrama, filters } = usePage<any>().props;
@@ -17,6 +16,20 @@ export default function LaporanPerAsrama() {
         });
     };
 
+    const dataWithRank = data.map((s: any, i: number) => ({ ...s, _rank: i + 1 }));
+
+    const columns: Column<any>[] = [
+        {
+            key: '_rank',
+            label: 'Ranking',
+            render: (s) => <Badge variant={s._rank <= 3 ? 'default' : 'secondary'}>{s._rank}</Badge>,
+        },
+        { key: 'santri_nama', label: 'Nama Santri', sortable: true, render: (s) => <span className="font-medium">{s.santri_nama}</span> },
+        { key: 'santri_nis', label: 'NIS' },
+        { key: 'jumlah_pelanggaran', label: 'Jumlah Pelanggaran', sortable: true },
+        { key: 'jumlah_shalawat', label: 'Jumlah Shalawat', sortable: true },
+    ];
+
     return (
         <AppLayout>
             <Head title="Laporan Per Asrama" />
@@ -26,49 +39,19 @@ export default function LaporanPerAsrama() {
                     <p className="text-muted-foreground">Ranking santri per asrama</p>
                 </div>
 
-                <Card>
-                    <CardContent className="p-6">
-                        <div className="flex items-end gap-4 mb-6">
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium">Asrama</label>
-                                <Select value={asramaId} onChange={(e) => setAsramaId(e.target.value)} placeholder="Semua Asrama" options={asrama.map((a: any) => ({ value: a.id, label: a.nomor }))} />
-                            </div>
-                            <Button onClick={filter}>Tampilkan</Button>
-                        </div>
-
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Ranking</TableHead>
-                                    <TableHead>Nama Santri</TableHead>
-                                    <TableHead>NIS</TableHead>
-                                    <TableHead>Jumlah Pelanggaran</TableHead>
-                                    <TableHead>Jumlah Shalawat</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {data.map((s: any, i: number) => (
-                                    <TableRow key={s.santri_id}>
-                                        <TableCell>
-                                            <Badge variant={i < 3 ? 'default' : 'secondary'}>{i + 1}</Badge>
-                                        </TableCell>
-                                        <TableCell className="font-medium">{s.santri_nama}</TableCell>
-                                        <TableCell>{s.santri_nis}</TableCell>
-                                        <TableCell>{s.jumlah_pelanggaran}</TableCell>
-                                        <TableCell>{s.jumlah_shalawat}</TableCell>
-                                    </TableRow>
-                                ))}
-                                {data.length === 0 && (
-                                    <TableRow>
-                                        <TableCell colSpan={5} className="text-center text-muted-foreground">
-                                            Belum ada data
-                                        </TableCell>
-                                    </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
-                    </CardContent>
-                </Card>
+                <DataTable
+                    columns={columns}
+                    data={dataWithRank}
+                    meta={{ current_page: 1, last_page: 1, total: data.length, from: 1, to: data.length }}
+                    keyExtractor={(s) => s.santri_id || Math.random()}
+                    onPageChange={() => {}}
+                    filters={
+                        <>
+                            <Select value={asramaId} onChange={(e) => setAsramaId(e.target.value)} placeholder="Semua Asrama" options={asrama.map((a: any) => ({ value: a.id, label: a.nomor }))} />
+                            <Button variant="outline" size="sm" onClick={filter}>Tampilkan</Button>
+                        </>
+                    }
+                />
             </div>
         </AppLayout>
     );

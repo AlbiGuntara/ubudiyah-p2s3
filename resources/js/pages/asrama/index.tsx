@@ -1,20 +1,22 @@
-import { useState } from 'react';
+import { useState, FormEvent } from 'react';
 import { Head, usePage, router } from '@inertiajs/react';
 import { AppLayout } from '@/components/layout/app-layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
-import { Pagination } from '@/components/ui/pagination';
-import { Dialog } from '@/components/ui/dialog';
-import { Edit2, Trash2, Plus, Search, Building2 } from 'lucide-react';
+import { Modal } from '@/components/ui/modal';
+import { DataTable, type Column } from '@/components/shared/data-table';
+import { Edit2, Trash2, Plus, Building2 } from 'lucide-react';
 
 export default function AsramaIndex() {
-    const { asrama, daerah, filters } = usePage<any>().props;
+    const { asrama, daerah, filters, errors } = usePage<any>().props;
+    const [perPage, setPerPage] = useState(10);
     const [showModal, setShowModal] = useState(false);
     const [editing, setEditing] = useState<any>(null);
     const [filterDaerah, setFilterDaerah] = useState(filters?.daerah_id || '');
+    const [sortColumn, setSortColumn] = useState('');
+    const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | 'none'>('none');
+    const [selectedIds, setSelectedIds] = useState<(string | number)[]>([]);
 
     const [form, setForm] = useState({ daerah_id: '', nomor: '' });
 
@@ -30,13 +32,16 @@ export default function AsramaIndex() {
         setShowModal(true);
     };
 
-    const submit = () => {
+    const submit = (e: FormEvent) => {
+        e.preventDefault();
         if (editing) {
             router.put(`/asrama/${editing.id}`, form, {
+                preserveScroll: true,
                 onSuccess: () => setShowModal(false),
             });
         } else {
             router.post('/asrama', form, {
+                preserveScroll: true,
                 onSuccess: () => setShowModal(false),
             });
         }
@@ -48,9 +53,51 @@ export default function AsramaIndex() {
         }
     };
 
-    const applyFilter = () => {
-        router.get('/asrama', { daerah_id: filterDaerah || undefined });
+    const bulkDelete = () => {
+        if (confirm(`Yakin ingin menghapus ${selectedIds.length} asrama?`)) {
+            router.post('/asrama/bulk-delete', { ids: selectedIds }, {
+                onSuccess: () => setSelectedIds([]),
+            });
+        }
     };
+
+    const handleSort = (column: string) => {
+        let nextDir: 'asc' | 'desc' | 'none' = 'asc';
+        if (sortColumn === column) {
+            nextDir = sortDirection === 'none' ? 'asc' : sortDirection === 'asc' ? 'desc' : 'none';
+        }
+        setSortColumn(nextDir === 'none' ? '' : column);
+        setSortDirection(nextDir);
+        router.get('/asrama', {
+            sort_column: nextDir === 'none' ? undefined : column,
+            sort_direction: nextDir === 'none' ? undefined : nextDir,
+            daerah_id: filterDaerah || undefined,
+            per_page: perPage,
+        }, { preserveState: true, preserveScroll: true });
+    };
+
+    const columns: Column<any>[] = [
+        { key: 'no', label: '#', render: (_a: any, idx: number) => <span>{asrama.from + idx}</span>, className: 'text-muted-foreground text-xs w-10' },
+        { key: 'daerah', label: 'Daerah', sortable: true, render: (a) => a.daerah?.nama_daerah || '-' },
+        { key: 'nomor', label: 'Nomor Asrama', sortable: true },
+        { key: 'santri_count', label: 'Jumlah Santri', sortable: true, className: 'text-center' },
+        {
+            key: 'aksi',
+            label: 'Aksi',
+            headClassName: 'text-right',
+            className: 'text-right',
+            render: (a) => (
+                <div className="flex justify-end gap-2">
+                    <Button variant="ghost" size="sm" onClick={() => openEdit(a)}>
+                        <Edit2 className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => destroy(a.id)}>
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                    </Button>
+                </div>
+            ),
+        },
+    ];
 
     return (
         <AppLayout>
@@ -67,9 +114,33 @@ export default function AsramaIndex() {
                     </Button>
                 </div>
 
-                <Card>
-                    <CardContent className="p-6">
-                        <div className="flex items-center gap-4 mb-4">
+                <DataTable
+                    columns={columns}
+                    data={asrama.data}
+                    meta={asrama}
+                    keyExtractor={(a) => a.id}
+                    onPageChange={(page) => router.get('/asrama', { page, daerah_id: filterDaerah || undefined, sort_column: sortColumn || undefined, sort_direction: sortDirection === 'none' ? undefined : sortDirection, per_page: perPage }, { preserveState: true, preserveScroll: true })}
+                    sortColumn={sortColumn}
+                    sortDirection={sortDirection}
+                    onSort={handleSort}
+                    perPage={perPage}
+                    onPerPageChange={(p) => {
+                        setPerPage(p);
+                        if (p !== perPage) {
+                            router.get('/asrama', { per_page: p, page: 1, daerah_id: filterDaerah || undefined, sort_column: sortColumn || undefined, sort_direction: sortDirection === 'none' ? undefined : sortDirection }, { preserveState: true, preserveScroll: true });
+                        }
+                    }}
+                    onSelectionChange={setSelectedIds}
+                    bulkActions={
+                        selectedIds.length > 0 && (
+                            <Button variant="destructive" size="sm" onClick={bulkDelete}>
+                                <Trash2 className="h-4 w-4" />
+                                Hapus ({selectedIds.length})
+                            </Button>
+                        )
+                    }
+                    filters={
+                        <>
                             <Select
                                 value={filterDaerah}
                                 onChange={(e) => setFilterDaerah(e.target.value)}
@@ -77,57 +148,19 @@ export default function AsramaIndex() {
                                 options={daerah.map((d: any) => ({ value: d.id, label: d.nama_daerah }))}
                                 className="max-w-xs"
                             />
-                            <Button variant="outline" onClick={applyFilter}>Filter</Button>
-                        </div>
+                            <Button variant="outline" size="sm" onClick={() => router.get('/asrama', { daerah_id: filterDaerah || undefined, per_page: perPage, sort_column: sortColumn || undefined, sort_direction: sortDirection === 'none' ? undefined : sortDirection }, { preserveState: true, preserveScroll: true })}>Filter</Button>
+                        </>
+                    }
+                />
 
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Daerah</TableHead>
-                                    <TableHead>Nomor Asrama</TableHead>
-                                    <TableHead>Jumlah Santri</TableHead>
-                                    <TableHead className="text-right">Aksi</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {asrama.data.map((a: any) => (
-                                    <TableRow key={a.id}>
-                                        <TableCell className="font-medium">{a.daerah?.nama_daerah}</TableCell>
-                                        <TableCell>{a.nomor}</TableCell>
-                                        <TableCell>{a.santri_count}</TableCell>
-                                        <TableCell className="text-right">
-                                            <div className="flex justify-end gap-2">
-                                                <Button variant="ghost" size="sm" onClick={() => openEdit(a)}>
-                                                    <Edit2 className="h-4 w-4" />
-                                                </Button>
-                                                <Button variant="ghost" size="sm" onClick={() => destroy(a.id)}>
-                                                    <Trash2 className="h-4 w-4 text-red-500" />
-                                                </Button>
-                                            </div>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
+                </div>
 
-                        <Pagination
-                            currentPage={asrama.current_page}
-                            lastPage={asrama.last_page}
-                            total={asrama.total}
-                            from={asrama.from}
-                            to={asrama.to}
-                            onPageChange={(page) => router.get('/asrama', { page, daerah_id: filterDaerah || undefined })}
-                        />
-                    </CardContent>
-                </Card>
-            </div>
-
-            <Dialog
+            <Modal
                 open={showModal}
                 onClose={() => setShowModal(false)}
                 title={editing ? 'Edit Asrama' : 'Tambah Asrama'}
             >
-                <div className="space-y-4">
+                <form onSubmit={submit} className="space-y-4">
                     <div className="space-y-2">
                         <label className="text-sm font-medium">Daerah</label>
                         <Select
@@ -136,6 +169,7 @@ export default function AsramaIndex() {
                             placeholder="Pilih Daerah"
                             options={daerah.map((d: any) => ({ value: d.id, label: d.nama_daerah }))}
                         />
+                        {errors.daerah_id && <p className="text-sm text-destructive">{errors.daerah_id}</p>}
                     </div>
                     <div className="space-y-2">
                         <label className="text-sm font-medium">Nomor Asrama</label>
@@ -144,13 +178,14 @@ export default function AsramaIndex() {
                             onChange={(e) => setForm({ ...form, nomor: e.target.value })}
                             placeholder="Contoh: 01"
                         />
+                        {errors.nomor && <p className="text-sm text-destructive">{errors.nomor}</p>}
                     </div>
                     <div className="flex justify-end gap-3 pt-2">
-                        <Button variant="outline" onClick={() => setShowModal(false)}>Batal</Button>
-                        <Button onClick={submit}>{editing ? 'Simpan' : 'Tambah'}</Button>
+                        <Button type="button" variant="outline" onClick={() => setShowModal(false)}>Batal</Button>
+                        <Button type="submit">{editing ? 'Simpan' : 'Tambah'}</Button>
                     </div>
-                </div>
-            </Dialog>
+                </form>
+            </Modal>
         </AppLayout>
     );
 }

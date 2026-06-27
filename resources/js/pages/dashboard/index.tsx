@@ -23,8 +23,8 @@ function StatCard({ title, value, icon: Icon, description }: StatCardProps) {
                             <p className="text-xs text-muted-foreground">{description}</p>
                         )}
                     </div>
-                    <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                        <Icon className="h-6 w-6 text-green-600 dark:text-green-400" />
+                    <div className="w-12 h-12 rounded-full bg-green-600/20 flex items-center justify-center">
+                        <Icon className="h-6 w-6 text-green-600" />
                     </div>
                 </div>
             </CardContent>

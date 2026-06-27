@@ -23,11 +23,6 @@ class PelanggaranPolicy
 
     public function update(User $user, Pelanggaran $pelanggaran): bool
     {
-        // Petugas can only edit their own violations
-        if ($user->isPetugas()) {
-            $petugas = \App\Models\Petugas::where('user_id', $user->id)->first();
-            return $petugas && $pelanggaran->petugas_id === $petugas->id;
-        }
         return $user->can('edit_pelanggaran');
     }
 

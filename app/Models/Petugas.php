@@ -15,6 +15,7 @@ class Petugas extends Model
         'asrama_id',
         'jabatan',
         'tugas',
+        'foto',
     ];
 
     public function santri()

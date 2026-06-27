@@ -83,8 +83,8 @@ export default function LaporanBulanan() {
                                 />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-sm font-medium">IKSASS</label>
-                                <Input value={iksass} onChange={(e) => setIksass(e.target.value)} placeholder="Tahun" className="w-24" />
+                                <label className="text-sm font-medium">Asal (IKSASS)</label>
+                                <Input value={iksass} onChange={(e) => setIksass(e.target.value)} placeholder="Cari asal..." className="w-32" />
                             </div>
                             <Button onClick={filter}>Tampilkan</Button>
                         </div>

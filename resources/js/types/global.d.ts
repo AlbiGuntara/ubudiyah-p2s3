@@ -16,6 +16,7 @@ declare module '@inertiajs/core' {
             appearance: string;
             flash: {
                 success?: string;
+                warning?: string;
                 error?: string;
             };
             [key: string]: unknown;

@@ -12,15 +12,20 @@ class StorePelanggaranRequest extends FormRequest
 
     public function rules(): array
     {
-        return [
+        $rules = [
             'santri_id' => 'nullable|exists:santri,id',
+            'santri_ids' => 'nullable|array',
+            'santri_ids.*' => 'exists:santri,id',
+            'tanpa_nama' => 'nullable|integer|min:0',
             'asrama_id' => 'required|exists:asrama,id',
             'daftar_pelanggaran_id' => 'required|exists:daftar_pelanggaran,id',
-            'petugas_id' => 'required|exists:petugas,id',
-            'jumlah' => 'required|integer|min:1',
+            'petugas_id' => 'nullable|exists:petugas,id',
+            'jumlah' => 'nullable|integer|min:1',
             'sumber_pencatatan' => 'required|in:petugas,ketua_kamar',
             'tanggal' => 'required|date',
             'keterangan' => 'nullable|string',
         ];
+
+        return $rules;
     }
 }

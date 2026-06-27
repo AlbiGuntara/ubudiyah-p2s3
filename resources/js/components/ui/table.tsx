@@ -2,18 +2,40 @@ import { cn } from '@/lib/utils';
 
 function Table({ className, ...props }: React.HTMLAttributes<HTMLTableElement>) {
     return (
-        <div className="relative w-full overflow-auto">
-            <table className={cn('w-full caption-bottom text-sm', className)} {...props} />
+        <div className="relative w-full overflow-auto rounded-lg">
+            <table
+                className={cn(
+                    'w-full caption-bottom text-sm border-separate border-spacing-0',
+                    className,
+                )}
+                {...props}
+            />
         </div>
     );
 }
 
 function TableHeader({ className, ...props }: React.HTMLAttributes<HTMLTableSectionElement>) {
-    return <thead className={cn('[&_tr]:border-b', className)} {...props} />;
+    return (
+        <thead
+            className={cn(
+                '[&_tr]:border-b bg-muted/40',
+                className,
+            )}
+            {...props}
+        />
+    );
 }
 
 function TableBody({ className, ...props }: React.HTMLAttributes<HTMLTableSectionElement>) {
-    return <tbody className={cn('[&_tr:last-child]:border-0', className)} {...props} />;
+    return (
+        <tbody
+            className={cn(
+                '[&_tr:last-child]:border-0 [&_tr:first-child>td:first-child]:rounded-tl-lg [&_tr:first-child>td:last-child]:rounded-tr-lg [&_tr:last-child>td:first-child]:rounded-bl-lg [&_tr:last-child>td:last-child]:rounded-br-lg',
+                className,
+            )}
+            {...props}
+        />
+    );
 }
 
 function TableRow({ className, ...props }: React.HTMLAttributes<HTMLTableRowElement>) {
@@ -32,7 +54,7 @@ function TableHead({ className, ...props }: React.ThHTMLAttributes<HTMLTableCell
     return (
         <th
             className={cn(
-                'h-10 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0',
+                'h-11 px-4 text-left align-middle text-xs font-semibold uppercase tracking-wider text-muted-foreground [&:has([role=checkbox])]:pr-0',
                 className,
             )}
             {...props}

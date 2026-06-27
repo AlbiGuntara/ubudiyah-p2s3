@@ -19,11 +19,14 @@ export default function Login() {
     return (
         <>
             <Head title="Login" />
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-800 via-green-700 to-green-900 p-4">
+            <div
+                className="min-h-screen flex items-center justify-center p-4 bg-cover bg-center bg-no-repeat"
+                style={{ backgroundImage: "url('/bg/login.png')" }}
+            >
                 <Card className="w-full max-w-md">
                     <CardHeader className="text-center">
-                        <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-green-600 flex items-center justify-center">
-                            <span className="text-white text-2xl font-bold">P</span>
+                        <div className="mx-auto mb-4 w-20 h-20 flex items-center justify-center">
+                            <img src="/logo/p2s3.png" alt="Logo" className="w-full h-full object-contain" />
                         </div>
                         <CardTitle className="text-2xl">Selamat Datang</CardTitle>
                         <CardDescription>

@@ -30,7 +30,7 @@ class SantriController extends Controller
         }
 
         if ($request->filled('iksass')) {
-            $query->where('iksass', $request->iksass);
+            $query->where('iksass', 'like', "%{$request->iksass}%");
         }
 
         if ($request->filled('search')) {
@@ -41,7 +41,16 @@ class SantriController extends Controller
             });
         }
 
-        $santri = $query->latest()->paginate(15);
+        $sortColumn = $request->input('sort_column', 'created_at');
+        $sortDirection = $request->input('sort_direction', 'desc');
+        $allowedSorts = ['nis', 'nama', 'iksass', 'asrama_id', 'created_at'];
+        if (in_array($sortColumn, $allowedSorts)) {
+            $query->orderBy($sortColumn, $sortDirection === 'asc' ? 'asc' : 'desc');
+        } else {
+            $query->latest();
+        }
+
+        $santri = $query->paginate((int) $request->input("per_page", 15));
         $daerah = Daerah::all();
         $asrama = Asrama::with('daerah')->get();
 
@@ -68,7 +77,6 @@ class SantriController extends Controller
             'statistik' => [
                 'total_pelanggaran' => $santri->total_pelanggaran,
                 'total_shalawat' => $santri->total_shalawat,
-                'jumlah_panggilan' => $santri->jumlah_panggilan,
             ],
         ]);
     }
@@ -85,12 +93,34 @@ class SantriController extends Controller
         return redirect()->route('santri.index')->with('success', 'Santri berhasil dihapus.');
     }
 
+    public function bulkDelete(Request $request): RedirectResponse
+    {
+        $ids = $request->input('ids', []);
+        Santri::whereIn('id', $ids)->delete();
+        return redirect()->route('santri.index')->with('success', 'Santri berhasil dihapus.');
+    }
+
     public function import(Request $request): RedirectResponse
     {
         $request->validate(['file' => 'required|mimes:xlsx,xls']);
 
-        Excel::import(new SantriImport, $request->file('file'));
+        $import = new SantriImport;
+        Excel::import($import, $request->file('file'));
 
-        return redirect()->route('santri.index')->with('success', 'Data santri berhasil diimport.');
+        $imported = $import->getImportedCount();
+        $errors = $import->getErrors();
+
+        if (!empty($errors)) {
+            $message = implode('<br>', array_slice($errors, 0, 10));
+            if (count($errors) > 10) {
+                $message .= '<br>... dan ' . (count($errors) - 10) . ' error lainnya';
+            }
+            if ($imported > 0) {
+                $message = "Berhasil import {$imported} data.<br>" . $message;
+            }
+            return redirect()->route('santri.index')->with('warning', $message);
+        }
+
+        return redirect()->route('santri.index')->with('success', "Berhasil import {$imported} data santri.");
     }
 }

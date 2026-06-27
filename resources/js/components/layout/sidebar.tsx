@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link, usePage, useRemember } from '@inertiajs/react';
+import { Fragment, useState, useRef } from 'react';
+import { Link, usePage } from '@inertiajs/react';
 import {
     LayoutDashboard,
     Map,
@@ -11,11 +11,7 @@ import {
     GraduationCap,
     FileText,
     Shield,
-    ChevronLeft,
-    ChevronRight,
-    Menu,
-    X,
-    Search,
+    UserPlus,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -26,107 +22,207 @@ interface NavItem {
     roles?: string[];
 }
 
-const navItems: NavItem[] = [
-    { label: 'Dashboard', href: '/', icon: LayoutDashboard },
-    { label: 'Daerah', href: '/daerah', icon: Map },
-    { label: 'Asrama', href: '/asrama', icon: Building2 },
-    { label: 'Santri', href: '/santri', icon: Users },
-    { label: 'Petugas', href: '/petugas', icon: UserCog },
-    { label: 'Jenis Pelanggaran', href: '/daftar-pelanggaran', icon: BookOpen },
-    { label: 'Pelanggaran', href: '/pelanggaran', icon: Gavel },
-    { label: 'Pembinaan', href: '/pembinaan', icon: GraduationCap },
-    { label: 'Laporan', href: '/laporan/bulanan', icon: FileText },
-    { label: 'Audit Log', href: '/audit', icon: Shield, roles: ['super_admin'] },
+interface NavGroup {
+    title: string;
+    items: NavItem[];
+}
+
+const navGroups: NavGroup[] = [
+    {
+        title: 'Menu',
+        items: [
+            { label: 'Dashboard', href: '/', icon: LayoutDashboard },
+        ],
+    },
+    {
+        title: 'Master Data',
+        items: [
+            { label: 'Daerah', href: '/daerah', icon: Map },
+            { label: 'Asrama', href: '/asrama', icon: Building2 },
+            { label: 'Santri', href: '/santri', icon: Users },
+            { label: 'Petugas', href: '/petugas', icon: UserCog },
+            { label: 'Jenis Pelanggaran', href: '/daftar-pelanggaran', icon: BookOpen },
+        ],
+    },
+    {
+        title: 'Transaksi',
+        items: [
+            { label: 'Pelanggaran', href: '/pelanggaran', icon: Gavel },
+            { label: 'Pembinaan', href: '/pembinaan', icon: GraduationCap },
+        ],
+    },
+    {
+        title: 'Laporan',
+        items: [
+            { label: 'Laporan', href: '/laporan/bulanan', icon: FileText },
+        ],
+    },
+    {
+        title: 'Pengaturan',
+        items: [
+            { label: 'Audit Log', href: '/audit', icon: Shield, roles: ['super_admin'] },
+            { label: 'Pengguna', href: '/users', icon: UserPlus, roles: ['super_admin'] },
+        ],
+    },
 ];
 
-export function Sidebar() {
+export function Sidebar({
+    collapsed,
+    mobileOpen,
+    onMobileClose,
+}: {
+    collapsed: boolean;
+    mobileOpen: boolean;
+    onMobileClose: () => void;
+}) {
     const page = usePage();
-    const url = page.url;
+    const pathname = page.url.split('?')[0];
     const { auth } = page.props;
-    const [collapsed, setCollapsed] = useRemember(false, 'sidebar-collapsed');
-    const [mobileOpen, setMobileOpen] = useState(false);
 
     const user = auth.user;
     if (!user) return null;
 
-    const filteredItems = navItems.filter((item) => {
-        if (!item.roles) return true;
-        return item.roles.includes(user.role);
-    });
+    const filteredGroups = navGroups
+        .map((group) => ({
+            ...group,
+            items: group.items.filter((item) => {
+                if (!item.roles) return true;
+                return item.roles.includes(user.role);
+            }),
+        }))
+        .filter((group) => group.items.length > 0);
+
+    const [tooltip, setTooltip] = useState<{ label: string; top: number } | null>(null);
+    const asideRef = useRef<HTMLElement>(null);
+
+    const showTooltip = (label: string, e: React.MouseEvent) => {
+        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+        setTooltip({ label, top: rect.top + rect.height / 2 });
+    };
+
+    const hideTooltip = () => setTooltip(null);
 
     return (
         <>
-            <button
-                onClick={() => setMobileOpen(true)}
-                className="fixed top-4 left-4 z-50 lg:hidden rounded-md p-2 bg-background border shadow-sm"
-            >
-                <Menu className="h-5 w-5" />
-            </button>
-
             {mobileOpen && (
-                <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setMobileOpen(false)} />
+                <div
+                    className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
+                    onClick={onMobileClose}
+                />
             )}
 
             <aside
+                ref={asideRef}
                 className={cn(
-                    'fixed top-0 left-0 z-40 h-screen bg-sidebar-background border-r border-sidebar-border transition-all duration-300 flex flex-col',
-                    collapsed ? 'w-16' : 'w-64',
-                    mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
+                    'fixed top-0 left-0 z-40 min-h-screen h-dvh bg-sidebar-background border-r border-sidebar-border transition-all duration-300 flex flex-col',
+                    collapsed ? 'w-[72px]' : 'w-64',
+                    mobileOpen
+                        ? 'translate-x-0 shadow-2xl'
+                        : '-translate-x-full lg:translate-x-0',
                 )}
             >
-                <div className={cn('flex items-center h-16 border-b border-sidebar-border px-4', collapsed ? 'justify-center' : 'justify-between')}>
-                    {!collapsed && (
-                        <div>
-                            <h1 className="font-bold text-sm text-sidebar-primary">Ubudiyah</h1>
-                            <p className="text-xs text-sidebar-foreground/60">P2S3 Sukorejo</p>
-                        </div>
-                    )}
-                    <button
-                        onClick={() => setCollapsed(!collapsed)}
-                        className="hidden lg:block rounded-md p-1.5 hover:bg-sidebar-accent transition-colors"
-                    >
-                        {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-                    </button>
-                    <button onClick={() => setMobileOpen(false)} className="lg:hidden rounded-md p-1.5 hover:bg-sidebar-accent">
-                        <X className="h-4 w-4" />
-                    </button>
+                <div className={cn('flex items-center h-16 border-b border-sidebar-border shrink-0', collapsed ? 'justify-center px-3' : 'px-4')}>
+                    <div className={cn('flex items-center gap-3', collapsed && 'flex-col gap-1')}>
+                        <img
+                            src="/logo/p2s3.png"
+                            alt="Logo"
+                            className={cn(
+                                'object-contain shrink-0',
+                                collapsed ? 'h-8 w-8' : 'h-9 w-9',
+                            )}
+                        />
+                        {!collapsed && (
+                            <div className="min-w-0">
+                                <h1 className="font-bold text-sm text-sidebar-primary leading-tight">Ubudiyah</h1>
+                                <p className="text-[11px] text-sidebar-foreground/50 leading-tight">P2S3 Sukorejo</p>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
-                <nav className="flex-1 overflow-y-auto p-2 space-y-1">
-                    {filteredItems.map((item) => {
-                        const isActive = url === item.href || url.startsWith(item.href + '/');
-                        return (
-                            <Link
-                                key={item.href}
-                                href={item.href}
-                                onClick={() => setMobileOpen(false)}
-                                className={cn(
-                                    'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
-                                    isActive
-                                        ? 'bg-sidebar-primary text-sidebar-primary-foreground'
-                                        : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
-                                    collapsed && 'justify-center px-2',
+                <nav className={cn('flex-1 overflow-y-auto py-3 sidebar-scroll', collapsed ? 'px-2' : 'px-3')}>
+                    <div className={cn('space-y-5', collapsed && 'space-y-3')}>
+                        {filteredGroups.map((group) => (
+                            <Fragment key={group.title}>
+                                {!collapsed && (
+                                    <p className="px-2 text-[11px] font-semibold uppercase text-sidebar-foreground/35 tracking-[0.08em]">
+                                        {group.title}
+                                    </p>
                                 )}
-                            >
-                                <item.icon className={cn('h-5 w-5 shrink-0', collapsed && 'h-5 w-5')} />
-                                {!collapsed && <span>{item.label}</span>}
-                            </Link>
-                        );
-                    })}
+                                <div className="space-y-0.5">
+                                    {group.items.map((item) => {
+                                        const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+                                        const Icon = item.icon;
+                                        return (
+                                            <Link
+                                                key={item.href}
+                                                href={item.href}
+                                                onClick={onMobileClose}
+                                                className={cn(
+                                                    'relative flex items-center rounded-lg text-sm transition-all duration-200',
+                                                    collapsed ? 'justify-center h-11 w-11 mx-auto' : 'gap-3 px-3 py-2.5',
+                                                    isActive
+                                                        ? 'bg-sidebar-primary/10 text-sidebar-primary font-medium'
+                                                        : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+                                                )}
+                                                onMouseEnter={collapsed ? (e) => showTooltip(item.label, e) : undefined}
+                                                onMouseLeave={collapsed ? hideTooltip : undefined}
+                                            >
+                                                {isActive && (
+                                                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 rounded-full bg-sidebar-primary" />
+                                                )}
+                                                <Icon className={cn('h-5 w-5 shrink-0', collapsed && 'h-5 w-5')} />
+                                                {!collapsed && <span className="truncate">{item.label}</span>}
+                                            </Link>
+                                        );
+                                    })}
+                                </div>
+                            </Fragment>
+                        ))}
+                    </div>
                 </nav>
 
-                <div className={cn('border-t border-sidebar-border p-3', collapsed && 'text-center')}>
+                <div className={cn('border-t border-sidebar-border shrink-0 px-3 py-3', collapsed && 'text-center')}>
                     {!collapsed ? (
-                        <div className="text-xs text-sidebar-foreground/60">
-                            <p className="font-medium text-sidebar-foreground">{user.name}</p>
-                            <p className="capitalize">{user.role.replace('_', ' ')}</p>
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-sidebar-primary flex items-center justify-center text-sidebar-primary-foreground text-xs font-bold shrink-0">
+                                {user.name.charAt(0)}
+                            </div>
+                            <div className="min-w-0 text-xs text-sidebar-foreground/60">
+                                <p className="font-medium text-sidebar-foreground truncate">{user.name}</p>
+                                <p className="capitalize truncate">{user.role.replace('_', ' ')}</p>
+                            </div>
                         </div>
                     ) : (
-                        <div className="w-8 h-8 rounded-full bg-sidebar-primary flex items-center justify-center text-sidebar-primary-foreground text-xs font-bold">
-                            {user.name.charAt(0)}
+                        <div
+                            className="relative"
+                            onMouseEnter={(e) => showTooltip(user.name, e)}
+                            onMouseLeave={hideTooltip}
+                        >
+                            <div className="w-9 h-9 rounded-full bg-sidebar-primary flex items-center justify-center text-sidebar-primary-foreground text-xs font-bold mx-auto cursor-default">
+                                {user.name.charAt(0)}
+                            </div>
                         </div>
                     )}
                 </div>
+
+                {collapsed && tooltip && (
+                    <div
+                        className="fixed z-[100] pointer-events-none animate-in fade-in slide-in-from-left-1 duration-150"
+                        style={{
+                            left: asideRef.current ? asideRef.current.getBoundingClientRect().right + 10 : 80,
+                            top: tooltip.top,
+                            transform: 'translateY(-50%)',
+                        }}
+                    >
+                        <div className="relative px-3 py-2 rounded-lg bg-gradient-to-br from-sidebar-foreground to-sidebar-foreground/90 text-sidebar-background text-xs font-semibold whitespace-nowrap shadow-xl ring-1 ring-white/10">
+                            {tooltip.label}
+                            <div
+                                className="absolute left-0 top-1/2 -translate-x-1 -translate-y-1/2 border-4 border-transparent border-r-sidebar-foreground"
+                            />
+                        </div>
+                    </div>
+                )}
             </aside>
         </>
     );

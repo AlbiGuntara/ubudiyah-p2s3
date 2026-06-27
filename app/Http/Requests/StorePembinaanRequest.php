@@ -14,9 +14,8 @@ class StorePembinaanRequest extends FormRequest
     {
         return [
             'santri_id' => 'required|exists:santri,id',
-            'panggilan' => 'required|in:I,II,III',
-            'tanggal_panggilan' => 'required|date',
-            'sanksi' => 'nullable|string',
+            'sanksi' => 'nullable|integer|min:0',
+            'shalawat_tertulis' => 'nullable|integer|min:0',
         ];
     }
 }

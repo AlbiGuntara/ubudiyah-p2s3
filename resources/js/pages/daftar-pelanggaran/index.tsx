@@ -3,17 +3,20 @@ import { Head, usePage, router } from '@inertiajs/react';
 import { AppLayout } from '@/components/layout/app-layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
-import { Pagination } from '@/components/ui/pagination';
-import { Dialog } from '@/components/ui/dialog';
+import { Modal } from '@/components/ui/modal';
 import { Badge } from '@/components/ui/badge';
+import { DataTable, type Column } from '@/components/shared/data-table';
 import { Edit2, Trash2, Plus } from 'lucide-react';
 
 export default function DaftarPelanggaranIndex() {
     const { daftarPelanggaran } = usePage<any>().props;
+    const [perPage, setPerPage] = useState(10);
     const [showModal, setShowModal] = useState(false);
     const [editing, setEditing] = useState<any>(null);
+    const [search, setSearch] = useState('');
+    const [sortColumn, setSortColumn] = useState('');
+    const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | 'none'>('none');
+    const [selectedIds, setSelectedIds] = useState<(string | number)[]>([]);
     const [form, setForm] = useState({ nama_pelanggaran: '', poin: '1' });
 
     const openCreate = () => {
@@ -47,6 +50,52 @@ export default function DaftarPelanggaranIndex() {
         }
     };
 
+    const bulkDelete = () => {
+        if (confirm(`Yakin ingin menghapus ${selectedIds.length} jenis pelanggaran?`)) {
+            router.post('/daftar-pelanggaran/bulk-delete', { ids: selectedIds }, {
+                onSuccess: () => setSelectedIds([]),
+            });
+        }
+    };
+
+    const handleSort = (column: string) => {
+        let nextDir: 'asc' | 'desc' | 'none' = 'asc';
+        if (sortColumn === column) {
+            nextDir = sortDirection === 'none' ? 'asc' : sortDirection === 'asc' ? 'desc' : 'none';
+        }
+        setSortColumn(nextDir === 'none' ? '' : column);
+        setSortDirection(nextDir);
+        router.get('/daftar-pelanggaran', {
+            sort_column: nextDir === 'none' ? undefined : column,
+            sort_direction: nextDir === 'none' ? undefined : nextDir,
+            search: search || undefined,
+            per_page: perPage,
+        }, { preserveState: true, preserveScroll: true });
+    };
+
+    const columns: Column<any>[] = [
+        { key: 'no', label: '#', render: (_d: any, idx: number) => <span>{daftarPelanggaran.from + idx}</span>, className: 'text-muted-foreground text-xs w-10' },
+        { key: 'nama_pelanggaran', label: 'Nama Pelanggaran', sortable: true },
+        { key: 'poin', label: 'Poin', sortable: true, render: (d) => <Badge>{d.poin} Poin</Badge> },
+        { key: 'pelanggaran_count', label: 'Digunakan', sortable: true, render: (d) => `${d.pelanggaran_count} kali` },
+        {
+            key: 'aksi',
+            label: 'Aksi',
+            headClassName: 'text-right',
+            className: 'text-right',
+            render: (d) => (
+                <div className="flex justify-end gap-2">
+                    <Button variant="ghost" size="sm" onClick={() => openEdit(d)}>
+                        <Edit2 className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => destroy(d.id)}>
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                    </Button>
+                </div>
+            ),
+        },
+    ];
+
     return (
         <AppLayout>
             <Head title="Jenis Pelanggaran" />
@@ -62,51 +111,41 @@ export default function DaftarPelanggaranIndex() {
                     </Button>
                 </div>
 
-                <Card>
-                    <CardContent className="p-6">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Nama Pelanggaran</TableHead>
-                                    <TableHead>Poin</TableHead>
-                                    <TableHead>Digunakan</TableHead>
-                                    <TableHead className="text-right">Aksi</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {daftarPelanggaran.data.map((d: any) => (
-                                    <TableRow key={d.id}>
-                                        <TableCell className="font-medium">{d.nama_pelanggaran}</TableCell>
-                                        <TableCell><Badge>{d.poin} Poin</Badge></TableCell>
-                                        <TableCell>{d.pelanggaran_count} kali</TableCell>
-                                        <TableCell className="text-right">
-                                            <div className="flex justify-end gap-2">
-                                                <Button variant="ghost" size="sm" onClick={() => openEdit(d)}>
-                                                    <Edit2 className="h-4 w-4" />
-                                                </Button>
-                                                <Button variant="ghost" size="sm" onClick={() => destroy(d.id)}>
-                                                    <Trash2 className="h-4 w-4 text-red-500" />
-                                                </Button>
-                                            </div>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
+                <DataTable
+                    columns={columns}
+                    data={daftarPelanggaran.data}
+                    meta={daftarPelanggaran}
+                    keyExtractor={(d) => d.id}
+                    onPageChange={(page) => router.get('/daftar-pelanggaran', { page, search: search || undefined, sort_column: sortColumn || undefined, sort_direction: sortDirection === 'none' ? undefined : sortDirection, per_page: perPage }, { preserveState: true, preserveScroll: true })}
+                    search={search}
+                    onSearchChange={(q) => {
+                        setSearch(q);
+                        router.get('/daftar-pelanggaran', { search: q || undefined, page: 1, per_page: perPage, sort_column: sortColumn || undefined, sort_direction: sortDirection === 'none' ? undefined : sortDirection }, { preserveState: true, preserveScroll: true });
+                    }}
+                    searchPlaceholder="Cari jenis pelanggaran..."
+                    sortColumn={sortColumn}
+                    sortDirection={sortDirection}
+                    onSort={handleSort}
+                    perPage={perPage}
+                    onPerPageChange={(p) => {
+                        setPerPage(p);
+                        if (p !== perPage) {
+                            router.get('/daftar-pelanggaran', { per_page: p, page: 1, search: search || undefined, sort_column: sortColumn || undefined, sort_direction: sortDirection === 'none' ? undefined : sortDirection }, { preserveState: true, preserveScroll: true });
+                        }
+                    }}
+                    onSelectionChange={setSelectedIds}
+                    bulkActions={
+                        selectedIds.length > 0 && (
+                            <Button variant="destructive" size="sm" onClick={bulkDelete}>
+                                <Trash2 className="h-4 w-4" />
+                                Hapus ({selectedIds.length})
+                            </Button>
+                        )
+                    }
+                />
+                </div>
 
-                        <Pagination
-                            currentPage={daftarPelanggaran.current_page}
-                            lastPage={daftarPelanggaran.last_page}
-                            total={daftarPelanggaran.total}
-                            from={daftarPelanggaran.from}
-                            to={daftarPelanggaran.to}
-                            onPageChange={(page) => router.get('/daftar-pelanggaran', { page })}
-                        />
-                    </CardContent>
-                </Card>
-            </div>
-
-            <Dialog
+            <Modal
                 open={showModal}
                 onClose={() => setShowModal(false)}
                 title={editing ? 'Edit Jenis Pelanggaran' : 'Tambah Jenis Pelanggaran'}
@@ -134,7 +173,7 @@ export default function DaftarPelanggaranIndex() {
                         <Button onClick={submit}>{editing ? 'Simpan' : 'Tambah'}</Button>
                     </div>
                 </div>
-            </Dialog>
+            </Modal>
         </AppLayout>
     );
 }

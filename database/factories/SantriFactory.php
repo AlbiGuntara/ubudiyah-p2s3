@@ -13,7 +13,7 @@ class SantriFactory extends Factory
         return [
             'nama' => fake()->name(),
             'nis' => (string) fake()->unique()->numberBetween(1000, 9999),
-            'iksass' => (string) fake()->numberBetween(2019, 2025),
+            'iksass' => fake()->randomElement(['Situbondo', 'Bondowoso', 'Jember', 'Banyuwangi', 'Probolinggo', 'Lumajang']),
             'asrama_id' => \App\Models\Asrama::factory(),
         ];
     }

@@ -5,13 +5,23 @@ import {
     Moon,
     Sun,
     LogOut,
-    User,
+    Menu,
+    PanelLeftClose,
+    PanelLeft,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 
-export function Navbar() {
+export function Navbar({
+    collapsed,
+    onToggleCollapse,
+    onToggleMobile,
+}: {
+    collapsed: boolean;
+    onToggleCollapse: () => void;
+    onToggleMobile: () => void;
+}) {
     const { auth, appearance } = usePage().props;
     const user = auth.user;
     const [searchQuery, setSearchQuery] = useState('');
@@ -53,18 +63,48 @@ export function Navbar() {
 
     const toggleDark = () => {
         const newAppearance = appearance === 'dark' ? 'light' : 'dark';
+        document.documentElement.classList.toggle('dark', newAppearance === 'dark');
         document.cookie = `appearance=${newAppearance};path=/;max-age=${60 * 60 * 24 * 365}`;
-        router.reload({ only: ['appearance'] });
+        router.post('/appearance', { appearance: newAppearance }, {
+            preserveState: true,
+            preserveScroll: true,
+        });
     };
 
     if (!user) return null;
 
     return (
-        <header className="sticky top-0 z-30 h-16 border-b bg-background/95 backdrop-blur-sm">
-            <div className="flex items-center justify-between h-full px-4 lg:px-6">
-                <div className="flex-1" />
+        <header className="sticky top-0 z-30 h-16 border-b border-border/50 bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
+            <div className="flex items-center justify-between h-full px-3 lg:px-5 gap-2">
+                <div className="flex items-center gap-1.5">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={onToggleMobile}
+                        className="lg:hidden"
+                    >
+                        <Menu className="h-5 w-5" />
+                    </Button>
 
-                <div className="flex items-center gap-3">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={onToggleCollapse}
+                        className="hidden lg:inline-flex"
+                    >
+                        {collapsed ? <PanelLeft className="h-5 w-5" /> : <PanelLeftClose className="h-5 w-5" />}
+                    </Button>
+
+                    <div className="flex items-center gap-2 lg:hidden ml-1">
+                        <img src="/logo/p2s3.png" alt="Logo" className="h-7 w-7 object-contain" />
+                        <div className="leading-tight">
+                            <p className="font-bold text-xs text-primary">Ubudiyah</p>
+                            <p className="text-[10px] text-muted-foreground">P2S3 Sukorejo</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-2">
                     <div ref={searchRef} className="relative hidden sm:block">
                         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                         <Input
@@ -72,7 +112,7 @@ export function Navbar() {
                             value={searchQuery}
                             onChange={(e) => handleSearch(e.target.value)}
                             onFocus={() => searchQuery.length >= 2 && setShowSearch(true)}
-                            className="w-64 pl-9"
+                            className="w-56 lg:w-64 pl-9 h-9"
                         />
                         {showSearch && searchResults.length > 0 && (
                             <div className="absolute top-full mt-1 w-full rounded-lg border bg-card shadow-lg overflow-hidden">
@@ -91,8 +131,8 @@ export function Navbar() {
                         )}
                     </div>
 
-                    <Button variant="ghost" size="icon" onClick={toggleDark}>
-                        {appearance === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+                    <Button variant="ghost" size="icon" onClick={toggleDark} className="h-9 w-9">
+                        {appearance === 'dark' ? <Sun className="h-[18px] w-[18px]" /> : <Moon className="h-[18px] w-[18px]" />}
                     </Button>
 
                     <div ref={profileRef} className="relative">
@@ -100,9 +140,9 @@ export function Navbar() {
                             variant="ghost"
                             size="sm"
                             onClick={() => setShowProfile(!showProfile)}
-                            className="gap-2"
+                            className="gap-2 h-9"
                         >
-                            <div className="w-7 h-7 rounded-full bg-green-600 text-white flex items-center justify-center text-xs font-bold">
+                            <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">
                                 {user.name.charAt(0)}
                             </div>
                             <span className="hidden md:inline text-sm">{user.name}</span>
@@ -124,7 +164,7 @@ export function Navbar() {
                                 </Link>
                                 <button
                                     onClick={() => router.post('/logout')}
-                                    className="flex items-center gap-2 px-4 py-2.5 text-sm hover:bg-accent transition-colors w-full text-left text-red-500"
+                                    className="flex items-center gap-2 px-4 py-2.5 text-sm hover:bg-accent transition-colors w-full text-left text-destructive"
                                 >
                                     <LogOut className="h-4 w-4" />
                                     Logout

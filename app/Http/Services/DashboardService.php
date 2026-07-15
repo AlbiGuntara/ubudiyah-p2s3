@@ -30,34 +30,61 @@ class DashboardService
 
     public function getHarianChart(): array
     {
-        $data = Pelanggaran::select(DB::raw('DATE(tanggal) as date'), DB::raw('count(*) as total'))
-            ->whereDate('tanggal', '>=', now()->subDays(7))
+        $labels = [];
+        $data = [];
+        $dayNames = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+
+        $raw = Pelanggaran::select(DB::raw('DATE(tanggal) as date'), DB::raw('count(*) as total'))
+            ->whereDate('tanggal', '>=', now()->subDays(6))
             ->groupBy('date')
             ->orderBy('date')
-            ->get();
+            ->get()
+            ->keyBy('date');
+
+        for ($i = 6; $i >= 0; $i--) {
+            $date = now()->subDays($i);
+            $key = $date->format('Y-m-d');
+            $dayName = $dayNames[(int) $date->format('w')];
+            $labels[] = $dayName;
+            $data[] = (int) ($raw[$key]->total ?? 0);
+        }
 
         return [
-            'labels' => $data->pluck('date'),
-            'data' => $data->pluck('total'),
+            'labels' => $labels,
+            'data' => $data,
         ];
     }
 
     public function getBulananChart(): array
     {
-        $data = Pelanggaran::select(DB::raw('MONTH(tanggal) as month'), DB::raw('YEAR(tanggal) as year'), DB::raw('count(*) as total'))
+        $labels = [];
+        $data = [];
+        $monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+
+        $raw = Pelanggaran::select(DB::raw('MONTH(tanggal) as month'), DB::raw('YEAR(tanggal) as year'), DB::raw('count(*) as total'))
             ->whereDate('tanggal', '>=', now()->subMonths(6))
             ->groupBy('year', 'month')
             ->orderBy('year')
             ->orderBy('month')
             ->get()
             ->map(fn($item) => [
-                'label' => $item->year . '-' . str_pad($item->month, 2, '0', STR_PAD_LEFT),
+                'key' => $item->year . '-' . str_pad($item->month, 2, '0', STR_PAD_LEFT),
+                'month' => $item->month,
                 'total' => $item->total,
-            ]);
+            ])
+            ->keyBy('key');
+
+        for ($i = 5; $i >= 0; $i--) {
+            $date = now()->subMonths($i);
+            $key = $date->format('Y-m');
+            $month = (int) $date->format('n');
+            $labels[] = $monthNames[$month - 1];
+            $data[] = (int) (isset($raw[$key]) ? $raw[$key]['total'] : 0);
+        }
 
         return [
-            'labels' => $data->pluck('label'),
-            'data' => $data->pluck('total'),
+            'labels' => $labels,
+            'data' => $data,
         ];
     }
 

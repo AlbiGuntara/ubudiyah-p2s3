@@ -59,6 +59,7 @@ Route::middleware('auth')->group(function () {
 
     // Laporan
     Route::prefix('laporan')->name('laporan.')->group(function () {
+        Route::get('/', [LaporanController::class, 'index'])->name('index');
         Route::get('bulanan', [LaporanController::class, 'bulanan'])->name('bulanan');
         Route::get('tahunan', [LaporanController::class, 'tahunan'])->name('tahunan');
         Route::get('total', [LaporanController::class, 'total'])->name('total');
@@ -68,6 +69,8 @@ Route::middleware('auth')->group(function () {
 
     // Export
     Route::prefix('export')->name('export.')->group(function () {
+        Route::get('excel', [ExportController::class, 'excelKomprehensif'])->name('excel');
+        Route::get('excel/{section}', [ExportController::class, 'excelSection'])->name('excel.section');
         Route::get('bulanan/excel', [ExportController::class, 'excelBulanan'])->name('bulanan.excel');
         Route::get('tahunan/excel', [ExportController::class, 'excelTahunan'])->name('tahunan.excel');
         Route::get('bulanan/pdf', [ExportController::class, 'pdfBulanan'])->name('bulanan.pdf');

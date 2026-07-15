@@ -3,7 +3,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Daerah;
 use App\Http\Requests\StoreDaerahRequest;
-use App\Traits\Auditable;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -11,7 +10,6 @@ use Illuminate\Http\RedirectResponse;
 
 class DaerahController extends Controller
 {
-    use Auditable;
 
     public function index(Request $request): Response
     {

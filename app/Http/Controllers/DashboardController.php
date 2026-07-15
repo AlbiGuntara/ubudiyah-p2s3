@@ -18,7 +18,6 @@ class DashboardController extends Controller
             'harianChart' => $this->dashboardService->getHarianChart(),
             'bulananChart' => $this->dashboardService->getBulananChart(),
             'daerahChart' => $this->dashboardService->getDaerahChart(),
-            'asramaChart' => $this->dashboardService->getAsramaChart(),
             'topDaerah' => $this->dashboardService->getTopDaerah(),
             'topAsrama' => $this->dashboardService->getTopAsrama(),
             'topSantri' => $this->dashboardService->getTopSantri(),

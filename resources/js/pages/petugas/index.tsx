@@ -138,7 +138,7 @@ export default function PetugasIndex() {
                 </div>
             ),
         },
-        { key: 'asrama', label: 'Asrama', render: (p) => p.santri?.asrama?.daerah?.kode ? `${p.santri.asrama.daerah.kode}.${p.santri.asrama.nomor}` : p.santri?.asrama?.nomor || p.asrama?.nomor || '-' },
+        { key: 'asrama', label: 'Asrama', render: (p) => p.santri?.asrama?.daerah?.kode ? `${p.santri.asrama.daerah.kode.charAt(0)}.${p.santri.asrama.nomor}` : p.santri?.asrama?.nomor || p.asrama?.nomor || '-' },
         { key: 'jabatan', label: 'Jabatan', sortable: true },
         { key: 'tugas', label: 'Tugas' },
         {
@@ -246,7 +246,7 @@ export default function PetugasIndex() {
                             <div className="flex h-9 w-full items-center rounded-md border border-input bg-muted px-3 text-sm text-muted-foreground">
                                 {(() => {
                                     const a = asrama.find((a: any) => String(a.id) === form.asrama_id);
-                                    return a ? `${a.daerah?.kode}.${a.nomor}` : 'Otomatis dari santri';
+                                    return a ? `${a.daerah?.kode?.charAt(0)}.${a.nomor}` : 'Otomatis dari santri';
                                 })()}
                             </div>
                         ) : (

@@ -1,6 +1,7 @@
 <?php
 namespace App\Models;
 
+use App\Traits\Auditable;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -8,7 +9,7 @@ use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable, HasRoles;
+    use Auditable, HasFactory, Notifiable, HasRoles;
 
     protected $fillable = [
         'name',

@@ -5,7 +5,6 @@ use App\Models\Petugas;
 use App\Models\Santri;
 use App\Models\Asrama;
 use App\Http\Requests\StorePetugasRequest;
-use App\Traits\Auditable;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -14,7 +13,6 @@ use Illuminate\Http\RedirectResponse;
 
 class PetugasController extends Controller
 {
-    use Auditable;
 
     public function index(Request $request): Response
     {

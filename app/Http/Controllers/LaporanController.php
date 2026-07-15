@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 use App\Http\Services\LaporanService;
 use App\Models\Daerah;
 use App\Models\Asrama;
+use App\Models\DaftarPelanggaran;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Http\Request;
@@ -13,6 +14,29 @@ class LaporanController extends Controller
     public function __construct(
         protected LaporanService $laporanService
     ) {}
+
+    public function index(Request $request): Response
+    {
+        $data = $this->laporanService->laporanKomprehensif(
+            $request->tanggal_mulai,
+            $request->tanggal_selesai,
+            $request->bulan ? (int) $request->bulan : null,
+            $request->tahun ? (int) $request->tahun : null,
+            $request->daerah_id,
+            $request->asrama_id,
+            $request->iksass,
+            $request->sumber_pencatatan
+        );
+
+        return Inertia::render('laporan/index', [
+            'data' => $data,
+            'daerah' => Daerah::all(),
+            'asrama' => Asrama::with('daerah')->get(),
+            'jenisPelanggaran' => DaftarPelanggaran::all(),
+            'tahunTersedia' => $this->laporanService->getTahunTersedia(),
+            'filters' => $request->only(['tanggal_mulai', 'tanggal_selesai', 'bulan', 'tahun', 'daerah_id', 'asrama_id', 'iksass', 'sumber_pencatatan']),
+        ]);
+    }
 
     public function bulanan(Request $request): Response
     {

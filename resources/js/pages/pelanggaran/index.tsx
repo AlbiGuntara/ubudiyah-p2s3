@@ -234,7 +234,7 @@ export default function PelanggaranIndex() {
             sortable: true,
             render: (p) =>
                 p.asrama?.daerah?.kode
-                    ? `${p.asrama.daerah.kode}.${p.asrama.nomor}`
+                    ? `${p.asrama.daerah.kode.charAt(0)}.${p.asrama.nomor}`
                     : p.asrama?.nomor || '-',
             hideable: true,
         },
@@ -324,7 +324,8 @@ export default function PelanggaranIndex() {
                                 daerah_id: filterDaerah || undefined,
                                 asrama_id: filterAsrama || undefined,
                                 tanggal_mulai: filterTanggalMulai || undefined,
-                                tanggal_selesai: filterTanggalSelesai || undefined,
+                                tanggal_selesai:
+                                    filterTanggalSelesai || undefined,
                                 per_page: perPage,
                             },
                             { preserveState: true, preserveScroll: true },
@@ -350,8 +351,10 @@ export default function PelanggaranIndex() {
                                     sumber: filterSumber || undefined,
                                     daerah_id: filterDaerah || undefined,
                                     asrama_id: filterAsrama || undefined,
-                                    tanggal_mulai: filterTanggalMulai || undefined,
-                                    tanggal_selesai: filterTanggalSelesai || undefined,
+                                    tanggal_mulai:
+                                        filterTanggalMulai || undefined,
+                                    tanggal_selesai:
+                                        filterTanggalSelesai || undefined,
                                 },
                                 { preserveState: true, preserveScroll: true },
                             );
@@ -417,7 +420,7 @@ export default function PelanggaranIndex() {
                                     : asrama
                                 ).map((a: any) => ({
                                     value: a.id,
-                                    label: `Asrama ${a.nomor}`,
+                                    label: `No. ${a.nomor}`,
                                 }))}
                                 className="min-w-[150px]"
                             />

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 use App\Http\Services\AuditLogService;
 use Inertia\Inertia;
 use Inertia\Response;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class AuditLogController extends Controller
@@ -12,12 +13,20 @@ class AuditLogController extends Controller
         protected AuditLogService $auditLogService
     ) {}
 
-    public function index(Request $request): Response
+    public function index(Request $request): Response|JsonResponse
     {
-        $logs = $this->auditLogService->getLogs($request->only(['user_id', 'aktivitas', 'date_from', 'date_to']));
+        $filters = $request->only(['search']);
+        $perPage = (int) $request->input('per_page', 50);
+
+        $logs = $this->auditLogService->getLogs($filters, $perPage);
+
+        if (! $request->inertia() && $request->wantsJson()) {
+            return response()->json($logs);
+        }
 
         return Inertia::render('audit/index', [
             'logs' => $logs,
+            'filters' => $filters,
         ]);
     }
 }

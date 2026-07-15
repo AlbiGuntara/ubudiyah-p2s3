@@ -3,7 +3,6 @@ namespace App\Http\Controllers;
 
 use App\Models\DaftarPelanggaran;
 use App\Http\Requests\StoreDaftarPelanggaranRequest;
-use App\Traits\Auditable;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -11,7 +10,6 @@ use Illuminate\Http\RedirectResponse;
 
 class DaftarPelanggaranController extends Controller
 {
-    use Auditable;
 
     public function index(Request $request): Response
     {

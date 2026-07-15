@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Traits;
 
 use App\Models\AuditLog;
@@ -27,6 +28,7 @@ trait Auditable
 
         AuditLog::create([
             'user_id' => Auth::id(),
+            'user_name' => Auth::user()->name,
             'aktivitas' => $aktivitas . ' ' . class_basename($model),
             'model_type' => get_class($model),
             'model_id' => $model->id,

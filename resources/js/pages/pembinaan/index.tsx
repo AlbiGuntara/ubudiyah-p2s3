@@ -15,6 +15,7 @@ export default function PembinaanIndex() {
         daerah,
         asrama,
         filters: initialFilters,
+        auth,
     } = usePage<any>().props;
     const [perPage, setPerPage] = useState(15);
     const [showModal, setShowModal] = useState(false);
@@ -173,7 +174,7 @@ export default function PembinaanIndex() {
     // Helper to get asrama display
     const getAsrama = (p: any) => {
         const a = p.santri?.asrama || p.asrama;
-        if (a?.daerah?.kode) return `${a.daerah.kode}.${a.nomor}`;
+        if (a?.daerah?.kode) return `${a.daerah.kode.charAt(0)}.${a.nomor}`;
         return a?.nomor || '-';
     };
 
@@ -289,17 +290,19 @@ export default function PembinaanIndex() {
                             Kelola pembinaan dan sanksi santri
                         </p>
                     </div>
-                    <div className="flex gap-2">
-                        <Button
-                            variant="default"
-                            size="sm"
-                            onClick={openPemutihan}
-                            className="inline-flex items-center gap-1"
-                        >
-                            <PlusCircle className="h-4 w-4" />
-                            Lakukan Pemutihan
-                        </Button>
-                    </div>
+                    {auth?.user?.is_pembina || auth?.user?.is_super_admin ? (
+                        <div className="flex gap-2">
+                            <Button
+                                variant="default"
+                                size="sm"
+                                onClick={openPemutihan}
+                                className="inline-flex items-center gap-1"
+                            >
+                                <PlusCircle className="h-4 w-4" />
+                                Lakukan Pemutihan
+                            </Button>
+                        </div>
+                    ) : null}
                 </div>
 
                 <DataTable
@@ -408,7 +411,7 @@ export default function PembinaanIndex() {
                                 options={filteredAsrama.map((a: any) => ({
                                     value: a.id,
                                     label: a.daerah?.kode
-                                        ? `${a.daerah.kode}.${a.nomor}`
+                                        ? `${a.daerah.kode.charAt(0)}.${a.nomor}`
                                         : `no. ${a.nomor}`,
                                 }))}
                                 className="min-w-[150px]"

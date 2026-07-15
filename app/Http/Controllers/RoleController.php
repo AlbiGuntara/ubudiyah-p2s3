@@ -3,7 +3,6 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreRoleRequest;
 use App\Http\Requests\UpdateRoleRequest;
-use App\Traits\Auditable;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 use Inertia\Inertia;
@@ -12,7 +11,6 @@ use Illuminate\Http\RedirectResponse;
 
 class RoleController extends Controller
 {
-    use Auditable;
 
     public function index(): Response
     {

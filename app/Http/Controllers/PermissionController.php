@@ -2,7 +2,6 @@
 namespace App\Http\Controllers;
 
 use Spatie\Permission\Models\Permission;
-use App\Traits\Auditable;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Http\RedirectResponse;
@@ -10,7 +9,6 @@ use Illuminate\Http\Request;
 
 class PermissionController extends Controller
 {
-    use Auditable;
 
     public function index(): Response
     {

@@ -1,51 +1,27 @@
 <?php
 namespace App\Exports;
 
-use Maatwebsite\Excel\Concerns\FromArray;
-use Maatwebsite\Excel\Concerns\WithHeadings;
-use Maatwebsite\Excel\Concerns\WithTitle;
-use Maatwebsite\Excel\Concerns\ShouldAutoSize;
-use Maatwebsite\Excel\Concerns\WithStyles;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use Maatwebsite\Excel\Concerns\WithMultipleSheets;
 
-class LaporanExport implements FromArray, WithHeadings, WithTitle, ShouldAutoSize, WithStyles
+class LaporanExport implements WithMultipleSheets
 {
     protected array $data;
-    protected string $judul;
     protected string $periode;
 
-    public function __construct(array $data, string $judul, string $periode)
+    public function __construct(array $data, string $periode)
     {
         $this->data = $data;
-        $this->judul = $judul;
         $this->periode = $periode;
     }
 
-    public function array(): array
+    public function sheets(): array
     {
         return [
-            [$this->judul],
-            ['Periode: ' . $this->periode],
-            [],
-            ['Jumlah Pelanggaran', $this->data['jumlah_pelanggaran'] ?? 0],
-            ['Jumlah Santri Melanggar', $this->data['jumlah_santri'] ?? 0],
-        ];
-    }
-
-    public function headings(): array
-    {
-        return [];
-    }
-
-    public function title(): string
-    {
-        return $this->judul;
-    }
-
-    public function styles(Worksheet $sheet)
-    {
-        return [
-            1 => ['font' => ['bold' => true, 'size' => 14]],
+            new LaporanSheet($this->data, 'Ringkasan', $this->periode, 'ringkasan'),
+            new LaporanSheet($this->data, 'Per Daerah', $this->periode, 'per_daerah'),
+            new LaporanSheet($this->data, 'Per Asrama', $this->periode, 'per_asrama'),
+            new LaporanSheet($this->data, 'Per Jenis Pelanggaran', $this->periode, 'per_jenis_pelanggaran'),
+            new LaporanSheet($this->data, 'Per IKSASS', $this->periode, 'per_iksass'),
         ];
     }
 }

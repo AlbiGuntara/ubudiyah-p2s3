@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
-use App\Traits\Auditable;
 use Spatie\Permission\Models\Role;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -13,7 +12,6 @@ use Illuminate\Http\Request;
 
 class UserController extends Controller
 {
-    use Auditable;
 
     public function index(Request $request): Response
     {

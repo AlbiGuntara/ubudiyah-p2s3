@@ -5,7 +5,6 @@ use App\Models\Santri;
 use App\Models\Daerah;
 use App\Models\Asrama;
 use App\Http\Requests\StoreSantriRequest;
-use App\Traits\Auditable;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -16,7 +15,6 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class SantriController extends Controller
 {
-    use Auditable;
 
     public function index(Request $request): Response
     {

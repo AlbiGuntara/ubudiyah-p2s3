@@ -6,16 +6,21 @@ use Illuminate\Pagination\LengthAwarePaginator;
 
 class AuditLogService
 {
-    public function getLogs(array $filters = []): LengthAwarePaginator
+    public function getLogs(array $filters = [], int $perPage = 50): LengthAwarePaginator
     {
         $query = AuditLog::with('user')->latest();
 
-        if (!empty($filters['user_id'])) {
-            $query->where('user_id', $filters['user_id']);
+        if (!empty($filters['search'])) {
+            $search = $filters['search'];
+            $query->where(function ($q) use ($search) {
+                $q->where('aktivitas', 'like', "%{$search}%")
+                  ->orWhere('model_type', 'like', "%{$search}%")
+                  ->orWhere('user_name', 'like', "%{$search}%");
+            });
         }
 
-        if (!empty($filters['aktivitas'])) {
-            $query->where('aktivitas', 'like', '%' . $filters['aktivitas'] . '%');
+        if (!empty($filters['user_id'])) {
+            $query->where('user_id', $filters['user_id']);
         }
 
         if (!empty($filters['date_from'])) {
@@ -26,6 +31,6 @@ class AuditLogService
             $query->whereDate('created_at', '<=', $filters['date_to']);
         }
 
-        return $query->paginate(20);
+        return $query->paginate($perPage);
     }
 }

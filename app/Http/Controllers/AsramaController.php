@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 use App\Models\Asrama;
 use App\Models\Daerah;
 use App\Http\Requests\StoreAsramaRequest;
-use App\Traits\Auditable;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Http\RedirectResponse;
@@ -12,7 +11,6 @@ use Illuminate\Http\Request;
 
 class AsramaController extends Controller
 {
-    use Auditable;
 
     public function index(Request $request): Response
     {

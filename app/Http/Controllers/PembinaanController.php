@@ -7,7 +7,6 @@ use App\Models\Asrama;
 use App\Models\Daerah;
 use App\Models\Pembinaan;
 use App\Models\Santri;
-use App\Traits\Auditable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -15,7 +14,6 @@ use Inertia\Response;
 
 class PembinaanController extends Controller
 {
-    use Auditable;
 
     public function index(Request $request): Response
     {
@@ -138,6 +136,11 @@ class PembinaanController extends Controller
      */
     public function pemutihan(Request $request): RedirectResponse
     {
+        $user = auth()->user();
+        if (!$user || !in_array($user->role, ['pembina', 'super_admin'])) {
+            abort(403, 'Hanya pembina dan super admin yang dapat melakukan pemutihan.');
+        }
+
         $validated = $request->validate([
             'multiplier' => 'required|integer|min:1',
         ]);

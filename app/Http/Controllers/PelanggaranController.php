@@ -9,7 +9,6 @@ use App\Models\DaftarPelanggaran;
 use App\Models\Pelanggaran;
 use App\Models\Pembinaan;
 use App\Models\Santri;
-use App\Traits\Auditable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -17,7 +16,6 @@ use Inertia\Response;
 
 class PelanggaranController extends Controller
 {
-    use Auditable;
 
     public function index(Request $request): Response
     {

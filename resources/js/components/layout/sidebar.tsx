@@ -54,7 +54,7 @@ const navGroups: NavGroup[] = [
     {
         title: 'Laporan',
         items: [
-            { label: 'Laporan', href: '/laporan/bulanan', icon: FileText },
+            { label: 'Laporan', href: '/laporan', icon: FileText },
         ],
     },
     {

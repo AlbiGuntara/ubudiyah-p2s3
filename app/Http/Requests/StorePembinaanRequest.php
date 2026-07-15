@@ -7,7 +7,10 @@ class StorePembinaanRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        if ($this->isMethod('POST')) {
+            return $this->user()->can('create_pembinaan');
+        }
+        return $this->user()->can('edit_pembinaan');
     }
 
     public function rules(): array

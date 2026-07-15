@@ -142,11 +142,16 @@ class DashboardService
     {
         return DB::table('pelanggaran')
             ->join('asrama', 'pelanggaran.asrama_id', '=', 'asrama.id')
-            ->select('asrama.nomor', DB::raw('count(*) as total'))
-            ->groupBy('asrama.id', 'asrama.nomor')
+            ->join('daerah', 'asrama.daerah_id', '=', 'daerah.id')
+            ->select('asrama.nomor', 'daerah.kode', DB::raw('count(*) as total'))
+            ->groupBy('asrama.id', 'asrama.nomor', 'daerah.kode')
             ->orderByDesc('total')
             ->limit(10)
             ->get()
+            ->map(fn($item) => [
+                'label' => 'Asrama ' . substr($item->kode, 0, 1) . '.' . $item->nomor,
+                'total' => $item->total,
+            ])
             ->toArray();
     }
 
@@ -154,12 +159,21 @@ class DashboardService
     {
         return DB::table('pelanggaran')
             ->join('santri', 'pelanggaran.santri_id', '=', 'santri.id')
-            ->select('santri.nama', 'santri.nis', DB::raw('count(*) as total'), DB::raw('SUM(pelanggaran.jumlah) * 100 as total_shalawat'))
+            ->leftJoin('asrama', 'santri.asrama_id', '=', 'asrama.id')
+            ->leftJoin('daerah', 'asrama.daerah_id', '=', 'daerah.id')
+            ->select('santri.nama', 'santri.nis', 'daerah.kode', 'asrama.nomor', DB::raw('count(*) as total'), DB::raw('SUM(pelanggaran.jumlah) * 100 as total_shalawat'))
             ->whereNotNull('pelanggaran.santri_id')
-            ->groupBy('santri.id', 'santri.nama', 'santri.nis')
+            ->groupBy('santri.id', 'santri.nama', 'santri.nis', 'daerah.kode', 'asrama.nomor')
             ->orderByDesc('total')
             ->limit(10)
             ->get()
+            ->map(fn($item) => [
+                'nama' => $item->nama,
+                'total' => $item->total,
+                'asrama_label' => $item->kode && $item->nomor
+                    ? '(' . substr($item->kode, 0, 1) . '.' . $item->nomor . ')'
+                    : '',
+            ])
             ->toArray();
     }
 }

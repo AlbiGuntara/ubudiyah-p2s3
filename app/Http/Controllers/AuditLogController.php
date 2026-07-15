@@ -11,7 +11,9 @@ class AuditLogController extends Controller
 {
     public function __construct(
         protected AuditLogService $auditLogService
-    ) {}
+    ) {
+        $this->middleware('permission:view_audit');
+    }
 
     public function index(Request $request): Response|JsonResponse
     {

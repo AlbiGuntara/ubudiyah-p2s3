@@ -9,16 +9,16 @@ class DaftarPelanggaranSeeder extends Seeder
     public function run(): void
     {
         $pelanggaran = [
-            ['nama_pelanggaran' => 'Tidak Jamaah Sholat Wajib', 'poin' => 1],
-            ['nama_pelanggaran' => 'Terlambat Jamaah Sholat Wajib', 'poin' => 1],
-            ['nama_pelanggaran' => 'Tidak Mengikuti Kegiatan Ubudiyah', 'poin' => 1],
-            ['nama_pelanggaran' => 'Tidak Sholat Sunnah Rawatib', 'poin' => 1],
-            ['nama_pelanggaran' => 'Meninggalkan Sholat Malam', 'poin' => 2],
-            ['nama_pelanggaran' => 'Tidak Puasa Sunnah', 'poin' => 1],
-            ['nama_pelanggaran' => 'Membaca Al-Quran Tidak Tartil', 'poin' => 1],
-            ['nama_pelanggaran' => 'Tidak Mengikuti Kajian', 'poin' => 1],
-            ['nama_pelanggaran' => 'Berbicara Saat Khutbah', 'poin' => 2],
-            ['nama_pelanggaran' => 'Meninggalkan Dzikir Pagi/Petang', 'poin' => 1],
+            ['nama_pelanggaran' => 'Tidak Jamaah Sholat Wajib'],
+            ['nama_pelanggaran' => 'Terlambat Jamaah Sholat Wajib'],
+            ['nama_pelanggaran' => 'Tidak Mengikuti Kegiatan Ubudiyah'],
+            ['nama_pelanggaran' => 'Tidak Sholat Sunnah Rawatib'],
+            ['nama_pelanggaran' => 'Meninggalkan Sholat Malam'],
+            ['nama_pelanggaran' => 'Tidak Puasa Sunnah'],
+            ['nama_pelanggaran' => 'Membaca Al-Quran Tidak Tartil'],
+            ['nama_pelanggaran' => 'Tidak Mengikuti Kajian'],
+            ['nama_pelanggaran' => 'Berbicara Saat Khutbah'],
+            ['nama_pelanggaran' => 'Meninggalkan Dzikir Pagi/Petang'],
         ];
 
         foreach ($pelanggaran as $p) {

@@ -7,6 +7,7 @@ export interface User {
     is_super_admin: boolean;
     is_petugas: boolean;
     is_pembina: boolean;
+    permissions: string[];
 }
 
 export interface Petugas {

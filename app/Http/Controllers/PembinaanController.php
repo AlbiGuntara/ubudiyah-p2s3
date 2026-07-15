@@ -14,6 +14,15 @@ use Inertia\Response;
 
 class PembinaanController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('permission:view_pembinaan', ['only' => ['index']]);
+        $this->middleware('permission:create_pembinaan', ['only' => ['store']]);
+        $this->middleware('permission:edit_pembinaan', ['only' => ['update']]);
+        $this->middleware('permission:delete_pembinaan', ['only' => ['destroy', 'bulkDelete']]);
+        $this->middleware('permission:edit_pembinaan', ['only' => ['setorSanksi']]);
+        $this->middleware('role:super_admin|pembina', ['only' => ['pemutihan']]);
+    }
 
     public function index(Request $request): Response
     {
@@ -136,11 +145,6 @@ class PembinaanController extends Controller
      */
     public function pemutihan(Request $request): RedirectResponse
     {
-        $user = auth()->user();
-        if (!$user || !in_array($user->role, ['pembina', 'super_admin'])) {
-            abort(403, 'Hanya pembina dan super admin yang dapat melakukan pemutihan.');
-        }
-
         $validated = $request->validate([
             'multiplier' => 'required|integer|min:1',
         ]);

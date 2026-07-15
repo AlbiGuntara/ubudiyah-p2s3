@@ -17,22 +17,22 @@ export default function DaftarPelanggaranIndex() {
     const [sortColumn, setSortColumn] = useState('');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | 'none'>('none');
     const [selectedIds, setSelectedIds] = useState<(string | number)[]>([]);
-    const [form, setForm] = useState({ nama_pelanggaran: '', poin: '1' });
+    const [form, setForm] = useState({ nama_pelanggaran: '' });
 
     const openCreate = () => {
         setEditing(null);
-        setForm({ nama_pelanggaran: '', poin: '1' });
+        setForm({ nama_pelanggaran: '' });
         setShowModal(true);
     };
 
     const openEdit = (d: any) => {
         setEditing(d);
-        setForm({ nama_pelanggaran: d.nama_pelanggaran, poin: String(d.poin) });
+        setForm({ nama_pelanggaran: d.nama_pelanggaran });
         setShowModal(true);
     };
 
     const submit = () => {
-        const data = { ...form, poin: parseInt(form.poin) };
+        const data = { ...form };
         if (editing) {
             router.put(`/daftar-pelanggaran/${editing.id}`, data, {
                 onSuccess: () => setShowModal(false),
@@ -76,8 +76,6 @@ export default function DaftarPelanggaranIndex() {
     const columns: Column<any>[] = [
         { key: 'no', label: '#', render: (_d: any, idx: number) => <span>{daftarPelanggaran.from + idx}</span>, className: 'text-muted-foreground text-xs w-10' },
         { key: 'nama_pelanggaran', label: 'Nama Pelanggaran', sortable: true },
-        { key: 'poin', label: 'Poin', sortable: true, render: (d) => <Badge>{d.poin} Poin</Badge> },
-        { key: 'pelanggaran_count', label: 'Digunakan', sortable: true, render: (d) => `${d.pelanggaran_count} kali` },
         {
             key: 'aksi',
             label: 'Aksi',
@@ -157,15 +155,6 @@ export default function DaftarPelanggaranIndex() {
                             value={form.nama_pelanggaran}
                             onChange={(e) => setForm({ ...form, nama_pelanggaran: e.target.value })}
                             placeholder="Contoh: Tidak Jamaah"
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium">Poin</label>
-                        <Input
-                            type="number"
-                            min={1}
-                            value={form.poin}
-                            onChange={(e) => setForm({ ...form, poin: e.target.value })}
                         />
                     </div>
                     <div className="flex justify-end gap-3 pt-2">

@@ -12,7 +12,6 @@ class DaftarPelanggaranFactory extends Factory
     {
         return [
             'nama_pelanggaran' => fake()->sentence(3),
-            'poin' => 1,
         ];
     }
 }

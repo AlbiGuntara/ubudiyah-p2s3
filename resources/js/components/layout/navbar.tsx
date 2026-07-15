@@ -154,14 +154,16 @@ export function Navbar({
                                     <p className="text-sm font-medium">{user.name}</p>
                                     <p className="text-xs text-muted-foreground capitalize">{user.role.replace('_', ' ')}</p>
                                 </div>
-                                <Link
-                                    href="/audit"
-                                    onClick={() => setShowProfile(false)}
-                                    className="flex items-center gap-2 px-4 py-2.5 text-sm hover:bg-accent transition-colors"
-                                >
-                                    <Shield className="h-4 w-4" />
-                                    Audit Log
-                                </Link>
+                                {user.permissions?.includes('view_audit') && (
+                                    <Link
+                                        href="/audit"
+                                        onClick={() => setShowProfile(false)}
+                                        className="flex items-center gap-2 px-4 py-2.5 text-sm hover:bg-accent transition-colors"
+                                    >
+                                        <Shield className="h-4 w-4" />
+                                        Audit Log
+                                    </Link>
+                                )}
                                 <button
                                     onClick={() => router.post('/logout')}
                                     className="flex items-center gap-2 px-4 py-2.5 text-sm hover:bg-accent transition-colors w-full text-left text-destructive"

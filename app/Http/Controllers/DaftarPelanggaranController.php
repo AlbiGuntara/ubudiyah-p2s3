@@ -10,6 +10,13 @@ use Illuminate\Http\RedirectResponse;
 
 class DaftarPelanggaranController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('permission:view_daftar_pelanggaran', ['only' => ['index']]);
+        $this->middleware('permission:create_daftar_pelanggaran', ['only' => ['store']]);
+        $this->middleware('permission:edit_daftar_pelanggaran', ['only' => ['update']]);
+        $this->middleware('permission:delete_daftar_pelanggaran', ['only' => ['destroy', 'bulkDelete']]);
+    }
 
     public function index(Request $request): Response
     {
@@ -22,7 +29,7 @@ class DaftarPelanggaranController extends Controller
 
         $sortColumn = $request->input('sort_column', 'created_at');
         $sortDirection = $request->input('sort_direction', 'desc');
-        $allowedSorts = ['nama_pelanggaran', 'poin', 'pelanggaran_count', 'created_at'];
+        $allowedSorts = ['nama_pelanggaran', 'pelanggaran_count', 'created_at'];
         if (in_array($sortColumn, $allowedSorts)) {
             $query->orderBy($sortColumn, $sortDirection === 'asc' ? 'asc' : 'desc');
         } else {

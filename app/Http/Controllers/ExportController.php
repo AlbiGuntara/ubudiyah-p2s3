@@ -11,7 +11,9 @@ class ExportController extends Controller
 {
     public function __construct(
         protected LaporanService $laporanService
-    ) {}
+    ) {
+        $this->middleware('permission:export_laporan');
+    }
 
     public function excelSection(Request $request, string $section)
     {

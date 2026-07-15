@@ -15,6 +15,14 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class SantriController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('permission:view_santri', ['only' => ['index', 'show']]);
+        $this->middleware('permission:create_santri', ['only' => ['store']]);
+        $this->middleware('permission:edit_santri', ['only' => ['update']]);
+        $this->middleware('permission:delete_santri', ['only' => ['destroy', 'bulkDelete']]);
+        $this->middleware('permission:import_santri', ['only' => ['import']]);
+    }
 
     public function index(Request $request): Response
     {

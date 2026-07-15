@@ -163,14 +163,6 @@ export default function PembinaanIndex() {
         return 'Tanpa Nama';
     };
 
-    // Helper to get daerah name
-    const getDaerah = (p: any) => {
-        if (p.santri?.asrama?.daerah?.nama_daerah)
-            return p.santri.asrama.daerah.nama_daerah;
-        if (p.asrama?.daerah?.nama_daerah) return p.asrama.daerah.nama_daerah;
-        return '-';
-    };
-
     // Helper to get asrama display
     const getAsrama = (p: any) => {
         const a = p.santri?.asrama || p.asrama;
@@ -198,16 +190,15 @@ export default function PembinaanIndex() {
             render: (p) => <span className="font-medium">{getNama(p)}</span>,
         },
         {
-            key: 'daerah',
-            label: 'Daerah',
-            render: (p) => getDaerah(p),
-            hideable: true,
-        },
-        {
             key: 'asrama',
             label: 'Asrama',
             render: (p) => getAsrama(p),
             hideable: true,
+        },
+        {
+            key: 'iksass',
+            label: 'IKSASS',
+            render: (p) => p.santri?.iksass || '-',
         },
         {
             key: 'sanksi',

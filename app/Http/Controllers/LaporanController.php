@@ -13,7 +13,9 @@ class LaporanController extends Controller
 {
     public function __construct(
         protected LaporanService $laporanService
-    ) {}
+    ) {
+        $this->middleware('permission:view_laporan');
+    }
 
     public function index(Request $request): Response
     {

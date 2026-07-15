@@ -37,6 +37,7 @@ class HandleInertiaRequests extends Middleware
                     'is_super_admin' => $user->isSuperAdmin(),
                     'is_petugas' => $user->isPetugas(),
                     'is_pembina' => $user->isPembina(),
+                    'permissions' => $user->getAllPermissions()->pluck('name'),
                 ] : null,
                 'petugas' => $petugas,
             ],

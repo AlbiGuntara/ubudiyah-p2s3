@@ -20,6 +20,7 @@ interface NavItem {
     href: string;
     icon: React.ElementType;
     roles?: string[];
+    permissions?: string[];
 }
 
 interface NavGroup {
@@ -31,36 +32,36 @@ const navGroups: NavGroup[] = [
     {
         title: 'Menu',
         items: [
-            { label: 'Dashboard', href: '/', icon: LayoutDashboard },
+            { label: 'Dashboard', href: '/', icon: LayoutDashboard, permissions: ['view_dashboard'] },
         ],
     },
     {
         title: 'Master Data',
         items: [
-            { label: 'Daerah', href: '/daerah', icon: Map },
-            { label: 'Asrama', href: '/asrama', icon: Building2 },
-            { label: 'Santri', href: '/santri', icon: Users },
-            { label: 'Petugas', href: '/petugas', icon: UserCog },
-            { label: 'Jenis Pelanggaran', href: '/daftar-pelanggaran', icon: BookOpen },
+            { label: 'Daerah', href: '/daerah', icon: Map, permissions: ['view_daerah'] },
+            { label: 'Asrama', href: '/asrama', icon: Building2, permissions: ['view_asrama'] },
+            { label: 'Santri', href: '/santri', icon: Users, permissions: ['view_santri'] },
+            { label: 'Petugas', href: '/petugas', icon: UserCog, permissions: ['view_petugas'] },
+            { label: 'Jenis Pelanggaran', href: '/daftar-pelanggaran', icon: BookOpen, permissions: ['view_daftar_pelanggaran'] },
         ],
     },
     {
         title: 'Transaksi',
         items: [
-            { label: 'Pelanggaran', href: '/pelanggaran', icon: Gavel },
-            { label: 'Pembinaan', href: '/pembinaan', icon: GraduationCap },
+            { label: 'Pelanggaran', href: '/pelanggaran', icon: Gavel, permissions: ['view_pelanggaran'] },
+            { label: 'Pembinaan', href: '/pembinaan', icon: GraduationCap, permissions: ['view_pembinaan'] },
         ],
     },
     {
         title: 'Laporan',
         items: [
-            { label: 'Laporan', href: '/laporan', icon: FileText },
+            { label: 'Laporan', href: '/laporan', icon: FileText, permissions: ['view_laporan'] },
         ],
     },
     {
         title: 'Pengaturan',
         items: [
-            { label: 'Audit Log', href: '/audit', icon: Shield, roles: ['super_admin'] },
+            { label: 'Audit Log', href: '/audit', icon: Shield, permissions: ['view_audit'] },
             { label: 'Pengguna', href: '/users', icon: UserPlus, roles: ['super_admin'] },
         ],
     },
@@ -86,8 +87,11 @@ export function Sidebar({
         .map((group) => ({
             ...group,
             items: group.items.filter((item) => {
-                if (!item.roles) return true;
-                return item.roles.includes(user.role);
+                if (item.roles && !item.roles.includes(user.role)) return false;
+                if (item.permissions) {
+                    return item.permissions.some((p) => user.permissions?.includes(p));
+                }
+                return true;
             }),
         }))
         .filter((group) => group.items.length > 0);

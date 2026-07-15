@@ -10,6 +10,13 @@ use Illuminate\Http\RedirectResponse;
 
 class DaerahController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('permission:view_daerah', ['only' => ['index']]);
+        $this->middleware('permission:create_daerah', ['only' => ['store']]);
+        $this->middleware('permission:edit_daerah', ['only' => ['update']]);
+        $this->middleware('permission:delete_daerah', ['only' => ['destroy', 'bulkDelete']]);
+    }
 
     public function index(Request $request): Response
     {

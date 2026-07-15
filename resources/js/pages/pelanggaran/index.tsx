@@ -86,7 +86,7 @@ export default function PelanggaranIndex() {
             petugas_id: p.petugas_id,
             tanpa_nama: p.santri_id ? '0' : String(p.jumlah),
             sumber_pencatatan: p.sumber_pencatatan,
-            tanggal: p.tanggal,
+            tanggal: p.tanggal ? p.tanggal.split('T')[0] : '',
             keterangan: p.keterangan || '',
         });
         const a = asrama.find((a: any) => String(a.id) === String(p.asrama_id));
@@ -108,9 +108,9 @@ export default function PelanggaranIndex() {
         setPendingSantriId('');
     };
 
-    const removeSantri = (santriId: string) => {
+    const removeSantri = (santriId: number | string) => {
         setSelectedSantri(
-            selectedSantri.filter((s: any) => String(s.id) !== santriId),
+            selectedSantri.filter((s: any) => String(s.id) !== String(santriId)),
         );
     };
 
@@ -502,6 +502,7 @@ export default function PelanggaranIndex() {
                                 value: d.id,
                                 label: d.nama_daerah,
                             }))}
+                            disabled={!!editing}
                         />
                     </div>
 
@@ -519,7 +520,7 @@ export default function PelanggaranIndex() {
                                 value: a.id,
                                 label: `Asrama ${a.nomor}`,
                             }))}
-                            disabled={!daerahId}
+                            disabled={!daerahId || !!editing}
                         />
                     </div>
 
@@ -534,51 +535,55 @@ export default function PelanggaranIndex() {
                                         className="flex items-center gap-1.5 rounded-full border bg-accent px-2.5 py-1 text-xs"
                                     >
                                         <span>{s.nama}</span>
-                                        <button
-                                            type="button"
-                                            onClick={() => removeSantri(s.id)}
-                                            className="text-muted-foreground hover:text-foreground"
-                                        >
-                                            <X className="h-3 w-3" />
-                                        </button>
+                                        {!editing && (
+                                            <button
+                                                type="button"
+                                                onClick={() => removeSantri(s.id)}
+                                                className="text-muted-foreground hover:text-foreground"
+                                            >
+                                                <X className="h-3 w-3" />
+                                            </button>
+                                        )}
                                     </div>
                                 ))}
                             </div>
                         )}
-                        <div className="flex gap-2">
-                            <Select
-                                value={pendingsantri_id}
-                                onChange={(e) =>
-                                    setPendingSantriId(e.target.value)
-                                }
-                                placeholder="Pilih Santri"
-                                options={filteredSantri
-                                    .filter(
-                                        (s: any) =>
-                                            !selectedSantri.find(
-                                                (sel: any) =>
-                                                    String(sel.id) ===
-                                                    String(s.id),
-                                            ),
-                                    )
-                                    .map((s: any) => ({
-                                        value: s.id,
-                                        label: s.nama,
-                                    }))}
-                                disabled={!form.asrama_id}
-                                className="flex-1"
-                            />
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => addSantri(pendingsantri_id)}
-                                disabled={!pendingsantri_id}
-                            >
-                                <Plus className="h-4 w-4" />
-                            </Button>
-                        </div>
-                        {!form.asrama_id && (
+                        {!editing && (
+                            <div className="flex gap-2">
+                                <Select
+                                    value={pendingsantri_id}
+                                    onChange={(e) =>
+                                        setPendingSantriId(e.target.value)
+                                    }
+                                    placeholder="Pilih Santri"
+                                    options={filteredSantri
+                                        .filter(
+                                            (s: any) =>
+                                                !selectedSantri.find(
+                                                    (sel: any) =>
+                                                        String(sel.id) ===
+                                                        String(s.id),
+                                                ),
+                                        )
+                                        .map((s: any) => ({
+                                            value: s.id,
+                                            label: s.nama,
+                                        }))}
+                                    disabled={!form.asrama_id}
+                                    className="flex-1"
+                                />
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => addSantri(pendingsantri_id)}
+                                    disabled={!pendingsantri_id}
+                                >
+                                    <Plus className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        )}
+                        {!form.asrama_id && !editing && (
                             <p className="text-xs text-muted-foreground">
                                 Pilih daerah dan asrama terlebih dahulu
                             </p>

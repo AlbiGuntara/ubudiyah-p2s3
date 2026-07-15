@@ -7,7 +7,10 @@ class StorePelanggaranRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        if ($this->isMethod('POST')) {
+            return $this->user()->can('create_pelanggaran');
+        }
+        return $this->user()->can('edit_pelanggaran');
     }
 
     public function rules(): array

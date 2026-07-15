@@ -16,6 +16,13 @@ use Inertia\Response;
 
 class PelanggaranController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('permission:view_pelanggaran', ['only' => ['index']]);
+        $this->middleware('permission:create_pelanggaran', ['only' => ['store', 'storeMassal']]);
+        $this->middleware('permission:edit_pelanggaran', ['only' => ['update']]);
+        $this->middleware('permission:delete_pelanggaran', ['only' => ['destroy', 'bulkDelete']]);
+    }
 
     public function index(Request $request): Response
     {

@@ -8,7 +8,10 @@ class StoreDaerahRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        if ($this->isMethod('POST')) {
+            return $this->user()->can('create_daerah');
+        }
+        return $this->user()->can('edit_daerah');
     }
 
     public function rules(): array

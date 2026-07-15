@@ -117,10 +117,8 @@ class LaporanService
             ->select(
                 'daftar_pelanggaran.id',
                 'daftar_pelanggaran.nama_pelanggaran',
-                'daftar_pelanggaran.poin',
                 DB::raw('count(*) as jumlah_pelanggaran'),
-                DB::raw('COUNT(DISTINCT pelanggaran.santri_id) as jumlah_santri'),
-                DB::raw('SUM(pelanggaran.jumlah) as total_poin')
+                DB::raw('COUNT(DISTINCT pelanggaran.santri_id) as jumlah_santri')
             )
             ->when($tanggalMulai && $tanggalSelesai, fn($q) => $q->whereBetween('pelanggaran.tanggal', [$tanggalMulai, $tanggalSelesai]))
             ->when($bulan && $tahun, fn($q) => $q->whereMonth('pelanggaran.tanggal', $bulan)->whereYear('pelanggaran.tanggal', $tahun))
@@ -128,7 +126,7 @@ class LaporanService
             ->when($daerahId, fn($q) => $q->whereHas('asrama', fn($q2) => $q2->where('daerah_id', $daerahId)))
             ->when($asramaId, fn($q) => $q->where('pelanggaran.asrama_id', $asramaId))
             ->when($sumberPencatatan, fn($q) => $q->where('pelanggaran.sumber_pencatatan', $sumberPencatatan))
-            ->groupBy('daftar_pelanggaran.id', 'daftar_pelanggaran.nama_pelanggaran', 'daftar_pelanggaran.poin')
+            ->groupBy('daftar_pelanggaran.id', 'daftar_pelanggaran.nama_pelanggaran')
             ->orderByDesc('jumlah_pelanggaran')
             ->get();
 
@@ -193,7 +191,6 @@ class LaporanService
                     : ($p->asrama?->nomor ?? '-'),
                 'daerah' => $p->asrama?->daerah?->nama_daerah ?? '-',
                 'jenis_pelanggaran' => $p->daftarPelanggaran?->nama_pelanggaran ?? '-',
-                'poin' => $p->daftarPelanggaran?->poin ?? 0,
                 'jumlah' => $p->jumlah ?? 1,
                 'sumber' => $p->sumber_pencatatan === 'petugas' ? 'Petugas' : 'Ketua Kamar',
                 'petugas' => $p->petugas?->santri?->nama ?? ($p->petugas_id ? 'Petugas #' . $p->petugas_id : '-'),

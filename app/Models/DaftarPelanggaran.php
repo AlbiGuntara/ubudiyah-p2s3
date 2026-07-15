@@ -13,7 +13,6 @@ class DaftarPelanggaran extends Model
 
     protected $fillable = [
         'nama_pelanggaran',
-        'poin',
     ];
 
     public function pelanggaran()

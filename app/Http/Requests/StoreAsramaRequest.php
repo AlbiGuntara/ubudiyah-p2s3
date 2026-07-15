@@ -8,7 +8,10 @@ class StoreAsramaRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        if ($this->isMethod('POST')) {
+            return $this->user()->can('create_asrama');
+        }
+        return $this->user()->can('edit_asrama');
     }
 
     public function rules(): array

@@ -9,7 +9,9 @@ class DashboardController extends Controller
 {
     public function __construct(
         protected DashboardService $dashboardService
-    ) {}
+    ) {
+        $this->middleware('permission:view_dashboard');
+    }
 
     public function index(): Response
     {

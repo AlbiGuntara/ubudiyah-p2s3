@@ -13,6 +13,13 @@ use Illuminate\Http\RedirectResponse;
 
 class PetugasController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('permission:view_petugas', ['only' => ['index']]);
+        $this->middleware('permission:create_petugas', ['only' => ['store']]);
+        $this->middleware('permission:edit_petugas', ['only' => ['update']]);
+        $this->middleware('permission:delete_petugas', ['only' => ['destroy', 'bulkDelete']]);
+    }
 
     public function index(Request $request): Response
     {

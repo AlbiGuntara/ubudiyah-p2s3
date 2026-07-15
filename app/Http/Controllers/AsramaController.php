@@ -11,6 +11,13 @@ use Illuminate\Http\Request;
 
 class AsramaController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('permission:view_asrama', ['only' => ['index']]);
+        $this->middleware('permission:create_asrama', ['only' => ['store']]);
+        $this->middleware('permission:edit_asrama', ['only' => ['update']]);
+        $this->middleware('permission:delete_asrama', ['only' => ['destroy', 'bulkDelete']]);
+    }
 
     public function index(Request $request): Response
     {

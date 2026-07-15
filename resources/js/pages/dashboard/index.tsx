@@ -133,7 +133,7 @@ function SimpleBarCard({ title, labels, data, color = '#16a34a' }: { title: stri
     );
 }
 
-function TopList({ title, items, valueLabel }: { title: string; items: { nama?: string; nama_daerah?: string; nomor?: string; total: number }[]; valueLabel: string }) {
+function TopList({ title, items, valueLabel }: { title: string; items: { nama?: string; nama_daerah?: string; label?: string; asrama_label?: string; total: number }[]; valueLabel: string }) {
     return (
         <Card>
             <CardHeader>
@@ -150,7 +150,10 @@ function TopList({ title, items, valueLabel }: { title: string; items: { nama?: 
                                     <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${i < 3 ? 'bg-green-600 text-white' : 'bg-muted text-muted-foreground'}`}>
                                         {i + 1}
                                     </span>
-                                    <span className="text-sm">{item.nama || item.nama_daerah || `Asrama ${item.nomor}`}</span>
+                                    <div>
+                                        <span className="text-sm">{item.label || item.nama_daerah || item.nama}</span>
+                                        {item.asrama_label && <span className="text-xs text-muted-foreground ml-1">{item.asrama_label}</span>}
+                                    </div>
                                 </div>
                                 <Badge variant="secondary">{item.total} {valueLabel}</Badge>
                             </div>
@@ -173,8 +176,8 @@ interface PageProps {
     bulananChart: { labels: string[]; data: number[] };
     daerahChart: { labels: string[]; data: number[] };
     topDaerah: { nama_daerah: string; total: number }[];
-    topAsrama: { nomor: string; total: number }[];
-    topSantri: { nama: string; nis: string; total: number; total_shalawat: number }[];
+    topAsrama: { label: string; total: number }[];
+    topSantri: { nama: string; total: number; asrama_label: string }[];
 }
 
 export default function Dashboard(props: PageProps) {

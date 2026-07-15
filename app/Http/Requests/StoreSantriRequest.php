@@ -24,6 +24,7 @@ class StoreSantriRequest extends FormRequest
                     ->whereNull('deleted_at'),
             ],
             'iksass' => 'nullable|string|max:20',
+            'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'asrama_id' => 'required|exists:asrama,id',
         ];
     }

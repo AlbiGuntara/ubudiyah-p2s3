@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\Storage;
+
 
 class PetugasController extends Controller
 {
@@ -56,43 +56,20 @@ class PetugasController extends Controller
 
     public function store(StorePetugasRequest $request): RedirectResponse
     {
-        $data = $request->validated();
-
-        if ($request->hasFile('foto')) {
-            $data['foto'] = $request->file('foto')->store('petugas', 'public');
-        }
-
-        Petugas::create($data);
+        Petugas::create($request->validated());
 
         return redirect()->route('petugas.index')->with('success', 'Petugas berhasil ditambahkan.');
     }
 
     public function update(StorePetugasRequest $request, Petugas $petugas): RedirectResponse
     {
-        $data = $request->validated();
-
-        if ($request->hasFile('foto')) {
-            // Hapus foto lama jika ada
-            if ($petugas->foto) {
-                Storage::disk('public')->delete($petugas->foto);
-            }
-            $data['foto'] = $request->file('foto')->store('petugas', 'public');
-        } else {
-            // Jangan overwrite foto jika tidak ada file baru
-            unset($data['foto']);
-        }
-
-        $petugas->update($data);
+        $petugas->update($request->validated());
 
         return redirect()->route('petugas.index')->with('success', 'Petugas berhasil diubah.');
     }
 
     public function destroy(Petugas $petugas): RedirectResponse
     {
-        if ($petugas->foto) {
-            Storage::disk('public')->delete($petugas->foto);
-        }
-
         $petugas->delete();
 
         return redirect()->route('petugas.index')->with('success', 'Petugas berhasil dihapus.');

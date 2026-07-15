@@ -38,6 +38,21 @@ export default function SantriShow() {
                             <CardTitle className="text-base">Informasi Santri</CardTitle>
                         </CardHeader>
                         <CardContent>
+                            <div className="flex flex-col items-center mb-4">
+                                {santri.foto ? (
+                                    <img
+                                        src={`/storage/${santri.foto}`}
+                                        alt={santri.nama}
+                                        className="h-24 w-24 rounded-full object-cover"
+                                    />
+                                ) : (
+                                    <div className="flex h-24 w-24 items-center justify-center rounded-full bg-muted">
+                                        <span className="text-2xl font-bold text-muted-foreground">
+                                            {santri.nama.charAt(0).toUpperCase()}
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
                             <dl className="space-y-3">
                                 <div className="flex justify-between">
                                     <dt className="text-muted-foreground">Nama</dt>

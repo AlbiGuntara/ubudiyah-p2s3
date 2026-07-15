@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Head, usePage, router, Link } from '@inertiajs/react';
 import { AppLayout } from '@/components/layout/app-layout';
 import { Button } from '@/components/ui/button';
@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Modal } from '@/components/ui/modal';
 import { DataTable, type Column } from '@/components/shared/data-table';
-import { Edit2, Trash2, Plus, Eye, Upload } from 'lucide-react';
+import { Edit2, Trash2, Plus, Eye, Upload, Camera, X } from 'lucide-react';
 
 export default function SantriIndex() {
     const { santri, daerah, asrama, filters } = usePage<any>().props;
@@ -22,8 +22,15 @@ export default function SantriIndex() {
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | 'none'>('none');
     const [selectedIds, setSelectedIds] = useState<(string | number)[]>([]);
 
-    const [form, setForm] = useState({ nama: '', nis: '', iksass: '', daerah_id: '', asrama_id: '' });
+    const [form, setForm] = useState({ nama: '', nis: '', iksass: '', foto: null as File | null, daerah_id: '', asrama_id: '' });
     const [formDaerah, setFormDaerah] = useState('');
+    const [fotoPreview, setFotoPreview] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!showModal) {
+            setFotoPreview(null);
+        }
+    }, [showModal]);
 
     const filteredAsrama = asrama.filter((a: any) => {
         if (formDaerah) return String(a.daerah_id) === String(formDaerah);
@@ -37,7 +44,8 @@ export default function SantriIndex() {
 
     const openCreate = () => {
         setEditing(null);
-        setForm({ nama: '', nis: '', iksass: '', daerah_id: '', asrama_id: '' });
+        setForm({ nama: '', nis: '', iksass: '', foto: null, daerah_id: '', asrama_id: '' });
+        setFotoPreview(null);
         setFormDaerah('');
         setShowModal(true);
     };
@@ -46,18 +54,45 @@ export default function SantriIndex() {
         setEditing(s);
         const daerahId = s.asrama?.daerah_id ? String(s.asrama.daerah_id) : '';
         setFormDaerah(daerahId);
-        setForm({ nama: s.nama, nis: s.nis || '', iksass: s.iksass || '', daerah_id: daerahId, asrama_id: s.asrama_id });
+        setForm({ nama: s.nama, nis: s.nis || '', iksass: s.iksass || '', foto: null, daerah_id: daerahId, asrama_id: s.asrama_id });
+        setFotoPreview(s.foto ? `/storage/${s.foto}` : null);
         setShowModal(true);
     };
 
+    const handleFotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0] || null;
+        if (file) {
+            setForm({ ...form, foto: file });
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                setFotoPreview(ev.target?.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const removeFoto = () => {
+        setForm({ ...form, foto: null });
+        setFotoPreview(null);
+    };
+
     const submit = () => {
-        const payload = { nama: form.nama, nis: form.nis, iksass: form.iksass, asrama_id: form.asrama_id };
+        const formData = new FormData();
+        formData.append('nama', form.nama);
+        formData.append('nis', form.nis || '');
+        formData.append('iksass', form.iksass || '');
+        formData.append('asrama_id', form.asrama_id);
+        if (form.foto) {
+            formData.append('foto', form.foto);
+        }
+
         if (editing) {
-            router.put(`/santri/${editing.id}`, payload, {
+            formData.append('_method', 'PUT');
+            router.post(`/santri/${editing.id}`, formData, {
                 onSuccess: () => setShowModal(false),
             });
         } else {
-            router.post('/santri', payload, {
+            router.post('/santri', formData, {
                 onSuccess: () => setShowModal(false),
             });
         }
@@ -105,6 +140,22 @@ export default function SantriIndex() {
 
     const columns: Column<any>[] = [
         { key: 'no', label: '#', render: (_s: any, idx: number) => <span>{santri.from + idx}</span>, className: 'text-muted-foreground text-xs w-10' },
+        {
+            key: 'foto',
+            label: 'Foto',
+            render: (s) =>
+                s.foto ? (
+                    <img
+                        src={`/storage/${s.foto}`}
+                        alt={s.nama}
+                        className="h-8 w-8 rounded-full object-cover"
+                    />
+                ) : (
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+                        <Camera className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                ),
+        },
         { key: 'nama', label: 'Nama', sortable: true, render: (s) => <span className="font-medium">{s.nama}</span> },
         { key: 'nis', label: 'NIS', sortable: true },
         { key: 'iksass', label: 'IKSASS', sortable: true },
@@ -246,6 +297,47 @@ export default function SantriIndex() {
                             placeholder="Contoh: Situbondo, Bondowoso"
                         />
                     </div>
+
+                    {/* Foto */}
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium">Foto Santri</label>
+                        <div className="flex items-center gap-4">
+                            {fotoPreview ? (
+                                <div className="relative">
+                                    <img
+                                        src={fotoPreview}
+                                        alt="Preview"
+                                        className="h-20 w-20 rounded-lg object-cover border"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={removeFoto}
+                                        className="absolute -top-2 -right-2 rounded-full bg-destructive text-destructive-foreground p-0.5"
+                                    >
+                                        <X className="h-3.5 w-3.5" />
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="h-20 w-20 rounded-lg border-2 border-dashed border-muted-foreground/30 flex items-center justify-center bg-muted/30">
+                                    <Camera className="h-6 w-6 text-muted-foreground/50" />
+                                </div>
+                            )}
+                            <label className="cursor-pointer">
+                                <span className="inline-flex items-center gap-2 text-sm text-primary hover:underline">
+                                    <Camera className="h-4 w-4" />
+                                    {fotoPreview ? 'Ganti Foto' : 'Upload Foto'}
+                                </span>
+                                <input
+                                    type="file"
+                                    accept="image/jpg,image/jpeg,image/png"
+                                    onChange={handleFotoChange}
+                                    className="hidden"
+                                />
+                            </label>
+                        </div>
+                        <p className="text-xs text-muted-foreground">Format: JPG/PNG, maks. 2MB</p>
+                    </div>
+
                     <div className="space-y-2">
                         <label className="text-sm font-medium">Daerah</label>
                         <Select

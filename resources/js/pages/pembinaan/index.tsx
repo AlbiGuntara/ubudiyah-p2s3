@@ -7,14 +7,7 @@ import { Modal } from '@/components/ui/modal';
 import { Badge } from '@/components/ui/badge';
 import { DataTable, type Column } from '@/components/shared/data-table';
 import { Select } from '@/components/ui/select';
-import {
-    Edit2,
-    Trash2,
-    BookOpen,
-    Filter,
-    Search,
-    PlusCircle,
-} from 'lucide-react';
+import { Edit2, Trash2, BookOpen, PlusCircle } from 'lucide-react';
 
 export default function PembinaanIndex() {
     const {
@@ -160,17 +153,10 @@ export default function PembinaanIndex() {
         );
     };
 
-    const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter') {
-            applyFilters();
-        }
-    };
-
     // Helper to get display name
     const getNama = (p: any) => {
         if (p.santri) return p.santri.nama;
         if (!p.santri_id && p.asrama) {
-            const kode = p.asrama?.daerah?.kode || '';
             return `Tanpa Nama`;
         }
         return 'Tanpa Nama';
@@ -190,6 +176,10 @@ export default function PembinaanIndex() {
         if (a?.daerah?.kode) return `${a.daerah.kode}.${a.nomor}`;
         return a?.nomor || '-';
     };
+
+    const filteredAsrama = filterDaerah
+        ? asrama.filter((a: any) => a.daerah_id === parseInt(filterDaerah))
+        : asrama;
 
     const columns: Column<any>[] = [
         {
@@ -286,10 +276,6 @@ export default function PembinaanIndex() {
         },
     ];
 
-    const filteredAsrama = filterDaerah
-        ? asrama.filter((a: any) => a.daerah_id === parseInt(filterDaerah))
-        : asrama;
-
     return (
         <AppLayout>
             <Head title="Pembinaan" />
@@ -316,59 +302,6 @@ export default function PembinaanIndex() {
                     </div>
                 </div>
 
-                {/* Search & Filter Bar */}
-                <div className="flex flex-wrap items-center gap-3 rounded-lg border p-3">
-                    <div className="relative min-w-[200px] flex-1">
-                        <Search className="absolute top-2.5 left-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input
-                            placeholder="Cari nama santri atau kamar..."
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            className="pl-8"
-                        />
-                    </div>
-                    <div className="w-full sm:w-auto">
-                        <Select
-                            value={filterDaerah}
-                            onChange={(e) => {
-                                setFilterDaerah(e.target.value);
-                                setFilterAsrama('');
-                            }}
-                            placeholder="Filter Daerah"
-                        >
-                            <option value="">Semua Daerah</option>
-                            {daerah?.map((d: any) => (
-                                <option key={d.id} value={d.id}>
-                                    {d.nama_daerah}
-                                </option>
-                            ))}
-                        </Select>
-                    </div>
-                    <div className="w-full sm:w-auto">
-                        <Select
-                            value={filterAsrama}
-                            onChange={(e) => setFilterAsrama(e.target.value)}
-                            placeholder="Filter Asrama"
-                        >
-                            <option value="">Semua Asrama</option>
-                            {filteredAsrama?.map((a: any) => (
-                                <option key={a.id} value={a.id}>
-                                    no. {a.nomor}
-                                </option>
-                            ))}
-                        </Select>
-                    </div>
-                    <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={applyFilters}
-                    >
-                        <Filter className="h-4 w-4" />
-                        Terapkan
-                    </Button>
-                </div>
-
                 <DataTable
                     columns={columns}
                     data={pembinaan.data}
@@ -392,6 +325,27 @@ export default function PembinaanIndex() {
                             { preserveState: true, preserveScroll: true },
                         )
                     }
+                    search={search}
+                    onSearchChange={(q) => {
+                        setSearch(q);
+                        router.get(
+                            '/pembinaan',
+                            {
+                                search: q || undefined,
+                                page: 1,
+                                sort_column: sortColumn || undefined,
+                                sort_direction:
+                                    sortDirection === 'none'
+                                        ? undefined
+                                        : sortDirection,
+                                daerah_id: filterDaerah || undefined,
+                                asrama_id: filterAsrama || undefined,
+                                per_page: perPage,
+                            },
+                            { preserveState: true, preserveScroll: true },
+                        );
+                    }}
+                    searchPlaceholder="Cari nama santri atau kamar..."
                     sortColumn={sortColumn}
                     sortDirection={sortDirection}
                     onSort={handleSort}
@@ -429,6 +383,44 @@ export default function PembinaanIndex() {
                                 Hapus ({selectedIds.length})
                             </Button>
                         )
+                    }
+                    filters={
+                        <>
+                            <Select
+                                value={filterDaerah}
+                                onChange={(e) => {
+                                    setFilterDaerah(e.target.value);
+                                    setFilterAsrama('');
+                                }}
+                                placeholder="Semua Daerah"
+                                options={daerah.map((d: any) => ({
+                                    value: d.id,
+                                    label: d.nama_daerah,
+                                }))}
+                                className="min-w-[150px]"
+                            />
+                            <Select
+                                value={filterAsrama}
+                                onChange={(e) =>
+                                    setFilterAsrama(e.target.value)
+                                }
+                                placeholder="Semua Asrama"
+                                options={filteredAsrama.map((a: any) => ({
+                                    value: a.id,
+                                    label: a.daerah?.kode
+                                        ? `${a.daerah.kode}.${a.nomor}`
+                                        : `no. ${a.nomor}`,
+                                }))}
+                                className="min-w-[150px]"
+                            />
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={applyFilters}
+                            >
+                                Filter
+                            </Button>
+                        </>
                     }
                 />
             </div>

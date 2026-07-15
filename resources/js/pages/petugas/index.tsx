@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Head, usePage, router } from '@inertiajs/react';
 import { AppLayout } from '@/components/layout/app-layout';
 import { Button } from '@/components/ui/button';
@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Modal } from '@/components/ui/modal';
 import { DataTable, type Column } from '@/components/shared/data-table';
-import { Edit2, Trash2, Plus, Camera, X } from 'lucide-react';
+import { Edit2, Trash2, Plus, Camera } from 'lucide-react';
 
 export default function PetugasIndex() {
     const { petugas, santri, asrama } = usePage<any>().props;
@@ -22,15 +22,7 @@ export default function PetugasIndex() {
         asrama_id: '',
         jabatan: '',
         tugas: '',
-        foto: null as File | null,
     });
-    const [fotoPreview, setFotoPreview] = useState<string | null>(null);
-
-    useEffect(() => {
-        if (!showModal) {
-            setFotoPreview(null);
-        }
-    }, [showModal]);
 
     const openCreate = () => {
         setEditing(null);
@@ -39,9 +31,7 @@ export default function PetugasIndex() {
             asrama_id: '',
             jabatan: '',
             tugas: '',
-            foto: null,
         });
-        setFotoPreview(null);
         setShowModal(true);
     };
 
@@ -52,9 +42,7 @@ export default function PetugasIndex() {
             asrama_id: String(p.asrama_id || ''),
             jabatan: p.jabatan || '',
             tugas: p.tugas || '',
-            foto: null,
         });
-        setFotoPreview(p.foto ? `/storage/${p.foto}` : null);
         setShowModal(true);
     };
 
@@ -64,23 +52,6 @@ export default function PetugasIndex() {
         setForm({ ...form, santri_id: value, asrama_id: asramaId });
     };
 
-    const handleFotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0] || null;
-        if (file) {
-            setForm({ ...form, foto: file });
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                setFotoPreview(ev.target?.result as string);
-            };
-            reader.readAsDataURL(file);
-        }
-    };
-
-    const removeFoto = () => {
-        setForm({ ...form, foto: null });
-        setFotoPreview(null);
-    };
-
     const submit = () => {
         const data: Record<string, any> = {
             santri_id: form.santri_id,
@@ -88,10 +59,6 @@ export default function PetugasIndex() {
             jabatan: form.jabatan,
             tugas: form.tugas,
         };
-
-        if (form.foto) {
-            data.foto = form.foto;
-        }
 
         const onFinish = () => setShowModal(false);
 
@@ -156,9 +123,9 @@ export default function PetugasIndex() {
             sortable: true,
             render: (p) => (
                 <div className="flex items-center gap-3">
-                    {p.foto ? (
+                    {p.santri?.foto ? (
                         <img
-                            src={`/storage/${p.foto}`}
+                            src={`/storage/${p.santri.foto}`}
                             alt={p.santri?.nama || 'Petugas'}
                             className="h-9 w-9 rounded-full object-cover border"
                         />
@@ -258,46 +225,6 @@ export default function PetugasIndex() {
                 title={editing ? 'Edit Petugas' : 'Tambah Petugas'}
             >
                 <div className="space-y-4">
-                    {/* Foto */}
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium">Foto Petugas</label>
-                        <div className="flex items-center gap-4">
-                            {fotoPreview ? (
-                                <div className="relative">
-                                    <img
-                                        src={fotoPreview}
-                                        alt="Preview"
-                                        className="h-20 w-20 rounded-lg object-cover border"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={removeFoto}
-                                        className="absolute -top-2 -right-2 rounded-full bg-destructive text-destructive-foreground p-0.5"
-                                    >
-                                        <X className="h-3.5 w-3.5" />
-                                    </button>
-                                </div>
-                            ) : (
-                                <div className="h-20 w-20 rounded-lg border-2 border-dashed border-muted-foreground/30 flex items-center justify-center bg-muted/30">
-                                    <Camera className="h-6 w-6 text-muted-foreground/50" />
-                                </div>
-                            )}
-                            <label className="cursor-pointer">
-                                <span className="inline-flex items-center gap-2 text-sm text-primary hover:underline">
-                                    <Camera className="h-4 w-4" />
-                                    {fotoPreview ? 'Ganti Foto' : 'Upload Foto'}
-                                </span>
-                                <input
-                                    type="file"
-                                    accept="image/jpg,image/jpeg,image/png"
-                                    onChange={handleFotoChange}
-                                    className="hidden"
-                                />
-                            </label>
-                        </div>
-                        <p className="text-xs text-muted-foreground">Format: JPG/PNG, maks. 2MB</p>
-                    </div>
-
                     {/* Santri (wajib) */}
                     <div className="space-y-2">
                         <label className="text-sm font-medium">

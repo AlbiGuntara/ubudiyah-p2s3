@@ -6,6 +6,7 @@ use App\Models\Daerah;
 use App\Models\Asrama;
 use App\Http\Requests\StoreSantriRequest;
 use App\Traits\Auditable;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Http\RedirectResponse;
@@ -64,7 +65,13 @@ class SantriController extends Controller
 
     public function store(StoreSantriRequest $request): RedirectResponse
     {
-        Santri::create($request->validated());
+        $data = $request->validated();
+
+        if ($request->hasFile('foto')) {
+            $data['foto'] = $request->file('foto')->store('foto-santri', 'public');
+        }
+
+        Santri::create($data);
         return redirect()->route('santri.index')->with('success', 'Santri berhasil ditambahkan.');
     }
 
@@ -83,7 +90,16 @@ class SantriController extends Controller
 
     public function update(StoreSantriRequest $request, Santri $santri): RedirectResponse
     {
-        $santri->update($request->validated());
+        $data = $request->validated();
+
+        if ($request->hasFile('foto')) {
+            if ($santri->foto) {
+                Storage::disk('public')->delete($santri->foto);
+            }
+            $data['foto'] = $request->file('foto')->store('foto-santri', 'public');
+        }
+
+        $santri->update($data);
         return redirect()->route('santri.index')->with('success', 'Santri berhasil diubah.');
     }
 

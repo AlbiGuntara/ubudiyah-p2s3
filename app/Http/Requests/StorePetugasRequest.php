@@ -17,7 +17,7 @@ class StorePetugasRequest extends FormRequest
             'asrama_id' => 'nullable|exists:asrama,id',
             'jabatan' => 'required|string|max:100',
             'tugas' => 'required|string|max:100',
-            'foto' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+
         ];
     }
 }

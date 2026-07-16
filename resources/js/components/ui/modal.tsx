@@ -91,7 +91,7 @@ export function Modal({ open, onClose, title, description, children, className, 
                     </button>
                 </div>
 
-                <div className="px-6 py-5">
+                <div className="px-6 py-5 max-h-[65vh] overflow-y-auto modal-scroll">
                     {children}
                 </div>
 

@@ -9,14 +9,16 @@ class PembinaanSeeder extends Seeder
     public function run(): void
     {
         $santriIds = range(1, 30);
-        $panggilan = ['I', 'II', 'III'];
 
         for ($i = 0; $i < 15; $i++) {
+            $santriId = $santriIds[array_rand($santriIds)];
+            $sanksi = rand(100, 500);
+
             Pembinaan::create([
-                'santri_id' => $santriIds[array_rand($santriIds)],
-                'panggilan' => $panggilan[array_rand($panggilan)],
-                'tanggal_panggilan' => now()->subDays(rand(0, 60)),
-                'sanksi' => 'Membaca shalawat ' . rand(100, 500) . ' kali',
+                'santri_id' => $santriId,
+                'sanksi' => $sanksi,
+                'sisa_sanksi' => $sanksi,
+                'shalawat_tertulis' => 0,
             ]);
         }
     }

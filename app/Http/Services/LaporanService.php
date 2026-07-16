@@ -144,12 +144,11 @@ class LaporanService
         // Per Petugas
         $perPetugas = DB::table('pelanggaran')
             ->join('petugas', 'pelanggaran.petugas_id', '=', 'petugas.id')
-            ->leftJoin('santri', 'petugas.santri_id', '=', 'santri.id')
             ->select(
                 'petugas.id',
                 'petugas.jabatan',
                 'petugas.tugas',
-                DB::raw('COALESCE(santri.nama, "Petugas Tanpa Santri") as nama_petugas'),
+                DB::raw('COALESCE(petugas.nama, "Petugas Tanpa Nama") as nama_petugas'),
                 DB::raw('count(*) as jumlah_pelanggaran'),
                 DB::raw('COUNT(DISTINCT pelanggaran.santri_id) as jumlah_santri_dicatat')
             )
@@ -160,7 +159,7 @@ class LaporanService
             ->when($daerahId, fn($q) => $q->whereHas('asrama', fn($q2) => $q2->where('daerah_id', $daerahId)))
             ->when($asramaId, fn($q) => $q->where('pelanggaran.asrama_id', $asramaId))
             ->when($sumberPencatatan, fn($q) => $q->where('pelanggaran.sumber_pencatatan', $sumberPencatatan))
-            ->groupBy('petugas.id', 'petugas.jabatan', 'petugas.tugas', 'santri.nama')
+            ->groupBy('petugas.id', 'petugas.jabatan', 'petugas.tugas', 'petugas.nama')
             ->orderByDesc('jumlah_pelanggaran')
             ->get();
 
@@ -169,7 +168,7 @@ class LaporanService
             'asrama.daerah',
             'santri',
             'daftarPelanggaran',
-            'petugas.santri',
+            'petugas',
         ])
             ->when($tanggalMulai && $tanggalSelesai, fn($q) => $q->whereBetween('tanggal', [$tanggalMulai, $tanggalSelesai]))
             ->when($bulan && $tahun, fn($q) => $q->whereMonth('tanggal', $bulan)->whereYear('tanggal', $tahun))
@@ -193,7 +192,7 @@ class LaporanService
                 'jenis_pelanggaran' => $p->daftarPelanggaran?->nama_pelanggaran ?? '-',
                 'jumlah' => $p->jumlah ?? 1,
                 'sumber' => $p->sumber_pencatatan === 'petugas' ? 'Petugas' : 'Ketua Kamar',
-                'petugas' => $p->petugas?->santri?->nama ?? ($p->petugas_id ? 'Petugas #' . $p->petugas_id : '-'),
+                'petugas' => $p->petugas?->nama ?? ($p->petugas_id ? 'Petugas #' . $p->petugas_id : '-'),
                 'keterangan' => $p->keterangan ?? '',
             ]);
 

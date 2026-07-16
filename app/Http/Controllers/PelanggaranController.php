@@ -103,49 +103,59 @@ class PelanggaranController extends Controller
     public function store(StorePelanggaranRequest $request): RedirectResponse
     {
         $data = $request->validated();
-        $santriIds = $data['santri_ids'] ?? [];
+        $santriPelanggaran = $data['santri_pelanggaran'] ?? [];
 
         $petugas = auth()->user()?->petugas;
         $petugasId = $petugas?->id ?? $data['petugas_id'] ?? null;
 
-        // Create individual records for each selected santri
-        if (! empty($santriIds)) {
-            foreach ($santriIds as $santriId) {
-                $pelanggaran = Pelanggaran::create([
-                    'santri_id' => $santriId,
+        // Create individual records for each selected santri with their own violation type
+        if (! empty($santriPelanggaran)) {
+            foreach ($santriPelanggaran as $item) {
+                Pelanggaran::create([
+                    'santri_id' => $item['santri_id'],
                     'asrama_id' => $data['asrama_id'],
-                    'daftar_pelanggaran_id' => $data['daftar_pelanggaran_id'],
+                    'daftar_pelanggaran_id' => $item['daftar_pelanggaran_id'],
                     'petugas_id' => $petugasId,
                     'jumlah' => 1,
                     'sumber_pencatatan' => $data['sumber_pencatatan'],
                     'tanggal' => $data['tanggal'],
                     'keterangan' => $data['keterangan'],
                 ]);
-                $this->syncPembinaan($santriId);
+                $this->syncPembinaan((int) $item['santri_id']);
             }
         }
 
-        // Create mass record for anonymous santri
-        $tanpaNama = (int) ($data['tanpa_nama'] ?? 0);
-        if ($tanpaNama > 0) {
-            Pelanggaran::create([
-                'santri_id' => null,
-                'asrama_id' => $data['asrama_id'],
-                'daftar_pelanggaran_id' => $data['daftar_pelanggaran_id'],
-                'petugas_id' => $petugasId,
-                'jumlah' => $tanpaNama,
-                'sumber_pencatatan' => $data['sumber_pencatatan'],
-                'tanggal' => $data['tanggal'],
-                'keterangan' => $data['keterangan'] ?? 'Tanpa nama',
-            ]);
-            $this->syncAnonymousPembinaan((int) $data['asrama_id']);
+        // Create records for anonymous santri (each entry has jumlah + daftar_pelanggaran_id)
+        $anonymousEntries = $data['anonymous_entries'] ?? [];
+        if (! empty($anonymousEntries)) {
+            $hasAnonymous = false;
+            foreach ($anonymousEntries as $entry) {
+                $jumlah = (int) ($entry['jumlah'] ?? 0);
+                if ($jumlah > 0) {
+                    $hasAnonymous = true;
+                    Pelanggaran::create([
+                        'santri_id' => null,
+                        'asrama_id' => $data['asrama_id'],
+                        'daftar_pelanggaran_id' => $entry['daftar_pelanggaran_id'],
+                        'petugas_id' => $petugasId,
+                        'jumlah' => $jumlah,
+                        'sumber_pencatatan' => $data['sumber_pencatatan'],
+                        'tanggal' => $data['tanggal'],
+                        'keterangan' => $data['keterangan'] ?? 'Tanpa nama',
+                    ]);
+                }
+            }
+            if ($hasAnonymous) {
+                $this->syncAnonymousPembinaan((int) $data['asrama_id']);
+            }
         }
 
         // Fallback for single santri (edit case / backward compat)
-        if (empty($santriIds) && $tanpaNama === 0 && ! empty($data['santri_id'])) {
-            $data['petugas_id'] = $petugasId;
-            Pelanggaran::create($data);
-            $this->syncPembinaan($data['santri_id']);
+        if (empty($santriPelanggaran) && empty($anonymousEntries) && ! empty($data['santri_id'])) {
+            $record = $data;
+            $record['petugas_id'] = $petugasId;
+            Pelanggaran::create($record);
+            $this->syncPembinaan((int) $data['santri_id']);
         }
 
         return redirect()->route('pelanggaran.index')->with('success', 'Pelanggaran berhasil dicatat.');

@@ -28,6 +28,8 @@ class RolePermissionSeeder extends Seeder
             'view_pelanggaran', 'create_pelanggaran', 'edit_pelanggaran', 'delete_pelanggaran',
             // Pembinaan
             'view_pembinaan', 'create_pembinaan', 'edit_pembinaan', 'delete_pembinaan',
+            // Surat Panggilan
+            'cetak_surat_panggilan',
             // Laporan
             'view_laporan', 'export_laporan',
             // Dashboard
@@ -54,6 +56,7 @@ class RolePermissionSeeder extends Seeder
             'view_daerah',
             'view_daftar_pelanggaran',
             'view_pelanggaran', 'create_pelanggaran', 'edit_pelanggaran',
+            'cetak_surat_panggilan',
             'view_pembinaan',
             'view_laporan',
         ]);

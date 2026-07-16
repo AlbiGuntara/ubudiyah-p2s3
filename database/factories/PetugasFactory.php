@@ -11,7 +11,8 @@ class PetugasFactory extends Factory
     public function definition(): array
     {
         return [
-            'santri_id' => null,
+            'nama' => fake()->name(),
+            'daerah_id' => \App\Models\Daerah::factory(),
             'asrama_id' => \App\Models\Asrama::factory(),
             'jabatan' => fake()->randomElement(['Koordinator', 'Anggota', 'Pembina']),
             'tugas' => fake()->sentence(3),

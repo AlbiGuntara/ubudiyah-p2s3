@@ -5,6 +5,7 @@ use App\Traits\Auditable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Asrama extends Model
 {
@@ -30,5 +31,10 @@ class Asrama extends Model
     public function pelanggaran()
     {
         return $this->hasMany(Pelanggaran::class);
+    }
+
+    public function suratPanggilan(): HasMany
+    {
+        return $this->hasMany(SuratPanggilan::class);
     }
 }

@@ -12,15 +12,17 @@ class Petugas extends Model
     protected $table = 'petugas';
 
     protected $fillable = [
-        'santri_id',
+        'nama',
+        'foto',
+        'daerah_id',
         'asrama_id',
         'jabatan',
         'tugas',
     ];
 
-    public function santri()
+    public function daerah()
     {
-        return $this->belongsTo(Santri::class);
+        return $this->belongsTo(Daerah::class);
     }
 
     public function asrama()

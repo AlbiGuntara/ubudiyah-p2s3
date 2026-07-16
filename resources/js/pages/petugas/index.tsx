@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { Head, usePage, router } from '@inertiajs/react';
 import { AppLayout } from '@/components/layout/app-layout';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,7 @@ import { DataTable, type Column } from '@/components/shared/data-table';
 import { Edit2, Trash2, Plus, Camera } from 'lucide-react';
 
 export default function PetugasIndex() {
-    const { petugas, santri, asrama } = usePage<any>().props;
+    const { petugas, daerah, asrama } = usePage<any>().props;
     const [perPage, setPerPage] = useState(10);
     const [showModal, setShowModal] = useState(false);
     const [editing, setEditing] = useState<any>(null);
@@ -17,53 +17,76 @@ export default function PetugasIndex() {
     const [sortColumn, setSortColumn] = useState('');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | 'none'>('none');
     const [selectedIds, setSelectedIds] = useState<(string | number)[]>([]);
+    const [fotoPreview, setFotoPreview] = useState<string | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
     const [form, setForm] = useState({
-        santri_id: '',
+        nama: '',
+        foto: null as File | null,
+        daerah_id: '',
         asrama_id: '',
         jabatan: '',
         tugas: '',
     });
 
+    const filteredAsrama = useMemo(() => {
+        return form.daerah_id
+            ? asrama.filter((a: any) => String(a.daerah_id) === String(form.daerah_id))
+            : [];
+    }, [asrama, form.daerah_id]);
+
     const openCreate = () => {
         setEditing(null);
         setForm({
-            santri_id: '',
+            nama: '',
+            foto: null,
+            daerah_id: '',
             asrama_id: '',
             jabatan: '',
             tugas: '',
         });
+        setFotoPreview(null);
         setShowModal(true);
     };
 
     const openEdit = (p: any) => {
         setEditing(p);
         setForm({
-            santri_id: String(p.santri_id || ''),
+            nama: p.nama || '',
+            foto: null,
+            daerah_id: String(p.daerah_id || ''),
             asrama_id: String(p.asrama_id || ''),
             jabatan: p.jabatan || '',
             tugas: p.tugas || '',
         });
+        setFotoPreview(p.foto ? `/storage/${p.foto}` : null);
         setShowModal(true);
     };
 
-    const handleSantriChange = (value: string) => {
-        const selectedSantri = santri.find((s: any) => String(s.id) === value);
-        const asramaId = selectedSantri?.asrama_id ? String(selectedSantri.asrama_id) : '';
-        setForm({ ...form, santri_id: value, asrama_id: asramaId });
+    const handleFotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setForm({ ...form, foto: file });
+            setFotoPreview(URL.createObjectURL(file));
+        }
     };
 
     const submit = () => {
-        const data: Record<string, any> = {
-            santri_id: form.santri_id,
-            asrama_id: form.asrama_id || null,
-            jabatan: form.jabatan,
-            tugas: form.tugas,
+        const data = new FormData();
+        data.append('nama', form.nama);
+        if (form.foto) data.append('foto', form.foto);
+        if (form.daerah_id) data.append('daerah_id', form.daerah_id);
+        if (form.asrama_id) data.append('asrama_id', form.asrama_id);
+        data.append('jabatan', form.jabatan);
+        data.append('tugas', form.tugas);
+
+        const onFinish = () => {
+            setShowModal(false);
+            setFotoPreview(null);
         };
 
-        const onFinish = () => setShowModal(false);
-
         if (editing) {
-            router.put(`/petugas/${editing.id}`, data, {
+            data.append('_method', 'PUT');
+            router.post(`/petugas/${editing.id}`, data, {
                 onSuccess: onFinish,
             });
         } else {
@@ -88,7 +111,7 @@ export default function PetugasIndex() {
     };
 
     const handleSort = (column: string) => {
-        const sortMap: Record<string, string> = { petugas: 'nama_petugas' };
+        const sortMap: Record<string, string> = { petugas: 'nama' };
         let nextDir: 'asc' | 'desc' | 'none' = 'asc';
         if (sortColumn === column) {
             nextDir = sortDirection === 'none' ? 'asc' : sortDirection === 'asc' ? 'desc' : 'none';
@@ -123,10 +146,10 @@ export default function PetugasIndex() {
             sortable: true,
             render: (p) => (
                 <div className="flex items-center gap-3">
-                    {p.santri?.foto ? (
+                    {p.foto ? (
                         <img
-                            src={`/storage/${p.santri.foto}`}
-                            alt={p.santri?.nama || 'Petugas'}
+                            src={`/storage/${p.foto}`}
+                            alt={p.nama || 'Petugas'}
                             className="h-9 w-9 rounded-full object-cover border"
                         />
                     ) : (
@@ -134,11 +157,11 @@ export default function PetugasIndex() {
                             <Camera className="h-4 w-4 text-muted-foreground" />
                         </div>
                     )}
-                    <span className="font-medium">{p.santri?.nama || '-'}</span>
+                    <span className="font-medium">{p.nama || '-'}</span>
                 </div>
             ),
         },
-        { key: 'asrama', label: 'Asrama', render: (p) => p.santri?.asrama?.daerah?.kode ? `${p.santri.asrama.daerah.kode.charAt(0)}.${p.santri.asrama.nomor}` : p.santri?.asrama?.nomor || p.asrama?.nomor || '-' },
+        { key: 'asrama', label: 'Asrama', render: (p) => p.asrama?.daerah?.kode ? `${p.asrama.daerah.kode.charAt(0)}.${p.asrama.nomor}` : p.asrama?.nomor || '-' },
         { key: 'jabatan', label: 'Jabatan', sortable: true },
         { key: 'tugas', label: 'Tugas' },
         {
@@ -190,7 +213,7 @@ export default function PetugasIndex() {
                     }
                     search={search}
                     onSearchChange={handleSearchChange}
-                    searchPlaceholder="Cari nama santri..."
+                    searchPlaceholder="Cari nama petugas..."
                     sortColumn={sortColumn}
                     sortDirection={sortDirection}
                     onSort={handleSort}
@@ -225,35 +248,85 @@ export default function PetugasIndex() {
                 title={editing ? 'Edit Petugas' : 'Tambah Petugas'}
             >
                 <div className="space-y-4">
-                    {/* Santri (wajib) */}
+                    {/* Nama */}
                     <div className="space-y-2">
                         <label className="text-sm font-medium">
-                            Nama Santri <span className="text-destructive">*</span>
+                            Nama Petugas <span className="text-destructive">*</span>
                         </label>
-                        <Select
-                            value={form.santri_id}
-                            onChange={(e) => handleSantriChange(e.target.value)}
-                            placeholder="Pilih Santri"
-                            options={santri.map((s: any) => ({ value: s.id, label: s.nama }))}
+                        <Input
+                            value={form.nama}
+                            onChange={(e) => setForm({ ...form, nama: e.target.value })}
+                            placeholder="Nama petugas"
                         />
-                        <p className="text-xs text-muted-foreground">Nama petugas akan mengikuti nama santri yang dipilih</p>
                     </div>
 
-                    {/* Asrama (otomatis dari santri, tidak bisa diubah) */}
+                    {/* Foto */}
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium">Foto</label>
+                        <div className="flex items-center gap-4">
+                            {fotoPreview ? (
+                                <img
+                                    src={fotoPreview}
+                                    alt="Preview"
+                                    className="h-16 w-16 rounded-full object-cover border"
+                                />
+                            ) : (
+                                <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center">
+                                    <Camera className="h-6 w-6 text-muted-foreground" />
+                                </div>
+                            )}
+                            <div>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => fileInputRef.current?.click()}
+                                >
+                                    {fotoPreview ? 'Ganti Foto' : 'Pilih Foto'}
+                                </Button>
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    accept="image/jpeg,image/png,image/jpg"
+                                    className="hidden"
+                                    onChange={handleFotoChange}
+                                />
+                                <p className="text-xs text-muted-foreground mt-1">Format: JPEG/PNG, Maks: 2MB</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Daerah */}
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium">Daerah</label>
+                        <Select
+                            value={form.daerah_id}
+                            onChange={(e) =>
+                                setForm({ ...form, daerah_id: e.target.value, asrama_id: '' })
+                            }
+                            placeholder="Pilih Daerah"
+                            options={daerah.map((d: any) => ({
+                                value: d.id,
+                                label: d.nama_daerah,
+                            }))}
+                        />
+                    </div>
+
+                    {/* Asrama (filtered by daerah) */}
                     <div className="space-y-2">
                         <label className="text-sm font-medium">Asrama</label>
-                        {form.santri_id && form.asrama_id ? (
-                            <div className="flex h-9 w-full items-center rounded-md border border-input bg-muted px-3 text-sm text-muted-foreground">
-                                {(() => {
-                                    const a = asrama.find((a: any) => String(a.id) === form.asrama_id);
-                                    return a ? `${a.daerah?.kode?.charAt(0)}.${a.nomor}` : 'Otomatis dari santri';
-                                })()}
-                            </div>
-                        ) : (
-                            <div className="flex h-9 w-full items-center rounded-md border border-input bg-muted px-3 text-sm text-muted-foreground">
-                                Asrama petugas
-                            </div>
-                        )}
+                        <Select
+                            value={form.asrama_id}
+                            onChange={(e) => setForm({ ...form, asrama_id: e.target.value })}
+                            placeholder={
+                                form.daerah_id ? 'Pilih Asrama' : 'Pilih daerah terlebih dahulu'
+                            }
+                            disabled={!form.daerah_id}
+                            options={filteredAsrama.map((a: any) => ({
+                                value: a.id,
+                                label: `${a.daerah?.kode?.charAt(0)}.${a.nomor}`,
+                            }))}
+                        />
                     </div>
 
                     {/* Jabatan */}

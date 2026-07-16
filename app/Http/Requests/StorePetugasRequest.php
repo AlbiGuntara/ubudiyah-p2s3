@@ -15,12 +15,19 @@ class StorePetugasRequest extends FormRequest
 
     public function rules(): array
     {
-        return [
-            'santri_id' => 'required|exists:santri,id',
+        $rules = [
+            'nama' => 'required|string|max:100',
+            'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'daerah_id' => 'nullable|exists:daerah,id',
             'asrama_id' => 'nullable|exists:asrama,id',
             'jabatan' => 'required|string|max:100',
             'tugas' => 'required|string|max:100',
-
         ];
+
+        if ($this->isMethod('PUT') || $this->isMethod('PATCH')) {
+            $rules['foto'] = 'nullable|image|mimes:jpeg,png,jpg|max:2048';
+        }
+
+        return $rules;
     }
 }

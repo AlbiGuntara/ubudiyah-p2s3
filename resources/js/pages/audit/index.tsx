@@ -113,7 +113,7 @@ export default function AuditIndex() {
                     )}
                 </div>
 
-                <div className="rounded-lg border">
+                <div className="rounded-lg border overflow-x-auto">
                     <table className="w-full">
                         <thead>
                             <tr className="border-b bg-muted/50">

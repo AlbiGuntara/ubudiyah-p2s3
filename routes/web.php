@@ -13,6 +13,7 @@ use App\Http\Controllers\PembinaanController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\PetugasController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\SuratPanggilanController;
 use App\Http\Controllers\SantriController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\UserController;
@@ -51,6 +52,11 @@ Route::middleware('auth')->group(function () {
     Route::resource('pelanggaran', PelanggaranController::class)->except(['create', 'edit', 'show']);
     Route::post('pelanggaran/massal', [PelanggaranController::class, 'storeMassal'])->name('pelanggaran.massal');
     Route::post('pelanggaran/bulk-delete', [PelanggaranController::class, 'bulkDelete'])->name('pelanggaran.bulk-delete');
+
+    // Surat Panggilan
+    Route::get('pelanggaran/surat-panggilan/cetak', [SuratPanggilanController::class, 'cetak'])->name('pelanggaran.surat-panggilan.cetak');
+    Route::get('pelanggaran/surat-panggilan/riwayat', [SuratPanggilanController::class, 'riwayat'])->name('pelanggaran.surat-panggilan.riwayat');
+    Route::get('pelanggaran/surat-panggilan/{suratPanggilan}/cetak-ulang', [SuratPanggilanController::class, 'cetakUlang'])->name('pelanggaran.surat-panggilan.cetak-ulang');
     // Pembinaan
     Route::resource('pembinaan', PembinaanController::class)->except(['show', 'create', 'edit', 'store']);
     Route::post('pembinaan/bulk-delete', [PembinaanController::class, 'bulkDelete'])->name('pembinaan.bulk-delete');

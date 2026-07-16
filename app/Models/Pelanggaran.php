@@ -4,6 +4,7 @@ namespace App\Models;
 use App\Traits\Auditable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Pelanggaran extends Model
 {
@@ -47,6 +48,16 @@ class Pelanggaran extends Model
     public function petugas()
     {
         return $this->belongsTo(Petugas::class);
+    }
+
+    public function suratPanggilan(): BelongsToMany
+    {
+        return $this->belongsToMany(SuratPanggilan::class, 'pelanggaran_surat_panggilan', 'pelanggaran_id', 'surat_panggilan_id');
+    }
+
+    public function scopeBelumTercetak($query)
+    {
+        return $query->whereDoesntHave('suratPanggilan');
     }
 
     public function scopeSumberPetugas($query)

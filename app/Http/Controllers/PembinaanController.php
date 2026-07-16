@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StorePembinaanRequest;
 use App\Models\Asrama;
+use App\Models\AuditLog;
 use App\Models\Daerah;
 use App\Models\Pembinaan;
 use App\Models\Santri;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -113,6 +115,14 @@ class PembinaanController extends Controller
     {
         $ids = $request->input('ids', []);
         Pembinaan::whereIn('id', $ids)->delete();
+
+        AuditLog::create([
+            'user_id' => Auth::id(),
+            'user_name' => Auth::user()->name,
+            'aktivitas' => 'menghapus banyak Pembinaan',
+            'model_type' => Pembinaan::class,
+            'data' => ['ids' => $ids, 'count' => count($ids)],
+        ]);
 
         return redirect()->route('pembinaan.index')->with('success', 'Pembinaan berhasil dihapus.');
     }

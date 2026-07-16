@@ -70,9 +70,9 @@
             vertical-align: top;
         }
 
-        .surat-info td:first-child {
+        /* .surat-info td:first-child {
             width: 80px;
-        }
+        } */
 
         .alamat-tujuan {
             margin: 6px 0;
@@ -214,7 +214,7 @@
 
             <div class="alamat-tujuan">
                 <p>Kepada Yth.<br>
-                    <strong>Ketua Kamar Asrama No. {{ $asrama->nomor }}</strong><br>
+                    <strong>Ketua Kamar Asrama {{ $asrama->daerah->nama_daerah }} No. {{ $asrama->nomor }}</strong><br>
                     di Tempat
                 </p>
             </div>

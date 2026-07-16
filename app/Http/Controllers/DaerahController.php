@@ -1,9 +1,11 @@
 <?php
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
 use App\Models\Daerah;
 use App\Http\Requests\StoreDaerahRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Http\RedirectResponse;
@@ -68,6 +70,15 @@ class DaerahController extends Controller
     {
         $ids = $request->input('ids', []);
         Daerah::whereIn('id', $ids)->delete();
+
+        AuditLog::create([
+            'user_id' => Auth::id(),
+            'user_name' => Auth::user()->name,
+            'aktivitas' => 'menghapus banyak Daerah',
+            'model_type' => Daerah::class,
+            'data' => ['ids' => $ids, 'count' => count($ids)],
+        ]);
+
         return redirect()->route('daerah.index')->with('success', 'Daerah berhasil dihapus.');
     }
 }

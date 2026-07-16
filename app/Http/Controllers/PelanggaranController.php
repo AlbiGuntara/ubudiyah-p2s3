@@ -4,11 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StorePelanggaranRequest;
 use App\Models\Asrama;
+use App\Models\AuditLog;
 use App\Models\Daerah;
 use App\Models\DaftarPelanggaran;
 use App\Models\Pelanggaran;
 use App\Models\Pembinaan;
 use App\Models\Santri;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -175,6 +177,14 @@ class PelanggaranController extends Controller
     {
         $ids = $request->input('ids', []);
         Pelanggaran::whereIn('id', $ids)->delete();
+
+        AuditLog::create([
+            'user_id' => Auth::id(),
+            'user_name' => Auth::user()->name,
+            'aktivitas' => 'menghapus banyak Pelanggaran',
+            'model_type' => Pelanggaran::class,
+            'data' => ['ids' => $ids, 'count' => count($ids)],
+        ]);
 
         return redirect()->route('pelanggaran.index')->with('success', 'Pelanggaran berhasil dihapus.');
     }

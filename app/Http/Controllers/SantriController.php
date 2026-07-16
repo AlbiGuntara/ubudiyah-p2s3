@@ -1,10 +1,12 @@
 <?php
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
 use App\Models\Santri;
 use App\Models\Daerah;
 use App\Models\Asrama;
 use App\Http\Requests\StoreSantriRequest;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -119,6 +121,15 @@ class SantriController extends Controller
     {
         $ids = $request->input('ids', []);
         Santri::whereIn('id', $ids)->delete();
+
+        AuditLog::create([
+            'user_id' => Auth::id(),
+            'user_name' => Auth::user()->name,
+            'aktivitas' => 'menghapus banyak Santri',
+            'model_type' => Santri::class,
+            'data' => ['ids' => $ids, 'count' => count($ids)],
+        ]);
+
         return redirect()->route('santri.index')->with('success', 'Santri berhasil dihapus.');
     }
 

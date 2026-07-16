@@ -1,9 +1,11 @@
 <?php
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
 use App\Models\User;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
+use Illuminate\Support\Facades\Auth;
 use Spatie\Permission\Models\Role;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -100,6 +102,15 @@ class UserController extends Controller
         }
 
         User::whereIn('id', $ids)->delete();
+
+        AuditLog::create([
+            'user_id' => Auth::id(),
+            'user_name' => Auth::user()->name,
+            'aktivitas' => 'menghapus banyak User',
+            'model_type' => User::class,
+            'data' => ['ids' => $ids, 'count' => count($ids)],
+        ]);
+
         return redirect()->route('users.index')->with('success', 'User berhasil dihapus.');
     }
 }

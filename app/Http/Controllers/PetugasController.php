@@ -1,10 +1,12 @@
 <?php
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
 use App\Models\Petugas;
 use App\Models\Daerah;
 use App\Models\Asrama;
 use App\Http\Requests\StorePetugasRequest;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -103,6 +105,15 @@ class PetugasController extends Controller
             }
         }
         Petugas::whereIn('id', $ids)->delete();
+
+        AuditLog::create([
+            'user_id' => Auth::id(),
+            'user_name' => Auth::user()->name,
+            'aktivitas' => 'menghapus banyak Petugas',
+            'model_type' => Petugas::class,
+            'data' => ['ids' => $ids, 'count' => count($ids)],
+        ]);
+
         return redirect()->route('petugas.index')->with('success', 'Petugas berhasil dihapus.');
     }
 }

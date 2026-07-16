@@ -2,8 +2,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Asrama;
+use App\Models\AuditLog;
 use App\Models\Daerah;
 use App\Http\Requests\StoreAsramaRequest;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Http\RedirectResponse;
@@ -80,6 +82,15 @@ class AsramaController extends Controller
     {
         $ids = $request->input('ids', []);
         Asrama::whereIn('id', $ids)->delete();
+
+        AuditLog::create([
+            'user_id' => Auth::id(),
+            'user_name' => Auth::user()->name,
+            'aktivitas' => 'menghapus banyak Asrama',
+            'model_type' => Asrama::class,
+            'data' => ['ids' => $ids, 'count' => count($ids)],
+        ]);
+
         return redirect()->route('asrama.index')->with('success', 'Asrama berhasil dihapus.');
     }
 }

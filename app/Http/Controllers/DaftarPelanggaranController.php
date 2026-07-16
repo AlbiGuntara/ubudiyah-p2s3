@@ -1,9 +1,11 @@
 <?php
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
 use App\Models\DaftarPelanggaran;
 use App\Http\Requests\StoreDaftarPelanggaranRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Http\RedirectResponse;
@@ -65,6 +67,15 @@ class DaftarPelanggaranController extends Controller
     {
         $ids = $request->input('ids', []);
         DaftarPelanggaran::whereIn('id', $ids)->delete();
+
+        AuditLog::create([
+            'user_id' => Auth::id(),
+            'user_name' => Auth::user()->name,
+            'aktivitas' => 'menghapus banyak DaftarPelanggaran',
+            'model_type' => DaftarPelanggaran::class,
+            'data' => ['ids' => $ids, 'count' => count($ids)],
+        ]);
+
         return redirect()->route('daftar-pelanggaran.index')->with('success', 'Jenis pelanggaran berhasil dihapus.');
     }
 }

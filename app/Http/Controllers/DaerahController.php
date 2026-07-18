@@ -51,19 +51,19 @@ class DaerahController extends Controller
     public function store(StoreDaerahRequest $request): RedirectResponse
     {
         $daerah = Daerah::create($request->validated());
-        return redirect()->route('daerah.index')->with('success', 'Daerah berhasil ditambahkan.');
+        return redirect()->back()->with('success', 'Daerah berhasil ditambahkan.');
     }
 
     public function update(StoreDaerahRequest $request, Daerah $daerah): RedirectResponse
     {
         $daerah->update($request->validated());
-        return redirect()->route('daerah.index')->with('success', 'Daerah berhasil diubah.');
+        return redirect()->back()->with('success', 'Daerah berhasil diubah.');
     }
 
     public function destroy(Daerah $daerah): RedirectResponse
     {
         $daerah->delete();
-        return redirect()->route('daerah.index')->with('success', 'Daerah berhasil dihapus.');
+        return redirect()->back()->with('success', 'Daerah berhasil dihapus.');
     }
 
     public function bulkDelete(Request $request): RedirectResponse
@@ -79,6 +79,6 @@ class DaerahController extends Controller
             'data' => ['ids' => $ids, 'count' => count($ids)],
         ]);
 
-        return redirect()->route('daerah.index')->with('success', 'Daerah berhasil dihapus.');
+        return redirect()->back()->with('success', 'Daerah berhasil dihapus.');
     }
 }

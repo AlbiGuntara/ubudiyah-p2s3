@@ -62,7 +62,7 @@ class PetugasController extends Controller
 
         Petugas::create($data);
 
-        return redirect()->route('petugas.index')->with('success', 'Petugas berhasil ditambahkan.');
+        return redirect()->back()->with('success', 'Petugas berhasil ditambahkan.');
     }
 
     public function update(StorePetugasRequest $request, Petugas $petugas): RedirectResponse
@@ -82,7 +82,7 @@ class PetugasController extends Controller
 
         $petugas->update($data);
 
-        return redirect()->route('petugas.index')->with('success', 'Petugas berhasil diubah.');
+        return redirect()->back()->with('success', 'Petugas berhasil diubah.');
     }
 
     public function destroy(Petugas $petugas): RedirectResponse
@@ -92,7 +92,7 @@ class PetugasController extends Controller
         }
         $petugas->delete();
 
-        return redirect()->route('petugas.index')->with('success', 'Petugas berhasil dihapus.');
+        return redirect()->back()->with('success', 'Petugas berhasil dihapus.');
     }
 
     public function bulkDelete(Request $request): RedirectResponse
@@ -114,6 +114,6 @@ class PetugasController extends Controller
             'data' => ['ids' => $ids, 'count' => count($ids)],
         ]);
 
-        return redirect()->route('petugas.index')->with('success', 'Petugas berhasil dihapus.');
+        return redirect()->back()->with('success', 'Petugas berhasil dihapus.');
     }
 }

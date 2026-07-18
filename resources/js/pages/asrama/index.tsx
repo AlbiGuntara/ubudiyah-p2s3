@@ -9,13 +9,13 @@ import { DataTable, type Column } from '@/components/shared/data-table';
 import { Edit2, Trash2, Plus, Building2 } from 'lucide-react';
 
 export default function AsramaIndex() {
-    const { asrama, daerah, filters, errors } = usePage<any>().props;
-    const [perPage, setPerPage] = useState(10);
+    const { asrama, daerah, filters, errors, per_page, sort_column, sort_direction } = usePage<any>().props;
+    const [perPage, setPerPage] = useState(parseInt(per_page) || 10);
     const [showModal, setShowModal] = useState(false);
     const [editing, setEditing] = useState<any>(null);
     const [filterDaerah, setFilterDaerah] = useState(filters?.daerah_id || '');
-    const [sortColumn, setSortColumn] = useState('');
-    const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | 'none'>('none');
+    const [sortColumn, setSortColumn] = useState(sort_column || '');
+    const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | 'none'>((sort_direction as any) || 'none');
     const [selectedIds, setSelectedIds] = useState<(string | number)[]>([]);
 
     const [form, setForm] = useState({ daerah_id: '', nomor: '' });

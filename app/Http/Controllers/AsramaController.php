@@ -56,26 +56,26 @@ class AsramaController extends Controller
         return Inertia::render('asrama/index', [
             'asrama' => $asrama,
             'daerah' => $daerah,
-            'filters' => $request->only(['daerah_id']),
+            'filters' => $request->only(['daerah_id', 'per_page', 'sort_column', 'sort_direction']),
         ]);
     }
 
     public function store(StoreAsramaRequest $request): RedirectResponse
     {
         Asrama::create($request->validated());
-        return redirect()->route('asrama.index')->with('success', 'Asrama berhasil ditambahkan.');
+        return redirect()->back()->with('success', 'Asrama berhasil ditambahkan.');
     }
 
     public function update(StoreAsramaRequest $request, Asrama $asrama): RedirectResponse
     {
         $asrama->update($request->validated());
-        return redirect()->route('asrama.index')->with('success', 'Asrama berhasil diubah.');
+        return redirect()->back()->with('success', 'Asrama berhasil diubah.');
     }
 
     public function destroy(Asrama $asrama): RedirectResponse
     {
         $asrama->delete();
-        return redirect()->route('asrama.index')->with('success', 'Asrama berhasil dihapus.');
+        return redirect()->back()->with('success', 'Asrama berhasil dihapus.');
     }
 
     public function bulkDelete(Request $request): RedirectResponse
@@ -91,6 +91,6 @@ class AsramaController extends Controller
             'data' => ['ids' => $ids, 'count' => count($ids)],
         ]);
 
-        return redirect()->route('asrama.index')->with('success', 'Asrama berhasil dihapus.');
+        return redirect()->back()->with('success', 'Asrama berhasil dihapus.');
     }
 }

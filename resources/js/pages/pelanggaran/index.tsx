@@ -18,22 +18,25 @@ export default function PelanggaranIndex() {
         daftarPelanggaran,
         filters,
         auth,
+        per_page,
+        sort_column,
+        sort_direction,
     } = usePage<any>().props;
     const userPermissions: string[] = auth?.user?.permissions || [];
     const canCetakSuratPanggilan = userPermissions.includes(
         'cetak_surat_panggilan',
     );
-    const [perPage, setPerPage] = useState(15);
+    const [perPage, setPerPage] = useState(parseInt(per_page) || 15);
     const [showModal, setShowModal] = useState(false);
     const [editing, setEditing] = useState<any>(null);
     const [filterSumber, setFilterSumber] = useState(filters?.sumber || '');
     const [filterDaerah, setFilterDaerah] = useState(filters?.daerah_id || '');
     const [filterAsrama, setFilterAsrama] = useState(filters?.asrama_id || '');
-    const [filterTanggalMulai, setFilterTanggalMulai] = useState('');
-    const [filterTanggalSelesai, setFilterTanggalSelesai] = useState('');
-    const [sortColumn, setSortColumn] = useState('');
+    const [filterTanggalMulai, setFilterTanggalMulai] = useState(filters?.tanggal_mulai || '');
+    const [filterTanggalSelesai, setFilterTanggalSelesai] = useState(filters?.tanggal_selesai || '');
+    const [sortColumn, setSortColumn] = useState(sort_column || '');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | 'none'>(
-        'none',
+        (sort_direction as 'asc' | 'desc' | 'none') || 'none',
     );
     const [selectedIds, setSelectedIds] = useState<(string | number)[]>([]);
 

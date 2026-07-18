@@ -6,11 +6,11 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Modal } from '@/components/ui/modal';
 import { DataTable, type Column } from '@/components/shared/data-table';
-import { Edit2, Trash2, Plus, Eye, Upload, Camera, X } from 'lucide-react';
+import { Edit2, Trash2, Plus, Eye, Upload, Camera, X, FileText } from 'lucide-react';
 
 export default function SantriIndex() {
-    const { santri, daerah, asrama, filters } = usePage<any>().props;
-    const [perPage, setPerPage] = useState(15);
+    const { santri, daerah, asrama, filters, per_page, sort_column, sort_direction } = usePage<any>().props;
+    const [perPage, setPerPage] = useState(parseInt(per_page) || 15);
     const [showModal, setShowModal] = useState(false);
     const [showImport, setShowImport] = useState(false);
     const [editing, setEditing] = useState<any>(null);
@@ -18,11 +18,12 @@ export default function SantriIndex() {
     const [filterAsrama, setFilterAsrama] = useState(filters?.asrama_id || '');
     const [filterIksass, setFilterIksass] = useState(filters?.iksass || '');
     const [search, setSearch] = useState(filters?.search || '');
-    const [sortColumn, setSortColumn] = useState('');
+    const [sortColumn, setSortColumn] = useState(sort_column || '');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | 'none'>(
-        'none',
+        (sort_direction as 'asc' | 'desc' | 'none') || 'none',
     );
     const [selectedIds, setSelectedIds] = useState<(string | number)[]>([]);
+    const [importFile, setImportFile] = useState<File | null>(null);
 
     const [form, setForm] = useState({
         nama: '',
@@ -168,9 +169,14 @@ export default function SantriIndex() {
 
     const handleImport = (e: React.FormEvent) => {
         e.preventDefault();
-        const formData = new FormData(e.target as HTMLFormElement);
+        if (!importFile) return;
+        const formData = new FormData();
+        formData.append('file', importFile);
         router.post('/santri/import', formData, {
-            onSuccess: () => setShowImport(false),
+            onSuccess: () => {
+                setShowImport(false);
+                setImportFile(null);
+            },
         });
     };
 
@@ -264,7 +270,10 @@ export default function SantriIndex() {
                     <div className="flex gap-2">
                         <Button
                             variant="outline"
-                            onClick={() => setShowImport(true)}
+                            onClick={() => {
+                                setShowImport(true);
+                                setImportFile(null);
+                            }}
                         >
                             <Upload className="h-4 w-4" />
                             Import
@@ -561,27 +570,68 @@ export default function SantriIndex() {
 
             <Modal
                 open={showImport}
-                onClose={() => setShowImport(false)}
+                onClose={() => {
+                    setShowImport(false);
+                    setImportFile(null);
+                }}
                 title="Import Santri"
                 description="Upload file Excel"
             >
                 <form onSubmit={handleImport} className="space-y-4">
-                    <input
-                        type="file"
-                        name="file"
-                        accept=".xlsx,.xls"
-                        required
-                        className="block w-full text-sm"
-                    />
+                    {importFile ? (
+                        <label className="flex cursor-pointer items-center gap-4 rounded-lg border-2 border-solid border-primary/40 bg-primary/5 px-5 py-4 transition hover:bg-primary/10">
+                            <FileText className="h-8 w-8 shrink-0 text-primary" />
+                            <div className="min-w-0 flex-1">
+                                <p className="truncate text-sm font-medium">
+                                    {importFile.name}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                    {(importFile.size / 1024).toFixed(1)} KB — Klik untuk ganti file
+                                </p>
+                            </div>
+                            <input
+                                type="file"
+                                accept=".xlsx,.xls"
+                                className="hidden"
+                                onChange={(e) =>
+                                    setImportFile(e.target.files?.[0] ?? null)
+                                }
+                            />
+                        </label>
+                    ) : (
+                        <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/30 px-6 py-10 transition hover:border-primary/50 hover:bg-muted/50">
+                            <Upload className="mb-2 h-8 w-8 text-muted-foreground/50" />
+                            <span className="text-sm font-medium text-muted-foreground">
+                                Pilih file Excel
+                            </span>
+                            <span className="mt-1 text-xs text-muted-foreground/60">
+                                Format: .xlsx atau .xls
+                            </span>
+                            <input
+                                type="file"
+                                accept=".xlsx,.xls"
+                                required
+                                className="hidden"
+                                onChange={(e) =>
+                                    setImportFile(e.target.files?.[0] ?? null)
+                                }
+                            />
+                        </label>
+                    )}
                     <div className="flex justify-end gap-3 pt-2">
                         <Button
                             variant="outline"
                             type="button"
-                            onClick={() => setShowImport(false)}
+                            onClick={() => {
+                                setShowImport(false);
+                                setImportFile(null);
+                            }}
                         >
                             Batal
                         </Button>
-                        <Button type="submit">Import</Button>
+                        <Button type="submit" disabled={!importFile}>
+                            Import
+                        </Button>
                     </div>
                 </form>
             </Modal>

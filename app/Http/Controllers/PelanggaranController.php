@@ -98,7 +98,7 @@ class PelanggaranController extends Controller
             'asrama' => $asrama,
             'daerah' => $daerah,
             'daftarPelanggaran' => $daftarPelanggaran,
-            'filters' => $request->only(['tanggal', 'tanggal_mulai', 'tanggal_selesai', 'daerah_id', 'asrama_id', 'iksass', 'petugas_id', 'sumber']),
+            'filters' => $request->only(['tanggal', 'tanggal_mulai', 'tanggal_selesai', 'daerah_id', 'asrama_id', 'iksass', 'petugas_id', 'sumber', 'per_page', 'sort_column', 'sort_direction']),
         ]);
     }
 
@@ -160,7 +160,7 @@ class PelanggaranController extends Controller
             $this->syncPembinaan((int) $data['santri_id']);
         }
 
-        return redirect()->route('pelanggaran.index')->with('success', 'Pelanggaran berhasil dicatat.');
+        return redirect()->back()->with('success', 'Pelanggaran berhasil dicatat.');
     }
 
     public function update(StorePelanggaranRequest $request, Pelanggaran $pelanggaran): RedirectResponse
@@ -170,7 +170,7 @@ class PelanggaranController extends Controller
         $data['petugas_id'] = $data['petugas_id'] ?? $pelanggaran->petugas_id;
         $pelanggaran->update($data);
 
-        return redirect()->route('pelanggaran.index')->with('success', 'Pelanggaran berhasil diubah.');
+        return redirect()->back()->with('success', 'Pelanggaran berhasil diubah.');
     }
 
     public function bulkDelete(Request $request): RedirectResponse
@@ -186,7 +186,7 @@ class PelanggaranController extends Controller
             'data' => ['ids' => $ids, 'count' => count($ids)],
         ]);
 
-        return redirect()->route('pelanggaran.index')->with('success', 'Pelanggaran berhasil dihapus.');
+        return redirect()->back()->with('success', 'Pelanggaran berhasil dihapus.');
     }
 
     public function destroy(Pelanggaran $pelanggaran): RedirectResponse
@@ -194,7 +194,7 @@ class PelanggaranController extends Controller
         $this->authorize('delete', $pelanggaran);
         $pelanggaran->delete();
 
-        return redirect()->route('pelanggaran.index')->with('success', 'Pelanggaran berhasil dihapus.');
+        return redirect()->back()->with('success', 'Pelanggaran berhasil dihapus.');
     }
 
     private function syncPembinaan(int $santriId): void

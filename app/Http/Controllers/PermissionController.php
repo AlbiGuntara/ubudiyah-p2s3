@@ -29,12 +29,12 @@ class PermissionController extends Controller
 
         Permission::create(['name' => $request->name, 'guard_name' => 'web']);
 
-        return redirect()->route('permissions.index')->with('success', 'Permission berhasil ditambahkan.');
+        return redirect()->back()->with('success', 'Permission berhasil ditambahkan.');
     }
 
     public function destroy(Permission $permission): RedirectResponse
     {
         $permission->delete();
-        return redirect()->route('permissions.index')->with('success', 'Permission berhasil dihapus.');
+        return redirect()->back()->with('success', 'Permission berhasil dihapus.');
     }
 }

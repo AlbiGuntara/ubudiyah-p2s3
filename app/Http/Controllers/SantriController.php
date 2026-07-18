@@ -67,7 +67,7 @@ class SantriController extends Controller
             'santri' => $santri,
             'daerah' => $daerah,
             'asrama' => $asrama,
-            'filters' => $request->only(['daerah_id', 'asrama_id', 'iksass', 'search']),
+            'filters' => $request->only(['daerah_id', 'asrama_id', 'iksass', 'search', 'per_page', 'sort_column', 'sort_direction']),
         ]);
     }
 
@@ -80,7 +80,7 @@ class SantriController extends Controller
         }
 
         Santri::create($data);
-        return redirect()->route('santri.index')->with('success', 'Santri berhasil ditambahkan.');
+        return redirect()->back()->with('success', 'Santri berhasil ditambahkan.');
     }
 
     public function show(Santri $santri): Response
@@ -108,13 +108,13 @@ class SantriController extends Controller
         }
 
         $santri->update($data);
-        return redirect()->route('santri.index')->with('success', 'Santri berhasil diubah.');
+        return redirect()->back()->with('success', 'Santri berhasil diubah.');
     }
 
     public function destroy(Santri $santri): RedirectResponse
     {
         $santri->delete();
-        return redirect()->route('santri.index')->with('success', 'Santri berhasil dihapus.');
+        return redirect()->back()->with('success', 'Santri berhasil dihapus.');
     }
 
     public function bulkDelete(Request $request): RedirectResponse
@@ -130,7 +130,7 @@ class SantriController extends Controller
             'data' => ['ids' => $ids, 'count' => count($ids)],
         ]);
 
-        return redirect()->route('santri.index')->with('success', 'Santri berhasil dihapus.');
+        return redirect()->back()->with('success', 'Santri berhasil dihapus.');
     }
 
     public function import(Request $request): RedirectResponse
@@ -151,9 +151,9 @@ class SantriController extends Controller
             if ($imported > 0) {
                 $message = "Berhasil import {$imported} data.<br>" . $message;
             }
-            return redirect()->route('santri.index')->with('warning', $message);
+            return redirect()->back()->with('warning', $message);
         }
 
-        return redirect()->route('santri.index')->with('success', "Berhasil import {$imported} data santri.");
+        return redirect()->back()->with('success', "Berhasil import {$imported} data santri.");
     }
 }

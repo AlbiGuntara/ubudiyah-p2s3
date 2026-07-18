@@ -9,13 +9,13 @@ import { DataTable, type Column } from '@/components/shared/data-table';
 import { Edit2, Trash2, Plus, Camera } from 'lucide-react';
 
 export default function PetugasIndex() {
-    const { petugas, daerah, asrama } = usePage<any>().props;
-    const [perPage, setPerPage] = useState(10);
+    const { petugas, daerah, asrama, search: searchParam, per_page, sort_column, sort_direction } = usePage<any>().props;
+    const [perPage, setPerPage] = useState(parseInt(per_page) || 10);
     const [showModal, setShowModal] = useState(false);
     const [editing, setEditing] = useState<any>(null);
-    const [search, setSearch] = useState('');
-    const [sortColumn, setSortColumn] = useState('');
-    const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | 'none'>('none');
+    const [search, setSearch] = useState(searchParam || '');
+    const [sortColumn, setSortColumn] = useState(sort_column || '');
+    const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | 'none'>((sort_direction as any) || 'none');
     const [selectedIds, setSelectedIds] = useState<(string | number)[]>([]);
     const [fotoPreview, setFotoPreview] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);

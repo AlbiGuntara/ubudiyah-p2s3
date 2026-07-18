@@ -3,6 +3,7 @@ namespace App\Imports;
 
 use App\Models\Santri;
 use App\Models\Asrama;
+use App\Models\Daerah;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 
@@ -20,6 +21,7 @@ class SantriImport implements ToModel, WithHeadingRow
         $nis = trim($row['nis'] ?? '');
         $iksass = trim($row['iksass'] ?? '');
         $asramaNomor = trim($row['asrama'] ?? '');
+        $daerahInput = trim($row['daerah'] ?? '');
 
         if (empty($nama)) {
             $this->errors[] = "Baris {$this->row}: Nama tidak boleh kosong";
@@ -31,9 +33,29 @@ class SantriImport implements ToModel, WithHeadingRow
             return null;
         }
 
-        $asrama = Asrama::where('nomor', $asramaNomor)->first();
+        $asramaQuery = Asrama::where('nomor', $asramaNomor);
+
+        if (!empty($daerahInput)) {
+            $daerah = Daerah::where('kode', $daerahInput)
+                ->orWhere('nama_daerah', $daerahInput)
+                ->first();
+
+            if (!$daerah) {
+                $this->errors[] = "Baris {$this->row}: Daerah \"{$daerahInput}\" tidak ditemukan";
+                return null;
+            }
+
+            $asramaQuery->where('daerah_id', $daerah->id);
+        }
+
+        $asrama = $asramaQuery->first();
         if (!$asrama) {
-            $this->errors[] = "Baris {$this->row}: Asrama dengan nomor \"{$asramaNomor}\" tidak ditemukan";
+            $msg = "Baris {$this->row}: Asrama dengan nomor \"{$asramaNomor}\"";
+            if (!empty($daerahInput)) {
+                $msg .= " di daerah \"{$daerahInput}\"";
+            }
+            $msg .= " tidak ditemukan";
+            $this->errors[] = $msg;
             return null;
         }
 

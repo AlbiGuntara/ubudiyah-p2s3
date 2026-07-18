@@ -58,7 +58,7 @@ class UserController extends Controller
             $user->assignRole($role);
         }
 
-        return redirect()->route('users.index')->with('success', 'User berhasil ditambahkan.');
+        return redirect()->back()->with('success', 'User berhasil ditambahkan.');
     }
 
     public function update(UpdateUserRequest $request, User $user): RedirectResponse
@@ -78,7 +78,7 @@ class UserController extends Controller
             $user->syncRoles([$role]);
         }
 
-        return redirect()->route('users.index')->with('success', 'User berhasil diubah.');
+        return redirect()->back()->with('success', 'User berhasil diubah.');
     }
 
     public function destroy(User $user): RedirectResponse
@@ -88,7 +88,7 @@ class UserController extends Controller
         }
 
         $user->delete();
-        return redirect()->route('users.index')->with('success', 'User berhasil dihapus.');
+        return redirect()->back()->with('success', 'User berhasil dihapus.');
     }
 
     public function bulkDelete(Request $request): RedirectResponse
@@ -111,6 +111,6 @@ class UserController extends Controller
             'data' => ['ids' => $ids, 'count' => count($ids)],
         ]);
 
-        return redirect()->route('users.index')->with('success', 'User berhasil dihapus.');
+        return redirect()->back()->with('success', 'User berhasil dihapus.');
     }
 }

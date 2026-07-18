@@ -9,13 +9,21 @@ import { DataTable, type Column } from '@/components/shared/data-table';
 import { Edit2, Trash2, Plus } from 'lucide-react';
 
 export default function DaftarPelanggaranIndex() {
-    const { daftarPelanggaran } = usePage<any>().props;
-    const [perPage, setPerPage] = useState(10);
+    const {
+        daftarPelanggaran,
+        search: searchParam,
+        per_page,
+        sort_column,
+        sort_direction,
+    } = usePage<any>().props;
+    const [perPage, setPerPage] = useState(parseInt(per_page) || 10);
     const [showModal, setShowModal] = useState(false);
     const [editing, setEditing] = useState<any>(null);
-    const [search, setSearch] = useState('');
-    const [sortColumn, setSortColumn] = useState('');
-    const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | 'none'>('none');
+    const [search, setSearch] = useState(searchParam || '');
+    const [sortColumn, setSortColumn] = useState(sort_column || '');
+    const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | 'none'>(
+        (sort_direction as any) || 'none',
+    );
     const [selectedIds, setSelectedIds] = useState<(string | number)[]>([]);
     const [form, setForm] = useState({ nama_pelanggaran: '' });
 
@@ -51,30 +59,54 @@ export default function DaftarPelanggaranIndex() {
     };
 
     const bulkDelete = () => {
-        if (confirm(`Yakin ingin menghapus ${selectedIds.length} jenis pelanggaran?`)) {
-            router.post('/daftar-pelanggaran/bulk-delete', { ids: selectedIds }, {
-                onSuccess: () => setSelectedIds([]),
-            });
+        if (
+            confirm(
+                `Yakin ingin menghapus ${selectedIds.length} jenis pelanggaran?`,
+            )
+        ) {
+            router.post(
+                '/daftar-pelanggaran/bulk-delete',
+                { ids: selectedIds },
+                {
+                    onSuccess: () => setSelectedIds([]),
+                },
+            );
         }
     };
 
     const handleSort = (column: string) => {
         let nextDir: 'asc' | 'desc' | 'none' = 'asc';
         if (sortColumn === column) {
-            nextDir = sortDirection === 'none' ? 'asc' : sortDirection === 'asc' ? 'desc' : 'none';
+            nextDir =
+                sortDirection === 'none'
+                    ? 'asc'
+                    : sortDirection === 'asc'
+                      ? 'desc'
+                      : 'none';
         }
         setSortColumn(nextDir === 'none' ? '' : column);
         setSortDirection(nextDir);
-        router.get('/daftar-pelanggaran', {
-            sort_column: nextDir === 'none' ? undefined : column,
-            sort_direction: nextDir === 'none' ? undefined : nextDir,
-            search: search || undefined,
-            per_page: perPage,
-        }, { preserveState: true, preserveScroll: true });
+        router.get(
+            '/daftar-pelanggaran',
+            {
+                sort_column: nextDir === 'none' ? undefined : column,
+                sort_direction: nextDir === 'none' ? undefined : nextDir,
+                search: search || undefined,
+                per_page: perPage,
+            },
+            { preserveState: true, preserveScroll: true },
+        );
     };
 
     const columns: Column<any>[] = [
-        { key: 'no', label: '#', render: (_d: any, idx: number) => <span>{daftarPelanggaran.from + idx}</span>, className: 'text-muted-foreground text-xs w-10' },
+        {
+            key: 'no',
+            label: '#',
+            render: (_d: any, idx: number) => (
+                <span>{daftarPelanggaran.from + idx}</span>
+            ),
+            className: 'text-muted-foreground text-xs w-10',
+        },
         { key: 'nama_pelanggaran', label: 'Nama Pelanggaran', sortable: true },
         {
             key: 'aksi',
@@ -83,10 +115,18 @@ export default function DaftarPelanggaranIndex() {
             className: 'text-right',
             render: (d) => (
                 <div className="flex justify-end gap-2">
-                    <Button variant="ghost" size="sm" onClick={() => openEdit(d)}>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openEdit(d)}
+                    >
                         <Edit2 className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="sm" onClick={() => destroy(d.id)}>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => destroy(d.id)}
+                    >
                         <Trash2 className="h-4 w-4 text-red-500" />
                     </Button>
                 </div>
@@ -100,12 +140,17 @@ export default function DaftarPelanggaranIndex() {
             <div className="space-y-6">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold tracking-tight">Jenis Pelanggaran</h1>
-                        <p className="text-muted-foreground">Kelola daftar jenis pelanggaran ubudiyah</p>
+                        <h1 className="text-2xl font-bold tracking-tight">
+                            Jenis Pelanggaran
+                        </h1>
+                        <p className="text-muted-foreground">
+                            Kelola daftar jenis pelanggaran ubudiyah
+                        </p>
                     </div>
                     <Button onClick={openCreate}>
                         <Plus className="h-4 w-4" />
-                        Tambah Pelanggaran
+                        Tambah{' '}
+                        <span className="hidden md:block">Pelanggaran</span>
                     </Button>
                 </div>
 
@@ -114,11 +159,39 @@ export default function DaftarPelanggaranIndex() {
                     data={daftarPelanggaran.data}
                     meta={daftarPelanggaran}
                     keyExtractor={(d) => d.id}
-                    onPageChange={(page) => router.get('/daftar-pelanggaran', { page, search: search || undefined, sort_column: sortColumn || undefined, sort_direction: sortDirection === 'none' ? undefined : sortDirection, per_page: perPage }, { preserveState: true, preserveScroll: true })}
+                    onPageChange={(page) =>
+                        router.get(
+                            '/daftar-pelanggaran',
+                            {
+                                page,
+                                search: search || undefined,
+                                sort_column: sortColumn || undefined,
+                                sort_direction:
+                                    sortDirection === 'none'
+                                        ? undefined
+                                        : sortDirection,
+                                per_page: perPage,
+                            },
+                            { preserveState: true, preserveScroll: true },
+                        )
+                    }
                     search={search}
                     onSearchChange={(q) => {
                         setSearch(q);
-                        router.get('/daftar-pelanggaran', { search: q || undefined, page: 1, per_page: perPage, sort_column: sortColumn || undefined, sort_direction: sortDirection === 'none' ? undefined : sortDirection }, { preserveState: true, preserveScroll: true });
+                        router.get(
+                            '/daftar-pelanggaran',
+                            {
+                                search: q || undefined,
+                                page: 1,
+                                per_page: perPage,
+                                sort_column: sortColumn || undefined,
+                                sort_direction:
+                                    sortDirection === 'none'
+                                        ? undefined
+                                        : sortDirection,
+                            },
+                            { preserveState: true, preserveScroll: true },
+                        );
                     }}
                     searchPlaceholder="Cari jenis pelanggaran..."
                     sortColumn={sortColumn}
@@ -128,38 +201,73 @@ export default function DaftarPelanggaranIndex() {
                     onPerPageChange={(p) => {
                         setPerPage(p);
                         if (p !== perPage) {
-                            router.get('/daftar-pelanggaran', { per_page: p, page: 1, search: search || undefined, sort_column: sortColumn || undefined, sort_direction: sortDirection === 'none' ? undefined : sortDirection }, { preserveState: true, preserveScroll: true });
+                            router.get(
+                                '/daftar-pelanggaran',
+                                {
+                                    per_page: p,
+                                    page: 1,
+                                    search: search || undefined,
+                                    sort_column: sortColumn || undefined,
+                                    sort_direction:
+                                        sortDirection === 'none'
+                                            ? undefined
+                                            : sortDirection,
+                                },
+                                { preserveState: true, preserveScroll: true },
+                            );
                         }
                     }}
                     onSelectionChange={setSelectedIds}
                     bulkActions={
                         selectedIds.length > 0 && (
-                            <Button variant="destructive" size="sm" onClick={bulkDelete}>
+                            <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={bulkDelete}
+                            >
                                 <Trash2 className="h-4 w-4" />
                                 Hapus ({selectedIds.length})
                             </Button>
                         )
                     }
                 />
-                </div>
+            </div>
 
             <Modal
                 open={showModal}
                 onClose={() => setShowModal(false)}
-                title={editing ? 'Edit Jenis Pelanggaran' : 'Tambah Jenis Pelanggaran'}
+                title={
+                    editing
+                        ? 'Edit Jenis Pelanggaran'
+                        : 'Tambah Jenis Pelanggaran'
+                }
             >
                 <div className="space-y-4">
                     <div className="space-y-2">
-                        <label className="text-sm font-medium">Nama Pelanggaran</label>
+                        <label className="text-sm font-medium">
+                            Nama Pelanggaran
+                        </label>
                         <Input
                             value={form.nama_pelanggaran}
-                            onChange={(e) => setForm({ ...form, nama_pelanggaran: e.target.value })}
+                            onChange={(e) =>
+                                setForm({
+                                    ...form,
+                                    nama_pelanggaran: e.target.value,
+                                })
+                            }
                             placeholder="Contoh: Tidak Jamaah"
                         />
                     </div>
                     <div className="flex justify-end gap-3 pt-2">
-                        <Button variant="outline" onClick={() => setShowModal(false)}>Batal</Button>
-                        <Button onClick={submit}>{editing ? 'Simpan' : 'Tambah'}</Button>
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowModal(false)}
+                        >
+                            Batal
+                        </Button>
+                        <Button onClick={submit}>
+                            {editing ? 'Simpan' : 'Tambah'}
+                        </Button>
                     </div>
                 </div>
             </Modal>

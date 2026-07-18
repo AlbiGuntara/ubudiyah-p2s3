@@ -10,6 +10,7 @@ use App\Models\Pembinaan;
 use App\Models\Santri;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\RedirectResponse;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -85,7 +86,7 @@ class PembinaanController extends Controller
             'santri' => $santri,
             'daerah' => $daerah,
             'asrama' => $asrama,
-            'filters' => $request->only(['search', 'daerah_id', 'asrama_id']),
+            'filters' => $request->only(['search', 'daerah_id', 'asrama_id', 'per_page', 'sort_column', 'sort_direction']),
         ]);
     }
 
@@ -101,14 +102,14 @@ class PembinaanController extends Controller
 
         $pembinaan->update($data);
 
-        return redirect()->route('pembinaan.index')->with('success', 'Pembinaan berhasil diubah.');
+        return redirect()->back()->with('success', 'Pembinaan berhasil diubah.');
     }
 
     public function destroy(Pembinaan $pembinaan): RedirectResponse
     {
         $pembinaan->delete();
 
-        return redirect()->route('pembinaan.index')->with('success', 'Pembinaan berhasil dihapus.');
+        return redirect()->back()->with('success', 'Pembinaan berhasil dihapus.');
     }
 
     public function bulkDelete(Request $request): RedirectResponse
@@ -124,7 +125,7 @@ class PembinaanController extends Controller
             'data' => ['ids' => $ids, 'count' => count($ids)],
         ]);
 
-        return redirect()->route('pembinaan.index')->with('success', 'Pembinaan berhasil dihapus.');
+        return redirect()->back()->with('success', 'Pembinaan berhasil dihapus.');
     }
 
     /**
@@ -140,14 +141,14 @@ class PembinaanController extends Controller
 
         // Cannot setor more than remaining sisa_sanksi
         if ($jumlahSetoran > $pembinaan->sisa_sanksi) {
-            return redirect()->route('pembinaan.index')->with('error', 'Jumlah setoran melebihi sisa sanksi.');
+            return redirect()->back()->with('error', 'Jumlah setoran melebihi sisa sanksi.');
         }
 
         $pembinaan->shalawat_tertulis += $jumlahSetoran;
         $pembinaan->sisa_sanksi = max(0, $pembinaan->sisa_sanksi - $jumlahSetoran);
         $pembinaan->save();
 
-        return redirect()->route('pembinaan.index')->with('success', "Sanksi {$jumlahSetoran} berhasil disetor. Sisa sanksi: {$pembinaan->sisa_sanksi}.");
+        return redirect()->back()->with('success', "Sanksi {$jumlahSetoran} berhasil disetor. Sisa sanksi: {$pembinaan->sisa_sanksi}.");
     }
 
     /**
@@ -169,6 +170,49 @@ class PembinaanController extends Controller
             }
         });
 
-        return redirect()->route('pembinaan.index')->with('success', "Pemutihan berhasil! Semua sisa sanksi dikalikan {$multiplier}.");
+        return redirect()->back()->with('success', "Pemutihan berhasil! Semua sisa sanksi dikalikan {$multiplier}.");
+    }
+
+    public function cetak()
+    {
+        $pembinaans = Pembinaan::with(['santri.asrama.daerah', 'asrama.daerah'])
+            ->where('sisa_sanksi', '>', 0)
+            ->get()
+            ->sortBy(function ($p) {
+                $nama = $p->santri?->nama ?? 'zzz';
+                $asramaNomor = $p->santri?->asrama?->nomor ?? $p->asrama?->nomor ?? 0;
+                $daerahId = $p->santri?->asrama?->daerah_id ?? $p->asrama?->daerah_id ?? 0;
+                return [$daerahId, (int) $asramaNomor, $nama];
+            });
+
+        $groups = [];
+        foreach ($pembinaans as $p) {
+            $daerahId = $p->santri?->asrama?->daerah_id ?? $p->asrama?->daerah_id;
+            $daerah = $p->santri?->asrama?->daerah ?? $p->asrama?->daerah;
+            if (!$daerah) {
+                continue;
+            }
+            if (!isset($groups[$daerahId])) {
+                $groups[$daerahId] = [
+                    'daerah' => $daerah,
+                    'pembinaans' => collect(),
+                ];
+            }
+            $groups[$daerahId]['pembinaans']->push($p);
+        }
+
+        if (empty($groups)) {
+            return redirect()->back()->with('error', 'Tidak ada data pembinaan dengan sisa sanksi.');
+        }
+
+        $pdf = Pdf::loadView('pdf.pembinaan-cetak', [
+            'groups' => $groups,
+            'tanggal_cetak' => now()->format('d/m/Y H:i'),
+            'user' => auth()->user()->name,
+        ]);
+
+        $pdf->setPaper('A4', 'portrait');
+
+        return $pdf->download('pembinaan-ubudiyah-' . now()->format('Y-m-d') . '.pdf');
     }
 }

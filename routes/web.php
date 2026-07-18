@@ -62,6 +62,7 @@ Route::middleware('auth')->group(function () {
     Route::post('pembinaan/bulk-delete', [PembinaanController::class, 'bulkDelete'])->name('pembinaan.bulk-delete');
     Route::post('pembinaan/{pembinaan}/setor-sanksi', [PembinaanController::class, 'setorSanksi'])->name('pembinaan.setor-sanksi');
     Route::post('pembinaan/pemutihan', [PembinaanController::class, 'pemutihan'])->name('pembinaan.pemutihan');
+    Route::get('pembinaan/cetak', [PembinaanController::class, 'cetak'])->name('pembinaan.cetak');
 
     // Laporan
     Route::prefix('laporan')->name('laporan.')->group(function () {

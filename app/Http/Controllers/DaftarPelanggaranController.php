@@ -48,19 +48,19 @@ class DaftarPelanggaranController extends Controller
     public function store(StoreDaftarPelanggaranRequest $request): RedirectResponse
     {
         DaftarPelanggaran::create($request->validated());
-        return redirect()->route('daftar-pelanggaran.index')->with('success', 'Jenis pelanggaran berhasil ditambahkan.');
+        return redirect()->back()->with('success', 'Jenis pelanggaran berhasil ditambahkan.');
     }
 
     public function update(StoreDaftarPelanggaranRequest $request, DaftarPelanggaran $daftarPelanggaran): RedirectResponse
     {
         $daftarPelanggaran->update($request->validated());
-        return redirect()->route('daftar-pelanggaran.index')->with('success', 'Jenis pelanggaran berhasil diubah.');
+        return redirect()->back()->with('success', 'Jenis pelanggaran berhasil diubah.');
     }
 
     public function destroy(DaftarPelanggaran $daftarPelanggaran): RedirectResponse
     {
         $daftarPelanggaran->delete();
-        return redirect()->route('daftar-pelanggaran.index')->with('success', 'Jenis pelanggaran berhasil dihapus.');
+        return redirect()->back()->with('success', 'Jenis pelanggaran berhasil dihapus.');
     }
 
     public function bulkDelete(Request $request): RedirectResponse
@@ -76,6 +76,6 @@ class DaftarPelanggaranController extends Controller
             'data' => ['ids' => $ids, 'count' => count($ids)],
         ]);
 
-        return redirect()->route('daftar-pelanggaran.index')->with('success', 'Jenis pelanggaran berhasil dihapus.');
+        return redirect()->back()->with('success', 'Jenis pelanggaran berhasil dihapus.');
     }
 }

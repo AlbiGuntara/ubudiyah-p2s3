@@ -33,7 +33,7 @@ class RoleController extends Controller
             $role->syncPermissions($request->permissions);
         }
 
-        return redirect()->route('roles.index')->with('success', 'Role berhasil ditambahkan.');
+        return redirect()->back()->with('success', 'Role berhasil ditambahkan.');
     }
 
     public function update(UpdateRoleRequest $request, Role $role): RedirectResponse
@@ -44,7 +44,7 @@ class RoleController extends Controller
             $role->syncPermissions($request->permissions);
         }
 
-        return redirect()->route('roles.index')->with('success', 'Role berhasil diubah.');
+        return redirect()->back()->with('success', 'Role berhasil diubah.');
     }
 
     public function destroy(Role $role): RedirectResponse
@@ -54,6 +54,6 @@ class RoleController extends Controller
         }
 
         $role->delete();
-        return redirect()->route('roles.index')->with('success', 'Role berhasil dihapus.');
+        return redirect()->back()->with('success', 'Role berhasil dihapus.');
     }
 }

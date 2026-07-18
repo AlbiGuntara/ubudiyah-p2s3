@@ -16,13 +16,13 @@ interface Daerah {
 }
 
 export default function DaerahIndex() {
-    const { daerah, errors } = usePage<{ daerah: { data: Daerah[]; current_page: number; last_page: number; total: number; from: number; to: number }; errors: Record<string, string> }>().props;
-    const [perPage, setPerPage] = useState(10);
+    const { daerah, errors, search: searchParam, per_page, sort_column, sort_direction } = usePage<{ daerah: { data: Daerah[]; current_page: number; last_page: number; total: number; from: number; to: number }; errors: Record<string, string>; search?: string; per_page?: string; sort_column?: string; sort_direction?: string }>().props;
+    const [perPage, setPerPage] = useState(parseInt(per_page || '') || 10);
     const [showModal, setShowModal] = useState(false);
     const [editing, setEditing] = useState<Daerah | null>(null);
-    const [search, setSearch] = useState('');
-    const [sortColumn, setSortColumn] = useState('');
-    const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | 'none'>('none');
+    const [search, setSearch] = useState(searchParam || '');
+    const [sortColumn, setSortColumn] = useState(sort_column || '');
+    const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | 'none'>((sort_direction as any) || 'none');
     const [selectedIds, setSelectedIds] = useState<(string | number)[]>([]);
 
     const [form, setForm] = useState({ kode: '', nama_daerah: '' });

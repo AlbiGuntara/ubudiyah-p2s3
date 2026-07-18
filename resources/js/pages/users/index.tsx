@@ -10,13 +10,14 @@ import { Badge } from '@/components/ui/badge';
 import { Edit2, Trash2, Plus, Shield, UserPlus } from 'lucide-react';
 
 export default function UsersIndex() {
-    const { users, roles } = usePage<any>().props;
-    const [perPage, setPerPage] = useState(10);
+    const { users, roles, per_page, sort_column, sort_direction } =
+        usePage<any>().props;
+    const [perPage, setPerPage] = useState(parseInt(per_page) || 10);
     const [showModal, setShowModal] = useState(false);
     const [editing, setEditing] = useState<any>(null);
-    const [sortColumn, setSortColumn] = useState('');
+    const [sortColumn, setSortColumn] = useState(sort_column || '');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | 'none'>(
-        'none',
+        (sort_direction as 'asc' | 'desc' | 'none') || 'none',
     );
     const [selectedIds, setSelectedIds] = useState<(string | number)[]>([]);
 
@@ -184,7 +185,7 @@ export default function UsersIndex() {
                             Kelola pengguna sistem
                         </p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap justify-end gap-2">
                         <Button
                             variant="outline"
                             onClick={() => router.get('/roles')}

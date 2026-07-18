@@ -7,7 +7,7 @@ import { Modal } from '@/components/ui/modal';
 import { Badge } from '@/components/ui/badge';
 import { DataTable, type Column } from '@/components/shared/data-table';
 import { Select } from '@/components/ui/select';
-import { Edit2, Trash2, BookOpen, PlusCircle } from 'lucide-react';
+import { Edit2, Trash2, BookOpen, PlusCircle, Printer } from 'lucide-react';
 
 export default function PembinaanIndex() {
     const {
@@ -16,16 +16,19 @@ export default function PembinaanIndex() {
         asrama,
         filters: initialFilters,
         auth,
+        per_page,
+        sort_column,
+        sort_direction,
     } = usePage<any>().props;
-    const [perPage, setPerPage] = useState(15);
+    const [perPage, setPerPage] = useState(parseInt(per_page) || 15);
     const [showModal, setShowModal] = useState(false);
     const [showSetorModal, setShowSetorModal] = useState(false);
     const [showPemutihanModal, setShowPemutihanModal] = useState(false);
     const [editing, setEditing] = useState<any>(null);
     const [setorTarget, setSetorTarget] = useState<any>(null);
-    const [sortColumn, setSortColumn] = useState('');
+    const [sortColumn, setSortColumn] = useState(sort_column || '');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | 'none'>(
-        'none',
+        (sort_direction as 'asc' | 'desc' | 'none') || 'none',
     );
     const [selectedIds, setSelectedIds] = useState<(string | number)[]>([]);
     const [form, setForm] = useState({ sanksi: 0 });
@@ -247,7 +250,7 @@ export default function PembinaanIndex() {
                         className="inline-flex items-center gap-1"
                     >
                         <BookOpen className="h-4 w-4" />
-                        <span className="hidden sm:inline">Setor</span>
+                        Setor
                     </Button>
                     <Button
                         variant="ghost"
@@ -281,19 +284,29 @@ export default function PembinaanIndex() {
                             Kelola pembinaan dan sanksi santri
                         </p>
                     </div>
-                    {auth?.user?.is_pembina || auth?.user?.is_super_admin ? (
-                        <div className="flex gap-2">
+                    <div className="flex flex-wrap justify-end gap-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                                window.open('/pembinaan/cetak', '_blank')
+                            }
+                        >
+                            <Printer className="h-4 w-4" />
+                            Cetak
+                        </Button>
+                        {auth?.user?.is_pembina ||
+                        auth?.user?.is_super_admin ? (
                             <Button
                                 variant="default"
                                 size="sm"
                                 onClick={openPemutihan}
-                                className="inline-flex items-center gap-1"
                             >
                                 <PlusCircle className="h-4 w-4" />
-                                Lakukan Pemutihan
+                                Pemutihan
                             </Button>
-                        </div>
-                    ) : null}
+                        ) : null}
+                    </div>
                 </div>
 
                 <DataTable

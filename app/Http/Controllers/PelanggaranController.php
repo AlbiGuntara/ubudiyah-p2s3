@@ -58,8 +58,15 @@ class PelanggaranController extends Controller
             $query->where('petugas_id', $request->petugas_id);
         }
 
-        if ($request->filled('sumber')) {
-            $query->where('sumber_pencatatan', $request->sumber);
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('santri', fn ($sq) => $sq->where('nama', 'like', "%{$search}%")
+                    ->orWhere('iksass', 'like', "%{$search}%"))
+                  ->orWhereHas('asrama', fn ($aq) => $aq->where('nomor', 'like', "%{$search}%")
+                      ->orWhereHas('daerah', fn ($dq) => $dq->where('kode', 'like', "%{$search}%")))
+                  ->orWhereHas('daftarPelanggaran', fn ($dpq) => $dpq->where('nama_pelanggaran', 'like', "%{$search}%"));
+            });
         }
 
         $sortColumn = $request->input('sort_column', 'created_at');
@@ -98,7 +105,7 @@ class PelanggaranController extends Controller
             'asrama' => $asrama,
             'daerah' => $daerah,
             'daftarPelanggaran' => $daftarPelanggaran,
-            'filters' => $request->only(['tanggal', 'tanggal_mulai', 'tanggal_selesai', 'daerah_id', 'asrama_id', 'iksass', 'petugas_id', 'sumber', 'per_page', 'sort_column', 'sort_direction']),
+            'filters' => $request->only(['search', 'tanggal', 'tanggal_mulai', 'tanggal_selesai', 'daerah_id', 'asrama_id', 'iksass', 'petugas_id', 'per_page', 'sort_column', 'sort_direction']),
         ]);
     }
 
@@ -176,7 +183,19 @@ class PelanggaranController extends Controller
     public function bulkDelete(Request $request): RedirectResponse
     {
         $ids = $request->input('ids', []);
+
+        $pelanggarans = Pelanggaran::whereIn('id', $ids)->get(['id', 'santri_id', 'asrama_id']);
+        $santriIds = $pelanggarans->whereNotNull('santri_id')->pluck('santri_id')->unique()->values()->toArray();
+        $asramaIds = $pelanggarans->whereNull('santri_id')->pluck('asrama_id')->unique()->values()->toArray();
+
         Pelanggaran::whereIn('id', $ids)->delete();
+
+        foreach ($santriIds as $santriId) {
+            $this->syncPembinaan($santriId);
+        }
+        foreach ($asramaIds as $asramaId) {
+            $this->syncAnonymousPembinaan($asramaId);
+        }
 
         AuditLog::create([
             'user_id' => Auth::id(),
@@ -192,7 +211,17 @@ class PelanggaranController extends Controller
     public function destroy(Pelanggaran $pelanggaran): RedirectResponse
     {
         $this->authorize('delete', $pelanggaran);
+
+        $santriId = $pelanggaran->santri_id;
+        $asramaId = $pelanggaran->asrama_id;
+
         $pelanggaran->delete();
+
+        if ($santriId) {
+            $this->syncPembinaan($santriId);
+        } else {
+            $this->syncAnonymousPembinaan($asramaId);
+        }
 
         return redirect()->back()->with('success', 'Pelanggaran berhasil dihapus.');
     }
@@ -200,17 +229,24 @@ class PelanggaranController extends Controller
     private function syncPembinaan(int $santriId): void
     {
         $totalPelanggaran = Pelanggaran::where('santri_id', $santriId)->count();
+
+        if ($totalPelanggaran === 0) {
+            Pembinaan::where('santri_id', $santriId)->delete();
+            return;
+        }
+
         $sanksi = $totalPelanggaran * 100;
 
         $pembinaan = Pembinaan::firstOrNew(['santri_id' => $santriId]);
         $pembinaan->sanksi = $sanksi;
-        // Only set sisa_sanksi if it's a new record or zero (first time)
         if (! $pembinaan->exists || $pembinaan->sisa_sanksi === 0) {
             $pembinaan->sisa_sanksi = max(0, $sanksi - $pembinaan->shalawat_tertulis);
         }
-        // If sanksi increased, add the difference to sisa_sanksi
         if ($pembinaan->exists && $sanksi > $pembinaan->getOriginal('sanksi')) {
             $pembinaan->sisa_sanksi += ($sanksi - $pembinaan->getOriginal('sanksi'));
+        }
+        if ($pembinaan->exists && $sanksi < $pembinaan->getOriginal('sanksi')) {
+            $pembinaan->sisa_sanksi = max(0, $pembinaan->sisa_sanksi - ($pembinaan->getOriginal('sanksi') - $sanksi));
         }
         $pembinaan->save();
     }
@@ -223,6 +259,12 @@ class PelanggaranController extends Controller
         $totalPelanggaran = Pelanggaran::whereNull('santri_id')
             ->where('asrama_id', $asramaId)
             ->sum('jumlah');
+
+        if ($totalPelanggaran === 0) {
+            Pembinaan::whereNull('santri_id')->where('asrama_id', $asramaId)->delete();
+            return;
+        }
+
         $sanksi = $totalPelanggaran * 100;
 
         $pembinaan = Pembinaan::firstOrNew([
@@ -230,13 +272,14 @@ class PelanggaranController extends Controller
             'asrama_id' => $asramaId,
         ]);
         $pembinaan->sanksi = $sanksi;
-        // Only set sisa_sanksi if it's a new record or zero
         if (! $pembinaan->exists || $pembinaan->sisa_sanksi === 0) {
             $pembinaan->sisa_sanksi = max(0, $sanksi - ($pembinaan->shalawat_tertulis ?? 0));
         }
-        // If sanksi increased, add the difference to sisa_sanksi
         if ($pembinaan->exists && $sanksi > $pembinaan->getOriginal('sanksi')) {
             $pembinaan->sisa_sanksi += ($sanksi - $pembinaan->getOriginal('sanksi'));
+        }
+        if ($pembinaan->exists && $sanksi < $pembinaan->getOriginal('sanksi')) {
+            $pembinaan->sisa_sanksi = max(0, $pembinaan->sisa_sanksi - ($pembinaan->getOriginal('sanksi') - $sanksi));
         }
         $pembinaan->save();
     }

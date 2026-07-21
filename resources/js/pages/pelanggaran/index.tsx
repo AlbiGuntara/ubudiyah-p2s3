@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Modal } from '@/components/ui/modal';
 import { DataTable, type Column } from '@/components/shared/data-table';
-import { Badge } from '@/components/ui/badge';
 import { Edit2, Trash2, Plus, X, Printer, RefreshCw } from 'lucide-react';
 
 export default function PelanggaranIndex() {
@@ -29,11 +28,15 @@ export default function PelanggaranIndex() {
     const [perPage, setPerPage] = useState(parseInt(per_page) || 15);
     const [showModal, setShowModal] = useState(false);
     const [editing, setEditing] = useState<any>(null);
-    const [filterSumber, setFilterSumber] = useState(filters?.sumber || '');
+    const [search, setSearch] = useState(filters?.search || '');
     const [filterDaerah, setFilterDaerah] = useState(filters?.daerah_id || '');
     const [filterAsrama, setFilterAsrama] = useState(filters?.asrama_id || '');
-    const [filterTanggalMulai, setFilterTanggalMulai] = useState(filters?.tanggal_mulai || '');
-    const [filterTanggalSelesai, setFilterTanggalSelesai] = useState(filters?.tanggal_selesai || '');
+    const [filterTanggalMulai, setFilterTanggalMulai] = useState(
+        filters?.tanggal_mulai || '',
+    );
+    const [filterTanggalSelesai, setFilterTanggalSelesai] = useState(
+        filters?.tanggal_selesai || '',
+    );
     const [sortColumn, setSortColumn] = useState(sort_column || '');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | 'none'>(
         (sort_direction as 'asc' | 'desc' | 'none') || 'none',
@@ -72,6 +75,8 @@ export default function PelanggaranIndex() {
         }[]
     >([]);
     const [pendingsantri_id, setPendingSantriId] = useState('');
+    const [pendingSantriSearch, setPendingSantriSearch] = useState('');
+    const [showSantriDropdown, setShowSantriDropdown] = useState(false);
     const [pendingPelanggaranId, setPendingPelanggaranId] = useState('');
     // Anonymous entries (row-based like santri)
     const [nextAnonId, setNextAnonId] = useState(0);
@@ -103,6 +108,14 @@ export default function PelanggaranIndex() {
             (s: any) => String(s.asrama_id) === String(form.asrama_id),
         );
     }, [santri, form.asrama_id]);
+
+    const filteredSantriBySearch = useMemo(() => {
+        if (!pendingSantriSearch) return filteredSantri;
+        const q = pendingSantriSearch.toLowerCase();
+        return filteredSantri.filter((s: any) =>
+            s.nama.toLowerCase().includes(q),
+        );
+    }, [filteredSantri, pendingSantriSearch]);
 
     const openCetakUlang = () => {
         setReprintDaerahId('');
@@ -145,6 +158,8 @@ export default function PelanggaranIndex() {
         setNextSantriId(0);
         setNextAnonId(0);
         setPendingSantriId('');
+        setPendingSantriSearch('');
+        setShowSantriDropdown(false);
         setPendingPelanggaranId('');
         setPendingAnonJumlah('1');
         setPendingAnonPelanggaranId('');
@@ -185,6 +200,8 @@ export default function PelanggaranIndex() {
             ]);
         }
         setPendingSantriId('');
+        setPendingSantriSearch('');
+        setShowSantriDropdown(false);
         setPendingPelanggaranId('');
         setPendingAnonJumlah('1');
         setPendingAnonPelanggaranId('');
@@ -207,6 +224,8 @@ export default function PelanggaranIndex() {
             setNextSantriId(nextSantriId + 1);
         }
         setPendingSantriId('');
+        setPendingSantriSearch('');
+        setShowSantriDropdown(false);
         setPendingPelanggaranId('');
     };
 
@@ -340,11 +359,11 @@ export default function PelanggaranIndex() {
             {
                 sort_column: nextDir === 'none' ? undefined : column,
                 sort_direction: nextDir === 'none' ? undefined : nextDir,
-                sumber: filterSumber || undefined,
                 daerah_id: filterDaerah || undefined,
                 asrama_id: filterAsrama || undefined,
                 tanggal_mulai: filterTanggalMulai || undefined,
                 tanggal_selesai: filterTanggalSelesai || undefined,
+                search: search || undefined,
                 per_page: perPage,
             },
             { preserveState: true, preserveScroll: true },
@@ -397,22 +416,6 @@ export default function PelanggaranIndex() {
             label: 'Pelanggaran',
             sortable: true,
             render: (p) => p.daftar_pelanggaran?.nama_pelanggaran || '-',
-        },
-        {
-            key: 'sumber',
-            label: 'Sumber',
-            render: (p) => (
-                <Badge
-                    variant={
-                        p.sumber_pencatatan === 'petugas'
-                            ? 'success'
-                            : 'warning'
-                    }
-                >
-                    {p.sumber_pencatatan}
-                </Badge>
-            ),
-            hideable: true,
         },
         {
             key: 'aksi',
@@ -504,7 +507,30 @@ export default function PelanggaranIndex() {
                                     sortDirection === 'none'
                                         ? undefined
                                         : sortDirection,
-                                sumber: filterSumber || undefined,
+                                daerah_id: filterDaerah || undefined,
+                                asrama_id: filterAsrama || undefined,
+                                tanggal_mulai: filterTanggalMulai || undefined,
+                                tanggal_selesai:
+                                    filterTanggalSelesai || undefined,
+                                search: search || undefined,
+                                per_page: perPage,
+                            },
+                            { preserveState: true, preserveScroll: true },
+                        )
+                    }
+                    search={search}
+                    onSearchChange={(q) => {
+                        setSearch(q);
+                        router.get(
+                            '/pelanggaran',
+                            {
+                                search: q || undefined,
+                                page: 1,
+                                sort_column: sortColumn || undefined,
+                                sort_direction:
+                                    sortDirection === 'none'
+                                        ? undefined
+                                        : sortDirection,
                                 daerah_id: filterDaerah || undefined,
                                 asrama_id: filterAsrama || undefined,
                                 tanggal_mulai: filterTanggalMulai || undefined,
@@ -513,8 +539,9 @@ export default function PelanggaranIndex() {
                                 per_page: perPage,
                             },
                             { preserveState: true, preserveScroll: true },
-                        )
-                    }
+                        );
+                    }}
+                    searchPlaceholder="Cari nama santri, IKSASS, asrama, atau pelanggaran..."
                     sortColumn={sortColumn}
                     sortDirection={sortDirection}
                     onSort={handleSort}
@@ -532,13 +559,13 @@ export default function PelanggaranIndex() {
                                         sortDirection === 'none'
                                             ? undefined
                                             : sortDirection,
-                                    sumber: filterSumber || undefined,
                                     daerah_id: filterDaerah || undefined,
                                     asrama_id: filterAsrama || undefined,
                                     tanggal_mulai:
                                         filterTanggalMulai || undefined,
                                     tanggal_selesai:
                                         filterTanggalSelesai || undefined,
+                                    search: search || undefined,
                                 },
                                 { preserveState: true, preserveScroll: true },
                             );
@@ -559,23 +586,6 @@ export default function PelanggaranIndex() {
                     }
                     filters={
                         <>
-                            <Select
-                                value={filterSumber}
-                                onChange={(e) => {
-                                    setFilterSumber(e.target.value);
-                                    setFilterDaerah('');
-                                    setFilterAsrama('');
-                                }}
-                                placeholder="Semua Sumber"
-                                options={[
-                                    { value: 'petugas', label: 'Petugas' },
-                                    {
-                                        value: 'ketua_kamar',
-                                        label: 'Ketua Kamar',
-                                    },
-                                ]}
-                                className="min-w-[150px]"
-                            />
                             <Select
                                 value={filterDaerah}
                                 onChange={(e) => {
@@ -635,7 +645,6 @@ export default function PelanggaranIndex() {
                                     router.get(
                                         '/pelanggaran',
                                         {
-                                            sumber: filterSumber || undefined,
                                             daerah_id:
                                                 filterDaerah || undefined,
                                             asrama_id:
@@ -645,6 +654,7 @@ export default function PelanggaranIndex() {
                                             tanggal_selesai:
                                                 filterTanggalSelesai ||
                                                 undefined,
+                                            search: search || undefined,
                                             per_page: perPage,
                                             sort_column:
                                                 sortColumn || undefined,
@@ -838,12 +848,7 @@ export default function PelanggaranIndex() {
 
                     {/* Santri (multi-entry, allow duplicates) */}
                     <div className="space-y-2">
-                        <label className="text-sm font-medium">
-                            Santri{' '}
-                            <span className="text-xs text-muted-foreground">
-                                (satu santri bisa ditambah berkali-kali)
-                            </span>
-                        </label>
+                        <label className="text-sm font-medium">Santri</label>
                         {santriEntries.length > 0 && (
                             <div className="mb-3 space-y-2">
                                 {santriEntries.map((s) => (
@@ -851,7 +856,7 @@ export default function PelanggaranIndex() {
                                         key={s.uid}
                                         className="flex items-center gap-2 rounded-lg border p-2"
                                     >
-                                        <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                                        <span className="min-w-[120px] flex-1 truncate text-sm font-medium">
                                             {s.nama}
                                         </span>
                                         <Select
@@ -870,7 +875,7 @@ export default function PelanggaranIndex() {
                                                 }),
                                             )}
                                             disabled={!!editing}
-                                            className="min-w-[160px]"
+                                            className="min-w-[160px] max-w-[220px]"
                                         />
                                         {!editing && (
                                             <button
@@ -890,21 +895,70 @@ export default function PelanggaranIndex() {
                         {!editing && (
                             <div className="flex flex-col gap-2">
                                 <div className="flex gap-2">
-                                    <Select
-                                        value={pendingsantri_id}
-                                        onChange={(e) =>
-                                            setPendingSantriId(e.target.value)
-                                        }
-                                        placeholder="Pilih Santri"
-                                        options={filteredSantri.map(
-                                            (s: any) => ({
-                                                value: s.id,
-                                                label: s.nama,
-                                            }),
-                                        )}
-                                        disabled={!form.asrama_id}
-                                        className="flex-1"
-                                    />
+                                    <div className="relative min-w-[150px] flex-1">
+                                        <Input
+                                            value={pendingSantriSearch}
+                                            onChange={(e) => {
+                                                setPendingSantriSearch(
+                                                    e.target.value,
+                                                );
+                                                setPendingSantriId('');
+                                                setShowSantriDropdown(true);
+                                            }}
+                                            onFocus={() =>
+                                                setShowSantriDropdown(true)
+                                            }
+                                            onBlur={() =>
+                                                setTimeout(
+                                                    () =>
+                                                        setShowSantriDropdown(
+                                                            false,
+                                                        ),
+                                                    200,
+                                                )
+                                            }
+                                            placeholder="Cari santri..."
+                                            disabled={!form.asrama_id}
+                                        />
+                                        {showSantriDropdown &&
+                                            pendingsantri_id === '' &&
+                                            form.asrama_id && (
+                                                <div className="absolute z-50 mt-1 max-h-48 min-w-max overflow-y-auto rounded-md border bg-popover whitespace-nowrap shadow-md [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                                                    {filteredSantriBySearch.length >
+                                                    0 ? (
+                                                        filteredSantriBySearch.map(
+                                                            (s: any) => (
+                                                                <button
+                                                                    key={s.id}
+                                                                    type="button"
+                                                                    className="flex w-full items-center px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground"
+                                                                    onClick={() => {
+                                                                        setPendingSantriId(
+                                                                            String(
+                                                                                s.id,
+                                                                            ),
+                                                                        );
+                                                                        setPendingSantriSearch(
+                                                                            s.nama,
+                                                                        );
+                                                                        setShowSantriDropdown(
+                                                                            false,
+                                                                        );
+                                                                    }}
+                                                                >
+                                                                    {s.nama}
+                                                                </button>
+                                                            ),
+                                                        )
+                                                    ) : (
+                                                        <p className="px-3 py-2 text-sm text-muted-foreground">
+                                                            Santri tidak
+                                                            ditemukan
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            )}
+                                    </div>
                                     <Select
                                         value={pendingPelanggaranId}
                                         onChange={(e) =>
@@ -919,7 +973,7 @@ export default function PelanggaranIndex() {
                                                 label: d.nama_pelanggaran,
                                             }),
                                         )}
-                                        className="min-w-[160px]"
+                                        className="max-w-[220px] min-w-[160px]"
                                     />
                                     <Button
                                         type="button"

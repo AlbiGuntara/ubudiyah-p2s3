@@ -4,11 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StorePembinaanRequest;
 use App\Models\Asrama;
-use App\Models\AuditLog;
 use App\Models\Daerah;
 use App\Models\Pembinaan;
 use App\Models\Santri;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\RedirectResponse;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
@@ -22,7 +20,6 @@ class PembinaanController extends Controller
         $this->middleware('permission:view_pembinaan', ['only' => ['index']]);
         $this->middleware('permission:create_pembinaan', ['only' => ['store']]);
         $this->middleware('permission:edit_pembinaan', ['only' => ['update']]);
-        $this->middleware('permission:delete_pembinaan', ['only' => ['destroy', 'bulkDelete']]);
         $this->middleware('permission:edit_pembinaan', ['only' => ['setorSanksi']]);
         $this->middleware('role:super_admin|pembina', ['only' => ['pemutihan']]);
     }
@@ -103,29 +100,6 @@ class PembinaanController extends Controller
         $pembinaan->update($data);
 
         return redirect()->back()->with('success', 'Pembinaan berhasil diubah.');
-    }
-
-    public function destroy(Pembinaan $pembinaan): RedirectResponse
-    {
-        $pembinaan->delete();
-
-        return redirect()->back()->with('success', 'Pembinaan berhasil dihapus.');
-    }
-
-    public function bulkDelete(Request $request): RedirectResponse
-    {
-        $ids = $request->input('ids', []);
-        Pembinaan::whereIn('id', $ids)->delete();
-
-        AuditLog::create([
-            'user_id' => Auth::id(),
-            'user_name' => Auth::user()->name,
-            'aktivitas' => 'menghapus banyak Pembinaan',
-            'model_type' => Pembinaan::class,
-            'data' => ['ids' => $ids, 'count' => count($ids)],
-        ]);
-
-        return redirect()->back()->with('success', 'Pembinaan berhasil dihapus.');
     }
 
     /**

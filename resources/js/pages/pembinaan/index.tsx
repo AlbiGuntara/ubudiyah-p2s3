@@ -7,7 +7,7 @@ import { Modal } from '@/components/ui/modal';
 import { Badge } from '@/components/ui/badge';
 import { DataTable, type Column } from '@/components/shared/data-table';
 import { Select } from '@/components/ui/select';
-import { Edit2, Trash2, BookOpen, PlusCircle, Printer } from 'lucide-react';
+import { Edit2, BookOpen, PlusCircle, Printer } from 'lucide-react';
 
 export default function PembinaanIndex() {
     const {
@@ -30,7 +30,6 @@ export default function PembinaanIndex() {
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | 'none'>(
         (sort_direction as 'asc' | 'desc' | 'none') || 'none',
     );
-    const [selectedIds, setSelectedIds] = useState<(string | number)[]>([]);
     const [form, setForm] = useState({ sanksi: 0 });
     const [jumlahSetoran, setJumlahSetoran] = useState('');
     const [multiplier, setMultiplier] = useState('');
@@ -94,24 +93,6 @@ export default function PembinaanIndex() {
                 },
             },
         );
-    };
-
-    const destroy = (id: number) => {
-        if (confirm('Yakin ingin menghapus pembinaan ini?')) {
-            router.delete(`/pembinaan/${id}`);
-        }
-    };
-
-    const bulkDelete = () => {
-        if (confirm(`Yakin ingin menghapus ${selectedIds.length} pembinaan?`)) {
-            router.post(
-                '/pembinaan/bulk-delete',
-                { ids: selectedIds },
-                {
-                    onSuccess: () => setSelectedIds([]),
-                },
-            );
-        }
     };
 
     const handleSort = (column: string) => {
@@ -259,13 +240,6 @@ export default function PembinaanIndex() {
                     >
                         <Edit2 className="h-4 w-4" />
                     </Button>
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => destroy(p.id)}
-                    >
-                        <Trash2 className="h-4 w-4 text-red-500" />
-                    </Button>
                 </div>
             ),
         },
@@ -378,19 +352,6 @@ export default function PembinaanIndex() {
                             );
                         }
                     }}
-                    onSelectionChange={setSelectedIds}
-                    bulkActions={
-                        selectedIds.length > 0 && (
-                            <Button
-                                variant="destructive"
-                                size="sm"
-                                onClick={bulkDelete}
-                            >
-                                <Trash2 className="h-4 w-4" />
-                                Hapus ({selectedIds.length})
-                            </Button>
-                        )
-                    }
                     filters={
                         <>
                             <Select

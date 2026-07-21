@@ -58,8 +58,8 @@ Route::middleware('auth')->group(function () {
     Route::get('pelanggaran/surat-panggilan/riwayat', [SuratPanggilanController::class, 'riwayat'])->name('pelanggaran.surat-panggilan.riwayat');
     Route::get('pelanggaran/surat-panggilan/{suratPanggilan}/cetak-ulang', [SuratPanggilanController::class, 'cetakUlang'])->name('pelanggaran.surat-panggilan.cetak-ulang');
     // Pembinaan
-    Route::resource('pembinaan', PembinaanController::class)->except(['show', 'create', 'edit', 'store']);
-    Route::post('pembinaan/bulk-delete', [PembinaanController::class, 'bulkDelete'])->name('pembinaan.bulk-delete');
+    Route::get('pembinaan', [PembinaanController::class, 'index'])->name('pembinaan.index');
+    Route::put('pembinaan/{pembinaan}', [PembinaanController::class, 'update'])->name('pembinaan.update');
     Route::post('pembinaan/{pembinaan}/setor-sanksi', [PembinaanController::class, 'setorSanksi'])->name('pembinaan.setor-sanksi');
     Route::post('pembinaan/pemutihan', [PembinaanController::class, 'pemutihan'])->name('pembinaan.pemutihan');
     Route::get('pembinaan/cetak', [PembinaanController::class, 'cetak'])->name('pembinaan.cetak');

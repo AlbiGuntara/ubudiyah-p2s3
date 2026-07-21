@@ -72,6 +72,7 @@ export default function PelanggaranIndex() {
             santri_id: number;
             nama: string;
             daftar_pelanggaran_id: string;
+            tanggal: string;
         }[]
     >([]);
     const [pendingsantri_id, setPendingSantriId] = useState('');
@@ -81,7 +82,12 @@ export default function PelanggaranIndex() {
     // Anonymous entries (row-based like santri)
     const [nextAnonId, setNextAnonId] = useState(0);
     const [anonymousEntries, setAnonymousEntries] = useState<
-        { uid: number; jumlah: string; daftar_pelanggaran_id: string }[]
+        {
+            uid: number;
+            jumlah: string;
+            daftar_pelanggaran_id: string;
+            tanggal: string;
+        }[]
     >([]);
     const [pendingAnonJumlah, setPendingAnonJumlah] = useState('1');
     const [pendingAnonPelanggaranId, setPendingAnonPelanggaranId] =
@@ -177,6 +183,7 @@ export default function PelanggaranIndex() {
         });
         const a = asrama.find((a: any) => String(a.id) === String(p.asrama_id));
         setDaerahId(a?.daerah_id ? String(a.daerah_id) : '');
+        const existingTanggal = p.tanggal ? p.tanggal.split('T')[0] : new Date().toISOString().split('T')[0];
         if (p.santri) {
             setNextSantriId(1);
             setSantriEntries([
@@ -185,6 +192,7 @@ export default function PelanggaranIndex() {
                     santri_id: p.santri.id,
                     nama: p.santri.nama,
                     daftar_pelanggaran_id: String(p.daftar_pelanggaran_id),
+                    tanggal: existingTanggal,
                 },
             ]);
         } else {
@@ -196,6 +204,7 @@ export default function PelanggaranIndex() {
                     uid: 0,
                     jumlah: String(p.jumlah),
                     daftar_pelanggaran_id: String(p.daftar_pelanggaran_id),
+                    tanggal: existingTanggal,
                 },
             ]);
         }
@@ -219,6 +228,7 @@ export default function PelanggaranIndex() {
                     santri_id: s.id,
                     nama: s.nama,
                     daftar_pelanggaran_id: pendingPelanggaranId,
+                    tanggal: new Date().toISOString().split('T')[0],
                 },
             ]);
             setNextSantriId(nextSantriId + 1);
@@ -244,6 +254,12 @@ export default function PelanggaranIndex() {
         );
     };
 
+    const updateSantriTanggal = (uid: number, tanggal: string) => {
+        setSantriEntries(
+            santriEntries.map((s) => (s.uid === uid ? { ...s, tanggal } : s)),
+        );
+    };
+
     const addAnonymous = () => {
         if (!pendingAnonJumlah || !pendingAnonPelanggaranId) return;
         const jumlah = parseInt(pendingAnonJumlah);
@@ -254,6 +270,7 @@ export default function PelanggaranIndex() {
                 uid: nextAnonId,
                 jumlah: pendingAnonJumlah,
                 daftar_pelanggaran_id: pendingAnonPelanggaranId,
+                tanggal: new Date().toISOString().split('T')[0],
             },
         ]);
         setNextAnonId(nextAnonId + 1);
@@ -282,6 +299,14 @@ export default function PelanggaranIndex() {
         );
     };
 
+    const updateAnonymousTanggal = (uid: number, tanggal: string) => {
+        setAnonymousEntries(
+            anonymousEntries.map((a) =>
+                a.uid === uid ? { ...a, tanggal } : a,
+            ),
+        );
+    };
+
     const submit = () => {
         if (editing) {
             const entry = santriEntries[0];
@@ -305,15 +330,16 @@ export default function PelanggaranIndex() {
                 santri_pelanggaran: santriEntries.map((s) => ({
                     santri_id: s.santri_id,
                     daftar_pelanggaran_id: s.daftar_pelanggaran_id,
+                    tanggal: s.tanggal,
                 })),
                 anonymous_entries: anonymousEntries.map((a) => ({
                     jumlah: parseInt(a.jumlah),
                     daftar_pelanggaran_id: a.daftar_pelanggaran_id,
+                    tanggal: a.tanggal,
                 })),
                 asrama_id: form.asrama_id,
                 petugas_id: form.petugas_id || null,
                 sumber_pencatatan: form.sumber_pencatatan,
-                tanggal: form.tanggal,
                 keterangan: form.keterangan,
             };
             router.post('/pelanggaran', data, {
@@ -854,40 +880,56 @@ export default function PelanggaranIndex() {
                                 {santriEntries.map((s) => (
                                     <div
                                         key={s.uid}
-                                        className="flex items-center gap-2 rounded-lg border p-2"
+                                        className="space-y-2 rounded-lg border p-2"
                                     >
-                                        <span className="min-w-[120px] flex-1 truncate text-sm font-medium">
-                                            {s.nama}
-                                        </span>
-                                        <Select
-                                            value={s.daftar_pelanggaran_id}
-                                            onChange={(e) =>
-                                                updateSantriPelanggaran(
-                                                    s.uid,
-                                                    e.target.value,
-                                                )
-                                            }
-                                            placeholder="Pilih"
-                                            options={daftarPelanggaran.map(
-                                                (d: any) => ({
-                                                    value: d.id,
-                                                    label: d.nama_pelanggaran,
-                                                }),
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm font-medium">
+                                                {s.nama}
+                                            </span>
+                                            {!editing && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        removeSantri(s.uid)
+                                                    }
+                                                    className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+                                                >
+                                                    <X className="h-4 w-4" />
+                                                </button>
                                             )}
-                                            disabled={!!editing}
-                                            className="min-w-[160px] max-w-[220px]"
-                                        />
-                                        {!editing && (
-                                            <button
-                                                type="button"
-                                                onClick={() =>
-                                                    removeSantri(s.uid)
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Select
+                                                value={s.daftar_pelanggaran_id}
+                                                onChange={(e) =>
+                                                    updateSantriPelanggaran(
+                                                        s.uid,
+                                                        e.target.value,
+                                                    )
                                                 }
-                                                className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
-                                            >
-                                                <X className="h-4 w-4" />
-                                            </button>
-                                        )}
+                                                placeholder="Pilih"
+                                                options={daftarPelanggaran.map(
+                                                    (d: any) => ({
+                                                        value: d.id,
+                                                        label: d.nama_pelanggaran,
+                                                    }),
+                                                )}
+                                                disabled={!!editing}
+                                                className="min-w-[160px] flex-1"
+                                            />
+                                            <Input
+                                                type="date"
+                                                value={s.tanggal}
+                                                onChange={(e) =>
+                                                    updateSantriTanggal(
+                                                        s.uid,
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                disabled={!!editing}
+                                                className="w-[140px] shrink-0"
+                                            />
+                                        </div>
                                     </div>
                                 ))}
                             </div>
@@ -923,7 +965,13 @@ export default function PelanggaranIndex() {
                                         {showSantriDropdown &&
                                             pendingsantri_id === '' &&
                                             form.asrama_id && (
-                                                <div className="absolute z-50 mt-1 max-h-48 min-w-max overflow-y-auto rounded-md border bg-popover whitespace-nowrap shadow-md [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                                                <div
+                                                    className="absolute z-50 mt-1 max-h-48 min-w-max overflow-y-auto rounded-md border bg-popover whitespace-nowrap shadow-md [&::-webkit-scrollbar]:hidden"
+                                                    style={{
+                                                        scrollbarWidth: 'none',
+                                                        msOverflowStyle: 'none',
+                                                    }}
+                                                >
                                                     {filteredSantriBySearch.length >
                                                     0 ? (
                                                         filteredSantriBySearch.map(
@@ -1007,53 +1055,71 @@ export default function PelanggaranIndex() {
                                 {anonymousEntries.map((a) => (
                                     <div
                                         key={a.uid}
-                                        className="flex items-center gap-2 rounded-lg border p-2"
+                                        className="space-y-2 rounded-lg border p-2"
                                     >
-                                        <Input
-                                            type="number"
-                                            min={1}
-                                            value={a.jumlah}
-                                            onChange={(e) =>
-                                                updateAnonymousJumlah(
-                                                    a.uid,
-                                                    e.target.value,
-                                                )
-                                            }
-                                            className="w-20 shrink-0"
-                                            disabled={!!editing}
-                                        />
-                                        <span className="text-xs text-muted-foreground">
-                                            orang
-                                        </span>
-                                        <Select
-                                            value={a.daftar_pelanggaran_id}
-                                            onChange={(e) =>
-                                                updateAnonymousPelanggaran(
-                                                    a.uid,
-                                                    e.target.value,
-                                                )
-                                            }
-                                            placeholder="Jenis Pelanggaran"
-                                            options={daftarPelanggaran.map(
-                                                (d: any) => ({
-                                                    value: d.id,
-                                                    label: d.nama_pelanggaran,
-                                                }),
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <Input
+                                                    type="number"
+                                                    min={1}
+                                                    value={a.jumlah}
+                                                    onChange={(e) =>
+                                                        updateAnonymousJumlah(
+                                                            a.uid,
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                    className="w-16 shrink-0"
+                                                    disabled={!!editing}
+                                                />
+                                                <span className="text-xs text-muted-foreground">
+                                                    orang
+                                                </span>
+                                            </div>
+                                            {!editing && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        removeAnonymous(a.uid)
+                                                    }
+                                                    className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+                                                >
+                                                    <X className="h-4 w-4" />
+                                                </button>
                                             )}
-                                            disabled={!!editing}
-                                            className="min-w-[160px]"
-                                        />
-                                        {!editing && (
-                                            <button
-                                                type="button"
-                                                onClick={() =>
-                                                    removeAnonymous(a.uid)
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Select
+                                                value={a.daftar_pelanggaran_id}
+                                                onChange={(e) =>
+                                                    updateAnonymousPelanggaran(
+                                                        a.uid,
+                                                        e.target.value,
+                                                    )
                                                 }
-                                                className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
-                                            >
-                                                <X className="h-4 w-4" />
-                                            </button>
-                                        )}
+                                                placeholder="Jenis Pelanggaran"
+                                                options={daftarPelanggaran.map(
+                                                    (d: any) => ({
+                                                        value: d.id,
+                                                        label: d.nama_pelanggaran,
+                                                    }),
+                                                )}
+                                                disabled={!!editing}
+                                                className="min-w-[160px] flex-1"
+                                            />
+                                            <Input
+                                                type="date"
+                                                value={a.tanggal}
+                                                onChange={(e) =>
+                                                    updateAnonymousTanggal(
+                                                        a.uid,
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                disabled={!!editing}
+                                                className="w-[140px] shrink-0"
+                                            />
+                                        </div>
                                     </div>
                                 ))}
                             </div>
@@ -1102,21 +1168,23 @@ export default function PelanggaranIndex() {
                         )}
                     </div>
                     <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium">
-                                Tanggal
-                            </label>
-                            <Input
-                                type="date"
-                                value={form.tanggal}
-                                onChange={(e) =>
-                                    setForm({
-                                        ...form,
-                                        tanggal: e.target.value,
-                                    })
-                                }
-                            />
-                        </div>
+                        {editing && (
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">
+                                    Tanggal
+                                </label>
+                                <Input
+                                    type="date"
+                                    value={form.tanggal}
+                                    onChange={(e) =>
+                                        setForm({
+                                            ...form,
+                                            tanggal: e.target.value,
+                                        })
+                                    }
+                                />
+                            </div>
+                        )}
                         <div className="space-y-2">
                             <label className="text-sm font-medium">
                                 Sumber

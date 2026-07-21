@@ -117,7 +117,7 @@ class PelanggaranController extends Controller
         $petugas = auth()->user()?->petugas;
         $petugasId = $petugas?->id ?? $data['petugas_id'] ?? null;
 
-        // Create individual records for each selected santri with their own violation type
+        // Create individual records for each selected santri with their own violation type and date
         if (! empty($santriPelanggaran)) {
             foreach ($santriPelanggaran as $item) {
                 Pelanggaran::create([
@@ -127,7 +127,7 @@ class PelanggaranController extends Controller
                     'petugas_id' => $petugasId,
                     'jumlah' => 1,
                     'sumber_pencatatan' => $data['sumber_pencatatan'],
-                    'tanggal' => $data['tanggal'],
+                    'tanggal' => $item['tanggal'],
                     'keterangan' => $data['keterangan'],
                 ]);
                 $this->syncPembinaan((int) $item['santri_id']);
@@ -149,7 +149,7 @@ class PelanggaranController extends Controller
                         'petugas_id' => $petugasId,
                         'jumlah' => $jumlah,
                         'sumber_pencatatan' => $data['sumber_pencatatan'],
-                        'tanggal' => $data['tanggal'],
+                        'tanggal' => $entry['tanggal'],
                         'keterangan' => $data['keterangan'] ?? 'Tanpa nama',
                     ]);
                 }

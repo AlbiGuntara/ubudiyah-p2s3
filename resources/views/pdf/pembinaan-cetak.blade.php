@@ -165,7 +165,6 @@
                         $santriItem = $santriData['santri'];
                         $asramaItem = $santriData['asrama'];
                         $pelanggarans = $santriData['pelanggarans'];
-                        $rowCount = max($pelanggarans->count(), 1);
                         $totalSanksi = $santriData['total_sanksi'];
 
                         $asramaText = '-';
@@ -191,30 +190,21 @@
                             <td style="text-align: center;"></td>
                         </tr>
                     @else
-                        @foreach ($pelanggarans as $index => $item)
+                        @foreach ($pelanggarans as $item)
                             <tr>
-                                @if ($index === 0)
-                                    <td rowspan="{{ $rowCount }}" style="text-align: center;">{{ $no }}
-                                    </td>
-                                    <td rowspan="{{ $rowCount }}">{{ $santriItem?->nama ?? 'Tanpa Nama' }}</td>
-                                    <td rowspan="{{ $rowCount }}" style="text-align: center;">
-                                        {{ $santriItem?->nis ?? '-' }}</td>
-                                    <td rowspan="{{ $rowCount }}" style="text-align: center;">{{ $asramaText }}
-                                    </td>
-                                    <td rowspan="{{ $rowCount }}" style="text-align: center;">
-                                        {{ $santriItem?->iksass ?? '-' }}</td>
-                                @endif
+                                <td style="text-align: center;">{{ $no }}</td>
+                                <td>{{ $santriItem?->nama ?? 'Tanpa Nama' }}</td>
+                                <td style="text-align: center;">{{ $santriItem?->nis ?? '-' }}</td>
+                                <td style="text-align: center;">{{ $asramaText }}</td>
+                                <td style="text-align: center;">{{ $santriItem?->iksass ?? '-' }}</td>
                                 <td style="white-space: nowrap; text-align: left;">
                                     {{ $item->daftarPelanggaran?->nama_pelanggaran ?? '-' }}</td>
                                 <td style="text-align: center;">
                                     {{ $item->tanggal ? \Carbon\Carbon::parse($item->tanggal)->format('d/m/Y') : '-' }}
                                 </td>
-                                @if ($index === 0)
-                                    <td rowspan="{{ $rowCount }}" style="text-align: center;">
-                                        {{ number_format($totalSanksi) }}</td>
-                                    <td rowspan="{{ $rowCount }}" style="text-align: center;"></td>
-                                    <td rowspan="{{ $rowCount }}" style="text-align: center;"></td>
-                                @endif
+                                <td style="text-align: center;">{{ number_format($totalSanksi) }}</td>
+                                <td style="text-align: center;"></td>
+                                <td style="text-align: center;"></td>
                             </tr>
                         @endforeach
                     @endif

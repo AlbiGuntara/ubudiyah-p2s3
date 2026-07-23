@@ -9,9 +9,10 @@ use App\Models\Daerah;
 use App\Models\Pelanggaran;
 use App\Models\Pembinaan;
 use App\Models\Santri;
-use Illuminate\Http\RedirectResponse;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -149,8 +150,11 @@ class PembinaanController extends Controller
         return redirect()->back()->with('success', "Pemutihan berhasil! Semua sisa sanksi dikalikan {$multiplier}.");
     }
 
-    public function cetak()
+    public function cetak(): \Illuminate\Http\Response|RedirectResponse
     {
+        set_time_limit(0);
+        ini_set('memory_limit', '512M');
+
         $pembinaans = Pembinaan::with(['santri.asrama.daerah', 'asrama.daerah'])
             ->where('sisa_sanksi', '>', 0)
             ->get();
@@ -197,7 +201,7 @@ class PembinaanController extends Controller
                     'santri' => $p->santri,
                     'asrama' => $p->santri?->asrama ?? $p->asrama,
                     'pelanggarans' => $pelanggarans,
-                    'total_sanksi' => $p->sanksi,
+                    'total_sanksi' => $p->sisa_sanksi,
                 ];
             }
         }
@@ -214,6 +218,13 @@ class PembinaanController extends Controller
 
         $pdf->setPaper('F4', 'landscape');
 
+        try {
+            $content = $pdf->output();
+        } catch (\Exception $e) {
+            Log::error('Gagal mencetak laporan pembinaan: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal mencetak laporan pembinaan. Data terlalu besar.');
+        }
+
         AuditLog::create([
             'user_id' => auth()->id(),
             'user_name' => auth()->user()->name,
@@ -226,6 +237,8 @@ class PembinaanController extends Controller
             ],
         ]);
 
-        return $pdf->download('pembinaan-ubudiyah-' . now()->format('Y-m-d') . '.pdf');
+        return response($content, 200)
+            ->header('Content-Type', 'application/pdf')
+            ->header('Content-Disposition', 'attachment; filename="pembinaan-ubudiyah-' . now()->format('Y-m-d') . '.pdf"');
     }
 }

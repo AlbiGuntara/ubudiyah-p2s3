@@ -59,6 +59,9 @@ export default function PelanggaranIndex() {
     const [globalRiwayat, setGlobalRiwayat] = useState<any[]>([]);
     const [loadingGlobalRiwayat, setLoadingGlobalRiwayat] = useState(false);
 
+    const [showPrintModal, setShowPrintModal] = useState(false);
+    const [printDaerahId, setPrintDaerahId] = useState('');
+
     const openRiwayatGlobal = useCallback(async () => {
         setShowRiwayatGlobal(true);
         setLoadingGlobalRiwayat(true);
@@ -541,14 +544,7 @@ export default function PelanggaranIndex() {
                                         <Printer className="h-4 w-4" />
                                         Cetak Ulang
                                     </Button>
-                                    <Button
-                                        onClick={() =>
-                                            window.open(
-                                                '/pelanggaran/surat-panggilan/cetak',
-                                                '_blank',
-                                            )
-                                        }
-                                    >
+                                    <Button onClick={() => setShowPrintModal(true)}>
                                         <Printer className="h-4 w-4" />
                                         Cetak Surat{' '}
                                         <span className="hidden sm:inline">
@@ -566,14 +562,7 @@ export default function PelanggaranIndex() {
                                             </Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
-                                            <DropdownMenuItem
-                                                onClick={() =>
-                                                    window.open(
-                                                        '/pelanggaran/surat-panggilan/cetak',
-                                                        '_blank',
-                                                    )
-                                                }
-                                            >
+                                            <DropdownMenuItem onClick={() => setShowPrintModal(true)}>
                                                 <Printer className="h-4 w-4" />
                                                 Cetak Surat Panggilan
                                             </DropdownMenuItem>
@@ -984,6 +973,65 @@ export default function PelanggaranIndex() {
                             onClick={() => setShowRiwayatGlobal(false)}
                         >
                             Tutup
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
+
+            <Modal
+                open={showPrintModal}
+                onClose={() => {
+                    setShowPrintModal(false);
+                    setPrintDaerahId('');
+                }}
+                title="Cetak Surat Panggilan"
+            >
+                <div className="space-y-4">
+                    <Button
+                        className="w-full"
+                        onClick={() => {
+                            setShowPrintModal(false);
+                            setPrintDaerahId('');
+                            window.open('/pelanggaran/surat-panggilan/cetak', '_blank');
+                        }}
+                    >
+                        <Printer className="h-4 w-4" />
+                        Cetak Semua
+                    </Button>
+
+                    <div className="relative">
+                        <div className="absolute inset-0 flex items-center">
+                            <span className="w-full border-t" />
+                        </div>
+                        <div className="relative flex justify-center text-xs uppercase">
+                            <span className="bg-card px-2 text-muted-foreground">atau</span>
+                        </div>
+                    </div>
+
+                    <div className="space-y-3">
+                        <label className="text-sm font-medium">Cetak Per Daerah</label>
+                        <Select
+                            value={printDaerahId}
+                            onChange={(e) => setPrintDaerahId(e.target.value)}
+                            placeholder="Pilih Daerah"
+                            options={daerah.map((d: any) => ({
+                                value: d.id,
+                                label: d.nama_daerah,
+                            }))}
+                        />
+                        <Button
+                            className="w-full"
+                            disabled={!printDaerahId}
+                            onClick={() => {
+                                if (!printDaerahId) return;
+                                setShowPrintModal(false);
+                                const url = `/pelanggaran/surat-panggilan/cetak?daerah_id=${printDaerahId}`;
+                                window.open(url, '_blank');
+                                setPrintDaerahId('');
+                            }}
+                        >
+                            <Printer className="h-4 w-4" />
+                            Cetak
                         </Button>
                     </div>
                 </div>

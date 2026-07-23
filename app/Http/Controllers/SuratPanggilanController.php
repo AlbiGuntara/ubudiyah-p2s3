@@ -12,6 +12,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class SuratPanggilanController extends Controller
 {
@@ -22,10 +24,17 @@ class SuratPanggilanController extends Controller
 
     public function cetak(Request $request): Response|RedirectResponse
     {
-        $unprintedPelanggaran = Pelanggaran::with(['santri', 'daftarPelanggaran', 'asrama.daerah'])
-            ->belumTercetak()
-            ->get()
-            ->groupBy('asrama_id');
+        set_time_limit(0);
+        ini_set('memory_limit', '512M');
+
+        $query = Pelanggaran::with(['santri', 'daftarPelanggaran', 'asrama.daerah'])
+            ->belumTercetak();
+
+        if ($request->filled('daerah_id')) {
+            $query->whereHas('asrama', fn($q) => $q->where('daerah_id', $request->daerah_id));
+        }
+
+        $unprintedPelanggaran = $query->get()->groupBy('asrama_id');
 
         if ($unprintedPelanggaran->isEmpty()) {
             return redirect()->back()->with('error', 'Tidak ada pelanggaran baru yang belum dicetak.');
@@ -38,13 +47,11 @@ class SuratPanggilanController extends Controller
 
         $printedAt = now();
         $letters = [];
+        $pendingInserts = [];
 
         foreach ($unprintedPelanggaran as $asramaId => $pelanggaranList) {
             $asrama = $asramas->get($asramaId);
-
-            if (!$asrama) {
-                continue;
-            }
+            if (!$asrama) continue;
 
             $count = SuratPanggilan::where('asrama_id', $asramaId)->count() + 1;
             $kodeSurat = sprintf(
@@ -54,21 +61,16 @@ class SuratPanggilanController extends Controller
                 now()->format('m/Y')
             );
 
-            $surat = SuratPanggilan::create([
-                'asrama_id' => $asramaId,
-                'kode_surat' => $kodeSurat,
-                'tanggal_cetak' => now(),
-                'printed_at' => $printedAt,
-                'dicetak_oleh' => auth()->id(),
-            ]);
-
-            $pelanggaranIds = $pelanggaranList->pluck('id')->toArray();
-            $surat->pelanggaran()->attach($pelanggaranIds);
-
             $letters[] = [
-                'surat' => $surat->load('pencetak'),
+                'surat' => (object) ['tanggal_cetak' => $printedAt],
                 'asrama' => $asrama,
                 'pelanggaran' => $pelanggaranList,
+            ];
+
+            $pendingInserts[] = [
+                'asrama_id' => $asramaId,
+                'kode_surat' => $kodeSurat,
+                'pelanggaran_ids' => $pelanggaranList->pluck('id')->toArray(),
             ];
         }
 
@@ -80,20 +82,49 @@ class SuratPanggilanController extends Controller
 
         $pdf->setPaper('A4', 'portrait');
 
-        AuditLog::create([
-            'user_id' => auth()->id(),
-            'user_name' => auth()->user()->name,
-            'aktivitas' => 'mencetak surat panggilan',
-            'model_type' => SuratPanggilan::class,
-            'model_id' => null,
-            'data' => [
-                'jumlah_surat' => count($letters),
-                'jumlah_pelanggaran' => $unprintedPelanggaran->flatten()->count(),
-                'printed_at' => $printedAt->toDateTimeString(),
-            ],
-        ]);
+        try {
+            $content = $pdf->output();
+        } catch (\Exception $e) {
+            Log::error('Gagal mencetak surat panggilan: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal mencetak surat panggilan. Data terlalu besar, coba cetak per daerah.');
+        }
 
-        return $pdf->download('surat-panggilan-ubudiyah-' . now()->format('Y-m-d') . '.pdf');
+        DB::beginTransaction();
+        try {
+            foreach ($pendingInserts as $data) {
+                $surat = SuratPanggilan::create([
+                    'asrama_id' => $data['asrama_id'],
+                    'kode_surat' => $data['kode_surat'],
+                    'tanggal_cetak' => now(),
+                    'printed_at' => $printedAt,
+                    'dicetak_oleh' => auth()->id(),
+                ]);
+                $surat->pelanggaran()->attach($data['pelanggaran_ids']);
+            }
+
+            AuditLog::create([
+                'user_id' => auth()->id(),
+                'user_name' => auth()->user()->name,
+                'aktivitas' => 'mencetak surat panggilan',
+                'model_type' => SuratPanggilan::class,
+                'model_id' => null,
+                'data' => [
+                    'jumlah_surat' => count($pendingInserts),
+                    'jumlah_pelanggaran' => $unprintedPelanggaran->flatten()->count(),
+                    'printed_at' => $printedAt->toDateTimeString(),
+                ],
+            ]);
+
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Gagal menyimpan riwayat cetak: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal menyimpan riwayat cetak. Silakan coba lagi.');
+        }
+
+        return response($content, 200)
+            ->header('Content-Type', 'application/pdf')
+            ->header('Content-Disposition', 'attachment; filename="surat-panggilan-ubudiyah-' . now()->format('Y-m-d') . '.pdf"');
     }
 
     public function riwayat(Request $request): JsonResponse
@@ -118,10 +149,16 @@ class SuratPanggilanController extends Controller
         $suratPanggilan = SuratPanggilan::with(['asrama.daerah', 'pencetak'])
             ->latest('printed_at')
             ->get()
-            ->groupBy(fn ($s) => $s->printed_at->format('Y-m-d H:i:s'))
+            ->groupBy(fn ($s) => $s->printed_at?->format('Y-m-d H:i:s')
+                ?? $s->tanggal_cetak?->format('Y-m-d H:i:s')
+                ?? $s->created_at->format('Y-m-d H:i:s'))
             ->map(fn ($items) => [
-                'printed_at' => $items->first()->printed_at->format('Y-m-d H:i:s'),
-                'tanggal_display' => $items->first()->printed_at->format('d/m/Y H:i'),
+                'printed_at' => $items->first()->printed_at?->format('Y-m-d H:i:s')
+                    ?? $items->first()->tanggal_cetak?->format('Y-m-d H:i:s')
+                    ?? $items->first()->created_at->format('Y-m-d H:i:s'),
+                'tanggal_display' => $items->first()->printed_at?->format('d/m/Y H:i')
+                    ?? $items->first()->tanggal_cetak?->format('d/m/Y H:i')
+                    ?? $items->first()->created_at->format('d/m/Y H:i'),
                 'pencetak' => $items->first()->pencetak?->name,
                 'jumlah_surat' => $items->count(),
                 'jumlah_pelanggaran' => $items->sum(fn ($s) => $s->pelanggaran()->count()),
@@ -164,8 +201,11 @@ class SuratPanggilanController extends Controller
         return response()->json(['success' => true, 'deleted' => $records->count()]);
     }
 
-    public function cetakUlang(SuratPanggilan $suratPanggilan): Response
+    public function cetakUlang(SuratPanggilan $suratPanggilan): Response|RedirectResponse
     {
+        set_time_limit(0);
+        ini_set('memory_limit', '512M');
+
         $suratPanggilan->load([
             'asrama.daerah',
             'pelanggaran.santri',
@@ -189,8 +229,12 @@ class SuratPanggilanController extends Controller
 
         $pdf->setPaper('A4', 'portrait');
 
-        $filename = 'surat-panggilan-ubudiyah-' . $suratPanggilan->kode_surat . '.pdf';
-        $filename = str_replace('/', '-', $filename);
+        try {
+            $content = $pdf->output();
+        } catch (\Exception $e) {
+            Log::error('Gagal mencetak ulang surat panggilan: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal mencetak ulang surat panggilan. Data terlalu besar.');
+        }
 
         AuditLog::create([
             'user_id' => auth()->id(),
@@ -204,6 +248,11 @@ class SuratPanggilanController extends Controller
             ],
         ]);
 
-        return $pdf->download($filename);
+        $filename = 'surat-panggilan-ubudiyah-' . $suratPanggilan->kode_surat . '.pdf';
+        $filename = str_replace('/', '-', $filename);
+
+        return response($content, 200)
+            ->header('Content-Type', 'application/pdf')
+            ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
     }
 }

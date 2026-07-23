@@ -136,18 +136,15 @@
                         $pelanggarans = $santriData['pelanggarans'];
                         $isAnon = $santriData['is_anonymous'] ?? false;
                         $anonSummary = $santriData['anon_summary'] ?? null;
-                        $rowCount = max($pelanggarans->count(), 1);
                     @endphp
 
                     @if ($isAnon)
-                        @foreach ($pelanggarans as $index => $item)
+                        @foreach ($pelanggarans as $item)
                             <tr>
-                                @if ($index === 0)
-                                    <td rowspan="{{ $rowCount }}" style="text-align: center;">{{ $no }}</td>
-                                    <td rowspan="{{ $rowCount }}">{{ $santriNama }}</td>
-                                    <td rowspan="{{ $rowCount }}" style="text-align: center;">{{ $santriNis }}</td>
-                                    <td rowspan="{{ $rowCount }}" style="text-align: center;">{{ $asramaLabel }}</td>
-                                @endif
+                                <td style="text-align: center;">{{ $no }}</td>
+                                <td>{{ $santriNama }}</td>
+                                <td style="text-align: center;">{{ $santriNis }}</td>
+                                <td style="text-align: center;">{{ $asramaLabel }}</td>
                                 <td style="white-space: nowrap; text-align: left;">{{ $item->jumlah }}
                                     {{ $item->daftarPelanggaran?->nama_pelanggaran ?? '-' }}</td>
                                 <td style="text-align: center;">
@@ -165,17 +162,12 @@
                             <td style="text-align: center;">-</td>
                         </tr>
                     @else
-                        @foreach ($pelanggarans as $index => $item)
+                        @foreach ($pelanggarans as $item)
                             <tr>
-                                @if ($index === 0)
-                                    <td rowspan="{{ $rowCount }}" style="text-align: center;">{{ $no }}
-                                    </td>
-                                    <td rowspan="{{ $rowCount }}">{{ $santriNama }}</td>
-                                    <td rowspan="{{ $rowCount }}" style="text-align: center;">{{ $santriNis }}
-                                    </td>
-                                    <td rowspan="{{ $rowCount }}" style="text-align: center;">{{ $asramaLabel }}
-                                    </td>
-                                @endif
+                                <td style="text-align: center;">{{ $no }}</td>
+                                <td>{{ $santriNama }}</td>
+                                <td style="text-align: center;">{{ $santriNis }}</td>
+                                <td style="text-align: center;">{{ $asramaLabel }}</td>
                                 <td style="white-space: nowrap; text-align: left;">
                                     {{ $item->daftarPelanggaran?->nama_pelanggaran ?? '-' }}</td>
                                 <td style="text-align: center;">

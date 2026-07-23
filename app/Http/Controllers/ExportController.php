@@ -6,9 +6,11 @@ use App\Http\Services\LaporanService;
 use App\Models\AuditLog;
 use App\Models\Pelanggaran;
 use App\Models\Pembinaan;
-use Maatwebsite\Excel\Facades\Excel;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Maatwebsite\Excel\Excel as ExcelType;
+use Maatwebsite\Excel\Facades\Excel;
 
 class ExportController extends Controller
 {
@@ -20,6 +22,9 @@ class ExportController extends Controller
 
     public function excelSection(Request $request, string $section)
     {
+        set_time_limit(0);
+        ini_set('memory_limit', '512M');
+
         $valid = ['per_daerah', 'per_asrama', 'per_jenis_pelanggaran', 'per_iksass'];
         if (!in_array($section, $valid)) {
             abort(404);
@@ -43,6 +48,16 @@ class ExportController extends Controller
             $request->tahun
         );
 
+        try {
+            $content = Excel::raw(
+                new \App\Exports\LaporanSingleExport($data, $periode, $section),
+                ExcelType::XLSX
+            );
+        } catch (\Exception $e) {
+            Log::error('Gagal export Excel section: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal mengexport laporan. Data terlalu besar, coba dengan filter yang lebih spesifik.');
+        }
+
         AuditLog::create([
             'user_id' => auth()->id(),
             'user_name' => auth()->user()->name,
@@ -52,14 +67,16 @@ class ExportController extends Controller
             'data' => ['section' => $section, 'periode' => $periode],
         ]);
 
-        return Excel::download(
-            new \App\Exports\LaporanSingleExport($data, $periode, $section),
-            "laporan-{$section}.xlsx"
-        );
+        return response($content, 200)
+            ->header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            ->header('Content-Disposition', 'attachment; filename="laporan-' . $section . '.xlsx"');
     }
 
     public function excelKomprehensif(Request $request)
     {
+        set_time_limit(0);
+        ini_set('memory_limit', '512M');
+
         $data = $this->laporanService->laporanKomprehensif(
             $request->tanggal_mulai,
             $request->tanggal_selesai,
@@ -78,6 +95,16 @@ class ExportController extends Controller
             $request->tahun
         );
 
+        try {
+            $content = Excel::raw(
+                new LaporanExport($data, $periode),
+                ExcelType::XLSX
+            );
+        } catch (\Exception $e) {
+            Log::error('Gagal export Excel komprehensif: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal mengexport laporan. Data terlalu besar, coba dengan filter yang lebih spesifik.');
+        }
+
         AuditLog::create([
             'user_id' => auth()->id(),
             'user_name' => auth()->user()->name,
@@ -87,17 +114,29 @@ class ExportController extends Controller
             'data' => ['periode' => $periode],
         ]);
 
-        return Excel::download(
-            new LaporanExport($data, $periode),
-            'laporan-ubudiyah-p2s3.xlsx'
-        );
+        return response($content, 200)
+            ->header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            ->header('Content-Disposition', 'attachment; filename="laporan-ubudiyah-p2s3.xlsx"');
     }
 
     public function excelBulanan(Request $request)
     {
+        set_time_limit(0);
+        ini_set('memory_limit', '512M');
+
         $bulan = $request->bulan ?? now()->month;
         $tahun = $request->tahun ?? now()->year;
         $data = $this->laporanService->laporanBulanan($bulan, $tahun, $request->daerah_id, $request->asrama_id, $request->iksass);
+
+        try {
+            $content = Excel::raw(
+                new \App\Exports\LaporanLegacyExport($data, 'Laporan Bulanan', "Bulan {$bulan} Tahun {$tahun}"),
+                ExcelType::XLSX
+            );
+        } catch (\Exception $e) {
+            Log::error('Gagal export Excel bulanan: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal mengexport laporan bulanan. Data terlalu besar.');
+        }
 
         AuditLog::create([
             'user_id' => auth()->id(),
@@ -108,16 +147,28 @@ class ExportController extends Controller
             'data' => ['bulan' => $bulan, 'tahun' => $tahun],
         ]);
 
-        return Excel::download(
-            new \App\Exports\LaporanLegacyExport($data, 'Laporan Bulanan', "Bulan {$bulan} Tahun {$tahun}"),
-            'laporan-bulanan.xlsx'
-        );
+        return response($content, 200)
+            ->header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            ->header('Content-Disposition', 'attachment; filename="laporan-bulanan.xlsx"');
     }
 
     public function excelTahunan(Request $request)
     {
+        set_time_limit(0);
+        ini_set('memory_limit', '512M');
+
         $tahun = $request->tahun ?? now()->year;
         $data = $this->laporanService->laporanTahunan($tahun, $request->daerah_id, $request->asrama_id, $request->iksass);
+
+        try {
+            $content = Excel::raw(
+                new \App\Exports\LaporanLegacyExport($data, 'Laporan Tahunan', "Tahun {$tahun}"),
+                ExcelType::XLSX
+            );
+        } catch (\Exception $e) {
+            Log::error('Gagal export Excel tahunan: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal mengexport laporan tahunan. Data terlalu besar.');
+        }
 
         AuditLog::create([
             'user_id' => auth()->id(),
@@ -128,14 +179,16 @@ class ExportController extends Controller
             'data' => ['tahun' => $tahun],
         ]);
 
-        return Excel::download(
-            new \App\Exports\LaporanLegacyExport($data, 'Laporan Tahunan', "Tahun {$tahun}"),
-            'laporan-tahunan.xlsx'
-        );
+        return response($content, 200)
+            ->header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            ->header('Content-Disposition', 'attachment; filename="laporan-tahunan.xlsx"');
     }
 
     public function pdfBulanan(Request $request)
     {
+        set_time_limit(0);
+        ini_set('memory_limit', '512M');
+
         $bulan = $request->bulan ?? now()->month;
         $tahun = $request->tahun ?? now()->year;
         $data = $this->laporanService->laporanBulanan($bulan, $tahun, $request->daerah_id, $request->asrama_id, $request->iksass);
@@ -148,6 +201,13 @@ class ExportController extends Controller
             'user' => auth()->user()->name,
         ]);
 
+        try {
+            $content = $pdf->output();
+        } catch (\Exception $e) {
+            Log::error('Gagal export PDF bulanan: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal mengexport laporan bulanan. Data terlalu besar.');
+        }
+
         AuditLog::create([
             'user_id' => auth()->id(),
             'user_name' => auth()->user()->name,
@@ -157,11 +217,16 @@ class ExportController extends Controller
             'data' => ['bulan' => $bulan, 'tahun' => $tahun],
         ]);
 
-        return $pdf->download('laporan-bulanan.pdf');
+        return response($content, 200)
+            ->header('Content-Type', 'application/pdf')
+            ->header('Content-Disposition', 'attachment; filename="laporan-bulanan.pdf"');
     }
 
     public function pdfTahunan(Request $request)
     {
+        set_time_limit(0);
+        ini_set('memory_limit', '512M');
+
         $tahun = $request->tahun ?? now()->year;
         $data = $this->laporanService->laporanTahunan($tahun, $request->daerah_id, $request->asrama_id, $request->iksass);
 
@@ -173,6 +238,13 @@ class ExportController extends Controller
             'user' => auth()->user()->name,
         ]);
 
+        try {
+            $content = $pdf->output();
+        } catch (\Exception $e) {
+            Log::error('Gagal export PDF tahunan: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal mengexport laporan tahunan. Data terlalu besar.');
+        }
+
         AuditLog::create([
             'user_id' => auth()->id(),
             'user_name' => auth()->user()->name,
@@ -182,11 +254,16 @@ class ExportController extends Controller
             'data' => ['tahun' => $tahun],
         ]);
 
-        return $pdf->download('laporan-tahunan.pdf');
+        return response($content, 200)
+            ->header('Content-Type', 'application/pdf')
+            ->header('Content-Disposition', 'attachment; filename="laporan-tahunan.pdf"');
     }
 
     public function pdfPelanggaranFull()
     {
+        set_time_limit(0);
+        ini_set('memory_limit', '512M');
+
         $pembinaans = Pembinaan::with(['santri.asrama.daerah', 'asrama.daerah'])
             ->where('sisa_sanksi', '>', 0)
             ->get();
@@ -284,6 +361,13 @@ class ExportController extends Controller
 
         $pdf->setPaper([0, 0, 609.45, 935.43], 'portrait');
 
+        try {
+            $content = $pdf->output();
+        } catch (\Exception $e) {
+            Log::error('Gagal export PDF pelanggaran full: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal mengexport laporan pelanggaran. Data terlalu besar.');
+        }
+
         AuditLog::create([
             'user_id' => auth()->id(),
             'user_name' => auth()->user()->name,
@@ -293,7 +377,9 @@ class ExportController extends Controller
             'data' => ['jumlah_daerah' => count($daerahGroups)],
         ]);
 
-        return $pdf->download('export-pelanggaran-full-' . now()->format('Y-m-d') . '.pdf');
+        return response($content, 200)
+            ->header('Content-Type', 'application/pdf')
+            ->header('Content-Disposition', 'attachment; filename="export-pelanggaran-full-' . now()->format('Y-m-d') . '.pdf"');
     }
 
     protected function formatPeriode(?string $tanggalMulai, ?string $tanggalSelesai, $bulan, $tahun): string

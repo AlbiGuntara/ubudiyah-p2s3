@@ -6,10 +6,27 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Modal } from '@/components/ui/modal';
 import { DataTable, type Column } from '@/components/shared/data-table';
-import { Edit2, Trash2, Plus, Eye, Upload, Camera, X, FileText } from 'lucide-react';
+import {
+    Edit2,
+    Trash2,
+    Plus,
+    Eye,
+    Upload,
+    Camera,
+    X,
+    FileText,
+} from 'lucide-react';
 
 export default function SantriIndex() {
-    const { santri, daerah, asrama, filters, per_page, sort_column, sort_direction } = usePage<any>().props;
+    const {
+        santri,
+        daerah,
+        asrama,
+        filters,
+        per_page,
+        sort_column,
+        sort_direction,
+    } = usePage<any>().props;
     const [perPage, setPerPage] = useState(parseInt(per_page) || 15);
     const [showModal, setShowModal] = useState(false);
     const [showImport, setShowImport] = useState(false);
@@ -35,6 +52,8 @@ export default function SantriIndex() {
     });
     const [formDaerah, setFormDaerah] = useState('');
     const [fotoPreview, setFotoPreview] = useState<string | null>(null);
+    const [showMergeConfirm, setShowMergeConfirm] = useState(false);
+    const [mergeExisting, setMergeExisting] = useState<any>(null);
 
     useEffect(() => {
         if (!showModal) {
@@ -100,7 +119,27 @@ export default function SantriIndex() {
         setFotoPreview(null);
     };
 
-    const submit = () => {
+    const submit = async () => {
+        if (form.nis) {
+            try {
+                const excludeId = editing ? editing.id : null;
+                const res = await fetch(
+                    `/santri/cek-nis?nis=${encodeURIComponent(form.nis)}&exclude_id=${excludeId || ''}`,
+                );
+                const data = await res.json();
+                if (data.found) {
+                    setMergeExisting(data.santri);
+                    setShowMergeConfirm(true);
+                    return;
+                }
+            } catch {
+                // proceed normally if check fails
+            }
+        }
+        doSubmit();
+    };
+
+    const doSubmit = (mergeAction?: string, mergeTargetId?: number) => {
         const formData = new FormData();
         formData.append('nama', form.nama);
         formData.append('nis', form.nis || '');
@@ -108,6 +147,10 @@ export default function SantriIndex() {
         formData.append('asrama_id', form.asrama_id);
         if (form.foto) {
             formData.append('foto', form.foto);
+        }
+        if (mergeAction && mergeTargetId) {
+            formData.append('merge_action', mergeAction);
+            formData.append('merge_target_id', String(mergeTargetId));
         }
 
         if (editing) {
@@ -569,6 +612,77 @@ export default function SantriIndex() {
             </Modal>
 
             <Modal
+                open={showMergeConfirm}
+                onClose={() => setShowMergeConfirm(false)}
+                title="NIS Sudah Terdaftar"
+            >
+                <div className="space-y-4">
+                    <p className="text-sm">
+                        NIS <strong>{form.nis}</strong> sudah terdaftar atas
+                        nama <strong>{mergeExisting?.nama}</strong>.
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                        Pilih tindakan penggabungan data:
+                    </p>
+                    <div className="flex flex-col gap-3">
+                        <Button
+                            className="w-full"
+                            onClick={() => {
+                                setShowMergeConfirm(false);
+                                doSubmit(
+                                    editing ? 'keep_other' : 'keep_old',
+                                    mergeExisting.id,
+                                );
+                            }}
+                        >
+                            <span className="flex min-w-0 items-center gap-0">
+                                <span>Gunakan data </span>
+                                <span className="min-w-0 truncate">
+                                    {mergeExisting?.nama}
+                                </span>
+                                <span className="shrink-0">
+                                    {' '}
+                                    & gabung riwayat
+                                </span>
+                            </span>
+                        </Button>
+                        <Button
+                            variant="outline"
+                            className="w-full"
+                            onClick={() => {
+                                setShowMergeConfirm(false);
+                                doSubmit(
+                                    editing ? undefined : 'keep_new',
+                                    editing ? undefined : mergeExisting.id,
+                                );
+                            }}
+                        >
+                            <span className="flex min-w-0 items-center gap-0">
+                                <span>Gunakan data </span>
+                                <span className="min-w-0 truncate">
+                                    {editing
+                                        ? editing?.nama || 'Santri Saat Ini'
+                                        : form.nama || 'Data Baru'}
+                                </span>
+                                <span className="shrink-0">
+                                    {' '}
+                                    & gabung riwayat
+                                </span>
+                            </span>
+                        </Button>
+                    </div>
+                    <div className="flex justify-end gap-3 pt-2">
+                        <Button
+                            variant="ghost"
+                            onClick={() => setShowMergeConfirm(false)}
+                        >
+                            Batal
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
+
+            <Modal
                 open={showImport}
                 onClose={() => {
                     setShowImport(false);
@@ -586,7 +700,8 @@ export default function SantriIndex() {
                                     {importFile.name}
                                 </p>
                                 <p className="text-xs text-muted-foreground">
-                                    {(importFile.size / 1024).toFixed(1)} KB — Klik untuk ganti file
+                                    {(importFile.size / 1024).toFixed(1)} KB —
+                                    Klik untuk ganti file
                                 </p>
                             </div>
                             <input

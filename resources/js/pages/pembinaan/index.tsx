@@ -255,7 +255,7 @@ export default function PembinaanIndex() {
                             Pembinaan
                         </h1>
                         <p className="text-muted-foreground">
-                            Kelola pembinaan dan sanksi santri
+                            Kelola data pembinaan santri
                         </p>
                     </div>
                     <div className="flex flex-wrap justify-end gap-2">

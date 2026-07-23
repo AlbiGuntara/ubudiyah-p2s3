@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StorePembinaanRequest;
 use App\Models\Asrama;
+use App\Models\AuditLog;
 use App\Models\Daerah;
+use App\Models\Pelanggaran;
 use App\Models\Pembinaan;
 use App\Models\Santri;
 use Illuminate\Http\RedirectResponse;
@@ -151,13 +153,22 @@ class PembinaanController extends Controller
     {
         $pembinaans = Pembinaan::with(['santri.asrama.daerah', 'asrama.daerah'])
             ->where('sisa_sanksi', '>', 0)
+            ->get();
+
+        $santriIds = $pembinaans->whereNotNull('santri_id')->pluck('santri_id')->unique()->values();
+
+        $pelanggaranBySantri = Pelanggaran::with('daftarPelanggaran')
+            ->whereIn('santri_id', $santriIds)
+            ->orderBy('tanggal')
             ->get()
-            ->sortBy(function ($p) {
-                $nama = $p->santri?->nama ?? 'zzz';
-                $asramaNomor = $p->santri?->asrama?->nomor ?? $p->asrama?->nomor ?? 0;
-                $daerahId = $p->santri?->asrama?->daerah_id ?? $p->asrama?->daerah_id ?? 0;
-                return [$daerahId, (int) $asramaNomor, $nama];
-            });
+            ->groupBy('santri_id');
+
+        $pembinaans = $pembinaans->sortBy(function ($p) {
+            $nama = $p->santri?->nama ?? 'zzz';
+            $asramaNomor = $p->santri?->asrama?->nomor ?? $p->asrama?->nomor ?? 0;
+            $daerahId = $p->santri?->asrama?->daerah_id ?? $p->asrama?->daerah_id ?? 0;
+            return [$daerahId, (int) $asramaNomor, $nama];
+        });
 
         $groups = [];
         foreach ($pembinaans as $p) {
@@ -166,13 +177,29 @@ class PembinaanController extends Controller
             if (!$daerah) {
                 continue;
             }
+
+            $santriKey = $p->santri_id ? 'santri_' . $p->santri_id : 'anon_' . $p->asrama_id;
+
             if (!isset($groups[$daerahId])) {
                 $groups[$daerahId] = [
                     'daerah' => $daerah,
-                    'pembinaans' => collect(),
+                    'santri' => [],
                 ];
             }
-            $groups[$daerahId]['pembinaans']->push($p);
+
+            if (!isset($groups[$daerahId]['santri'][$santriKey])) {
+                $pelanggarans = collect();
+                if ($p->santri_id && isset($pelanggaranBySantri[$p->santri_id])) {
+                    $pelanggarans = $pelanggaranBySantri[$p->santri_id];
+                }
+
+                $groups[$daerahId]['santri'][$santriKey] = [
+                    'santri' => $p->santri,
+                    'asrama' => $p->santri?->asrama ?? $p->asrama,
+                    'pelanggarans' => $pelanggarans,
+                    'total_sanksi' => $p->sanksi,
+                ];
+            }
         }
 
         if (empty($groups)) {
@@ -185,7 +212,19 @@ class PembinaanController extends Controller
             'user' => auth()->user()->name,
         ]);
 
-        $pdf->setPaper('A4', 'portrait');
+        $pdf->setPaper('F4', 'landscape');
+
+        AuditLog::create([
+            'user_id' => auth()->id(),
+            'user_name' => auth()->user()->name,
+            'aktivitas' => 'mencetak laporan pembinaan',
+            'model_type' => Pembinaan::class,
+            'model_id' => null,
+            'data' => [
+                'jumlah_pembinaan' => $pembinaans->count(),
+                'jumlah_daerah' => count($groups),
+            ],
+        ]);
 
         return $pdf->download('pembinaan-ubudiyah-' . now()->format('Y-m-d') . '.pdf');
     }

@@ -6,7 +6,13 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Modal } from '@/components/ui/modal';
 import { DataTable, type Column } from '@/components/shared/data-table';
-import { Edit2, Trash2, Plus, X, Printer, RefreshCw } from 'lucide-react';
+import { Edit2, Trash2, Plus, X, Printer, RefreshCw, ChevronDown } from 'lucide-react';
+import {
+    DropdownMenu,
+    DropdownMenuTrigger,
+    DropdownMenuContent,
+    DropdownMenuItem,
+} from '@/components/ui/dropdown-menu';
 
 export default function PelanggaranIndex() {
     const {
@@ -48,6 +54,41 @@ export default function PelanggaranIndex() {
     const [reprintAsramaId, setReprintAsramaId] = useState('');
     const [reprintRiwayat, setReprintRiwayat] = useState<any[]>([]);
     const [loadingRiwayat, setLoadingRiwayat] = useState(false);
+
+    const [showRiwayatGlobal, setShowRiwayatGlobal] = useState(false);
+    const [globalRiwayat, setGlobalRiwayat] = useState<any[]>([]);
+    const [loadingGlobalRiwayat, setLoadingGlobalRiwayat] = useState(false);
+
+    const openRiwayatGlobal = useCallback(async () => {
+        setShowRiwayatGlobal(true);
+        setLoadingGlobalRiwayat(true);
+        try {
+            const res = await fetch('/pelanggaran/surat-panggilan/riwayat-global');
+            const data = await res.json();
+            setGlobalRiwayat(data);
+        } catch {
+            setGlobalRiwayat([]);
+        } finally {
+            setLoadingGlobalRiwayat(false);
+        }
+    }, []);
+
+    const hapusRiwayat = useCallback(async (printedAt: string) => {
+        if (!confirm('Yakin ingin menghapus sesi cetak ini? Semua surat dalam sesi ini akan dihapus dan pelanggaran akan kembali ke daftar cetak.')) return;
+        try {
+            const res = await fetch('/pelanggaran/surat-panggilan/delete-session', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': (window as any).csrfToken || '',
+                },
+                body: JSON.stringify({ printed_at: printedAt }),
+            });
+            if (res.ok) {
+                setGlobalRiwayat((prev) => prev.filter((r) => r.printed_at !== printedAt));
+            }
+        } catch {}
+    }, []);
 
     const filteredReprintAsrama = useMemo(() => {
         if (!reprintDaerahId) return [];
@@ -485,27 +526,68 @@ export default function PelanggaranIndex() {
                     <div className="flex flex-wrap justify-end gap-2">
                         {canCetakSuratPanggilan && (
                             <>
-                                <Button
-                                    variant="outline"
-                                    onClick={openCetakUlang}
-                                >
-                                    <RefreshCw className="h-4 w-4" />
-                                    Cetak Ulang
-                                </Button>
-                                <Button
-                                    onClick={() =>
-                                        window.open(
-                                            '/pelanggaran/surat-panggilan/cetak',
-                                            '_blank',
-                                        )
-                                    }
-                                >
-                                    <Printer className="h-4 w-4" />
-                                    Cetak Surat{' '}
-                                    <span className="hidden sm:inline">
-                                        Panggilan
-                                    </span>
-                                </Button>
+                                <div className="hidden sm:flex sm:gap-2">
+                                    <Button
+                                        variant="outline"
+                                        onClick={openRiwayatGlobal}
+                                    >
+                                        <RefreshCw className="h-4 w-4" />
+                                        Riwayat Cetak
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        onClick={openCetakUlang}
+                                    >
+                                        <Printer className="h-4 w-4" />
+                                        Cetak Ulang
+                                    </Button>
+                                    <Button
+                                        onClick={() =>
+                                            window.open(
+                                                '/pelanggaran/surat-panggilan/cetak',
+                                                '_blank',
+                                            )
+                                        }
+                                    >
+                                        <Printer className="h-4 w-4" />
+                                        Cetak Surat{' '}
+                                        <span className="hidden sm:inline">
+                                            Panggilan
+                                        </span>
+                                    </Button>
+                                </div>
+                                <div className="sm:hidden">
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="outline">
+                                                <Printer className="h-4 w-4" />
+                                                Cetak
+                                                <ChevronDown className="h-4 w-4" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            <DropdownMenuItem
+                                                onClick={() =>
+                                                    window.open(
+                                                        '/pelanggaran/surat-panggilan/cetak',
+                                                        '_blank',
+                                                    )
+                                                }
+                                            >
+                                                <Printer className="h-4 w-4" />
+                                                Cetak Surat Panggilan
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={openCetakUlang}>
+                                                <Printer className="h-4 w-4" />
+                                                Cetak Ulang
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={openRiwayatGlobal}>
+                                                <RefreshCw className="h-4 w-4" />
+                                                Riwayat Cetak
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </div>
                             </>
                         )}
                         <Button onClick={openCreate}>
@@ -791,10 +873,9 @@ export default function PelanggaranIndex() {
                                 >
                                     <div className="space-y-1">
                                         <p className="text-sm font-medium">
-                                            {item.kode_surat}
+                                            {item.tanggal_cetak}
                                         </p>
                                         <p className="text-xs text-muted-foreground">
-                                            {item.tanggal_cetak} &middot;{' '}
                                             {item.jumlah_pelanggaran}{' '}
                                             pelanggaran &middot; {item.pencetak}
                                         </p>
@@ -820,6 +901,87 @@ export default function PelanggaranIndex() {
                         <Button
                             variant="outline"
                             onClick={() => setShowCetakUlang(false)}
+                        >
+                            Tutup
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
+
+            <Modal
+                open={showRiwayatGlobal}
+                onClose={() => setShowRiwayatGlobal(false)}
+                title="Riwayat Cetak Surat Panggilan"
+            >
+                <div className="space-y-4">
+                    {loadingGlobalRiwayat && (
+                        <div className="flex items-center justify-center py-8">
+                            <svg
+                                className="h-6 w-6 animate-spin text-green-600"
+                                viewBox="0 0 24 24"
+                            >
+                                <circle
+                                    className="opacity-25"
+                                    cx="12"
+                                    cy="12"
+                                    r="10"
+                                    stroke="currentColor"
+                                    strokeWidth="4"
+                                    fill="none"
+                                />
+                                <path
+                                    className="opacity-75"
+                                    fill="currentColor"
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                                />
+                            </svg>
+                        </div>
+                    )}
+
+                    {!loadingGlobalRiwayat && globalRiwayat.length === 0 && (
+                        <p className="py-4 text-center text-sm text-muted-foreground">
+                            Belum ada riwayat cetak.
+                        </p>
+                    )}
+
+                    {!loadingGlobalRiwayat && globalRiwayat.length > 0 && (
+                        <div className="max-h-96 space-y-3 overflow-y-auto">
+                            {globalRiwayat.map((item: any) => (
+                                <div
+                                    key={item.printed_at}
+                                    className="rounded-lg border p-3"
+                                >
+                                    <div className="flex items-start justify-between">
+                                        <div className="min-w-0 flex-1 space-y-1">
+                                            <p className="text-sm font-medium">
+                                                {item.tanggal_display}
+                                            </p>
+                                            <p className="text-xs text-muted-foreground">
+                                                {item.jumlah_surat} surat &middot;{' '}
+                                                {item.jumlah_pelanggaran}{' '}
+                                                pelanggaran &middot; {item.pencetak}
+                                            </p>
+                                        </div>
+                                        <Button
+                                            size="sm"
+                                            variant="destructive"
+                                            className="ml-2 shrink-0"
+                                            onClick={() =>
+                                                hapusRiwayat(item.printed_at)
+                                            }
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    <div className="flex justify-end pt-2">
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowRiwayatGlobal(false)}
                         >
                             Tutup
                         </Button>

@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Asrama;
+use App\Models\AuditLog;
 use App\Models\Pelanggaran;
 use App\Models\SuratPanggilan;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -34,6 +36,7 @@ class SuratPanggilanController extends Controller
             ->get()
             ->keyBy('id');
 
+        $printedAt = now();
         $letters = [];
 
         foreach ($unprintedPelanggaran as $asramaId => $pelanggaranList) {
@@ -55,6 +58,7 @@ class SuratPanggilanController extends Controller
                 'asrama_id' => $asramaId,
                 'kode_surat' => $kodeSurat,
                 'tanggal_cetak' => now(),
+                'printed_at' => $printedAt,
                 'dicetak_oleh' => auth()->id(),
             ]);
 
@@ -70,11 +74,24 @@ class SuratPanggilanController extends Controller
 
         $pdf = Pdf::loadView('pdf.surat-panggilan', [
             'letters' => $letters,
-            'tanggal_cetak' => now()->format('d/m/Y H:i'),
+            'tanggal_cetak' => $printedAt->format('d/m/Y H:i'),
             'user' => auth()->user()->name,
         ]);
 
         $pdf->setPaper('A4', 'portrait');
+
+        AuditLog::create([
+            'user_id' => auth()->id(),
+            'user_name' => auth()->user()->name,
+            'aktivitas' => 'mencetak surat panggilan',
+            'model_type' => SuratPanggilan::class,
+            'model_id' => null,
+            'data' => [
+                'jumlah_surat' => count($letters),
+                'jumlah_pelanggaran' => $unprintedPelanggaran->flatten()->count(),
+                'printed_at' => $printedAt->toDateTimeString(),
+            ],
+        ]);
 
         return $pdf->download('surat-panggilan-ubudiyah-' . now()->format('Y-m-d') . '.pdf');
     }
@@ -88,12 +105,63 @@ class SuratPanggilanController extends Controller
             ->map(fn ($s) => [
                 'id' => $s->id,
                 'kode_surat' => $s->kode_surat,
-                'tanggal_cetak' => $s->tanggal_cetak->format('d/m/Y'),
+                'tanggal_cetak' => $s->tanggal_cetak->format('d/m/Y H:i'),
                 'jumlah_pelanggaran' => $s->pelanggaran()->count(),
                 'pencetak' => $s->pencetak?->name,
             ]);
 
         return response()->json($suratPanggilan);
+    }
+
+    public function riwayatGlobal(): JsonResponse
+    {
+        $suratPanggilan = SuratPanggilan::with(['asrama.daerah', 'pencetak'])
+            ->latest('printed_at')
+            ->get()
+            ->groupBy(fn ($s) => $s->printed_at->format('Y-m-d H:i:s'))
+            ->map(fn ($items) => [
+                'printed_at' => $items->first()->printed_at->format('Y-m-d H:i:s'),
+                'tanggal_display' => $items->first()->printed_at->format('d/m/Y H:i'),
+                'pencetak' => $items->first()->pencetak?->name,
+                'jumlah_surat' => $items->count(),
+                'jumlah_pelanggaran' => $items->sum(fn ($s) => $s->pelanggaran()->count()),
+                'asramas' => $items->map(fn ($s) =>
+                    $s->asrama
+                        ? ($s->asrama->daerah?->kode
+                            ? substr($s->asrama->daerah->kode, 0, 1) . '.' . $s->asrama->nomor
+                            : (string) $s->asrama->nomor)
+                        : '-'
+                )->values(),
+            ])
+            ->values();
+
+        return response()->json($suratPanggilan);
+    }
+
+    public function destroySession(Request $request): JsonResponse
+    {
+        $request->validate(['printed_at' => 'required|string']);
+
+        $records = SuratPanggilan::where('printed_at', $request->printed_at)->get();
+
+        foreach ($records as $surat) {
+            $surat->pelanggaran()->detach();
+            $surat->delete();
+        }
+
+        AuditLog::create([
+            'user_id' => auth()->id(),
+            'user_name' => auth()->user()->name,
+            'aktivitas' => 'menghapus sesi cetak surat panggilan',
+            'model_type' => SuratPanggilan::class,
+            'model_id' => null,
+            'data' => [
+                'printed_at' => $request->printed_at,
+                'jumlah_surat' => $records->count(),
+            ],
+        ]);
+
+        return response()->json(['success' => true, 'deleted' => $records->count()]);
     }
 
     public function cetakUlang(SuratPanggilan $suratPanggilan): Response
@@ -123,6 +191,18 @@ class SuratPanggilanController extends Controller
 
         $filename = 'surat-panggilan-ubudiyah-' . $suratPanggilan->kode_surat . '.pdf';
         $filename = str_replace('/', '-', $filename);
+
+        AuditLog::create([
+            'user_id' => auth()->id(),
+            'user_name' => auth()->user()->name,
+            'aktivitas' => 'mencetak ulang surat panggilan',
+            'model_type' => SuratPanggilan::class,
+            'model_id' => $suratPanggilan->id,
+            'data' => [
+                'kode_surat' => $suratPanggilan->kode_surat,
+                'asrama_id' => $suratPanggilan->asrama_id,
+            ],
+        ]);
 
         return $pdf->download($filename);
     }

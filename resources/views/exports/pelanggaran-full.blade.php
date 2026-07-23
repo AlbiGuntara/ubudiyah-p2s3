@@ -3,10 +3,10 @@
 
 <head>
     <meta charset="utf-8">
-    <title>Cetak Pembinaan Ubudiyah</title>
+    <title>Export Pelanggaran Full</title>
     <style>
         @page {
-            size: 330mm 215mm landscape;
+            size: 215mm 330mm;
             margin: 12mm 12mm 12mm 12mm;
         }
 
@@ -30,14 +30,14 @@
             margin-bottom: 6px;
         }
 
-        table.pembinaan {
+        table {
             width: 100%;
             border-collapse: collapse;
             margin: 6px 0;
             font-size: 8pt;
         }
 
-        table.pembinaan th {
+        table th {
             border: 1px solid #000;
             padding: 4px 4px;
             text-align: center;
@@ -46,56 +46,32 @@
             font-size: 7.5pt;
         }
 
-        table.pembinaan td {
+        table td {
             border: 1px solid #000;
             padding: 3px 4px;
             vertical-align: middle;
         }
 
-        table.pembinaan td:nth-child(1) {
+        table td:nth-child(1) {
             text-align: center;
             width: 20px;
         }
 
-        table.pembinaan td:nth-child(4) {
+        table td:nth-child(3) {
             text-align: center;
         }
 
-        table.pembinaan td:nth-child(5) {
+        table td:nth-child(4) {
             text-align: center;
         }
 
-        table.pembinaan td:nth-child(6) {
+        table td:nth-child(5) {
             text-align: left;
             white-space: nowrap;
         }
 
-        table.pembinaan td:nth-child(7) {
+        table td:nth-child(6) {
             text-align: center;
-        }
-
-        table.pembinaan td:nth-child(8) {
-            text-align: center;
-        }
-
-        table.pembinaan td:nth-child(9) {
-            text-align: center;
-        }
-
-        table.pembinaan td:nth-child(10) {
-            text-align: center;
-        }
-
-        .footer-cetak {
-            position: fixed;
-            bottom: 8mm;
-            left: 12mm;
-            right: 12mm;
-            font-size: 7pt;
-            color: #666;
-            text-align: center;
-            border-top: 1px solid #ccc;
-            padding-top: 3px;
         }
 
         .page-break {
@@ -129,7 +105,7 @@
         $thn = $tglCetak->year;
     @endphp
 
-    @foreach ($groups as $groupIndex => $group)
+    @foreach ($daerahGroups as $groupIndex => $group)
         @php
             $daerah = $group['daerah'];
             $santriList = $group['santri'];
@@ -139,56 +115,54 @@
             DATA PELANGGARAN UBUDIYAH <br> DAERAH {{ strtoupper($daerah->nama_daerah) }}
         </div>
 
-        <div class="tanggal-cetak">
-            Dicetak: {{ $hari }}, {{ $tgl }} {{ $bln }} {{ $thn }}
-        </div>
-
-        <table class="pembinaan">
+        <table>
             <thead>
                 <tr>
                     <th>No</th>
                     <th>Nama Santri</th>
                     <th>NIS</th>
                     <th>Asrama</th>
-                    <th>IKSASS</th>
                     <th>Jenis Pelanggaran</th>
                     <th>Tgl. Pelanggaran</th>
-                    <th>Total Sanksi</th>
-                    <th>Sanksi Disetor</th>
-                    <th>Tgl. Setor</th>
                 </tr>
             </thead>
             <tbody>
                 @php $no = 1; @endphp
                 @foreach ($santriList as $santriKey => $santriData)
                     @php
-                        $santriItem = $santriData['santri'];
-                        $asramaItem = $santriData['asrama'];
+                        $santriNama = $santriData['santri_nama'];
+                        $santriNis = $santriData['santri_nis'];
+                        $asramaLabel = $santriData['asrama_label'];
                         $pelanggarans = $santriData['pelanggarans'];
+                        $isAnon = $santriData['is_anonymous'] ?? false;
+                        $anonSummary = $santriData['anon_summary'] ?? null;
                         $rowCount = max($pelanggarans->count(), 1);
-                        $totalSanksi = $santriData['total_sanksi'];
-
-                        $asramaText = '-';
-                        if ($asramaItem) {
-                            $kodeDaerah = $asramaItem->daerah?->kode ?? '';
-                            $asramaText = $kodeDaerah
-                                ? substr($kodeDaerah, 0, 1) . '.' . $asramaItem->nomor
-                                : (string) $asramaItem->nomor;
-                        }
                     @endphp
 
-                    @if ($pelanggarans->isEmpty())
+                    @if ($isAnon)
+                        @foreach ($pelanggarans as $index => $item)
+                            <tr>
+                                @if ($index === 0)
+                                    <td rowspan="{{ $rowCount }}" style="text-align: center;">{{ $no }}</td>
+                                    <td rowspan="{{ $rowCount }}">{{ $santriNama }}</td>
+                                    <td rowspan="{{ $rowCount }}" style="text-align: center;">{{ $santriNis }}</td>
+                                    <td rowspan="{{ $rowCount }}" style="text-align: center;">{{ $asramaLabel }}</td>
+                                @endif
+                                <td style="white-space: nowrap; text-align: left;">{{ $item->jumlah }}
+                                    {{ $item->daftarPelanggaran?->nama_pelanggaran ?? '-' }}</td>
+                                <td style="text-align: center;">
+                                    {{ $item->tanggal ? \Carbon\Carbon::parse($item->tanggal)->format('d/m/Y') : '-' }}
+                                </td>
+                            </tr>
+                        @endforeach
+                    @elseif ($pelanggarans->isEmpty())
                         <tr>
                             <td style="text-align: center;">{{ $no }}</td>
-                            <td>{{ $santriItem?->nama ?? 'Tanpa Nama' }}</td>
-                            <td style="text-align: center;">{{ $santriItem?->nis ?? '-' }}</td>
-                            <td style="text-align: center;">{{ $asramaText }}</td>
-                            <td style="text-align: center;">{{ $santriItem?->iksass ?? '-' }}</td>
+                            <td>{{ $santriNama }}</td>
+                            <td style="text-align: center;">{{ $santriNis }}</td>
+                            <td style="text-align: center;">{{ $asramaLabel }}</td>
                             <td style="white-space: nowrap; text-align: left;">-</td>
                             <td style="text-align: center;">-</td>
-                            <td style="text-align: center;">{{ number_format($totalSanksi) }}</td>
-                            <td style="text-align: center;"></td>
-                            <td style="text-align: center;"></td>
                         </tr>
                     @else
                         @foreach ($pelanggarans as $index => $item)
@@ -196,25 +170,17 @@
                                 @if ($index === 0)
                                     <td rowspan="{{ $rowCount }}" style="text-align: center;">{{ $no }}
                                     </td>
-                                    <td rowspan="{{ $rowCount }}">{{ $santriItem?->nama ?? 'Tanpa Nama' }}</td>
-                                    <td rowspan="{{ $rowCount }}" style="text-align: center;">
-                                        {{ $santriItem?->nis ?? '-' }}</td>
-                                    <td rowspan="{{ $rowCount }}" style="text-align: center;">{{ $asramaText }}
+                                    <td rowspan="{{ $rowCount }}">{{ $santriNama }}</td>
+                                    <td rowspan="{{ $rowCount }}" style="text-align: center;">{{ $santriNis }}
                                     </td>
-                                    <td rowspan="{{ $rowCount }}" style="text-align: center;">
-                                        {{ $santriItem?->iksass ?? '-' }}</td>
+                                    <td rowspan="{{ $rowCount }}" style="text-align: center;">{{ $asramaLabel }}
+                                    </td>
                                 @endif
                                 <td style="white-space: nowrap; text-align: left;">
                                     {{ $item->daftarPelanggaran?->nama_pelanggaran ?? '-' }}</td>
                                 <td style="text-align: center;">
                                     {{ $item->tanggal ? \Carbon\Carbon::parse($item->tanggal)->format('d/m/Y') : '-' }}
                                 </td>
-                                @if ($index === 0)
-                                    <td rowspan="{{ $rowCount }}" style="text-align: center;">
-                                        {{ number_format($totalSanksi) }}</td>
-                                    <td rowspan="{{ $rowCount }}" style="text-align: center;"></td>
-                                    <td rowspan="{{ $rowCount }}" style="text-align: center;"></td>
-                                @endif
                             </tr>
                         @endforeach
                     @endif

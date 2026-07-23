@@ -1,16 +1,38 @@
-import { usePage, useRemember } from '@inertiajs/react';
+import { usePage } from '@inertiajs/react';
 import { Sidebar } from './sidebar';
 import { Navbar } from './navbar';
 import { Toaster, type ToastData, type ToastType } from '@/components/ui/toast';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { cn } from '@/lib/utils';
+
+const COLLAPSED_KEY = 'sidebar-collapsed';
+
+function usePersistedState<T>(key: string, defaultValue: T): [T, (val: T) => void] {
+    const [state, setState] = useState<T>(() => {
+        if (typeof window === 'undefined') return defaultValue;
+        try {
+            const stored = localStorage.getItem(key);
+            return stored !== null ? (JSON.parse(stored) as T) : defaultValue;
+        } catch {
+            return defaultValue;
+        }
+    });
+
+    useEffect(() => {
+        try {
+            localStorage.setItem(key, JSON.stringify(state));
+        } catch { /* noop */ }
+    }, [key, state]);
+
+    return [state, setState];
+}
 
 let toastId = 0;
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
     const { flash, appearance } = usePage().props;
     const [toasts, setToasts] = useState<ToastData[]>([]);
-    const [collapsed, setCollapsed] = useRemember(false, 'sidebar-collapsed');
+    const [collapsed, setCollapsed] = usePersistedState(COLLAPSED_KEY, false);
     const [mobileOpen, setMobileOpen] = useState(false);
 
     const addToast = useCallback((message: string, type: ToastType) => {

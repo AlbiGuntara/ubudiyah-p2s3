@@ -13,13 +13,15 @@ class SuratPanggilan extends Model
         'asrama_id',
         'kode_surat',
         'tanggal_cetak',
+        'printed_at',
         'dicetak_oleh',
     ];
 
     protected function casts(): array
     {
         return [
-            'tanggal_cetak' => 'date',
+            'tanggal_cetak' => 'datetime',
+            'printed_at' => 'datetime',
         ];
     }
 

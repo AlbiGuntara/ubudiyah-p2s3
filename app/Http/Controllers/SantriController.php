@@ -3,6 +3,8 @@ namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
 use App\Models\Santri;
+use App\Models\Pelanggaran;
+use App\Models\Pembinaan;
 use App\Models\Daerah;
 use App\Models\Asrama;
 use App\Http\Requests\StoreSantriRequest;
@@ -79,8 +81,24 @@ class SantriController extends Controller
             $data['foto'] = $request->file('foto')->store('foto-santri', 'public');
         }
 
-        Santri::create($data);
-        return redirect()->back()->with('success', 'Santri berhasil ditambahkan.');
+        $mergeAction = $request->input('merge_action');
+        $mergeTargetId = $request->input('merge_target_id');
+
+        if ($mergeAction === 'keep_old' && $mergeTargetId) {
+            $existing = Santri::findOrFail($mergeTargetId);
+            return redirect()->back()->with('success', 'Data baru dibatalkan, data ' . $existing->nama . ' tetap digunakan.');
+        }
+
+        $santri = Santri::create($data);
+
+        $mergedCount = $this->autoMerge($santri);
+
+        $message = 'Santri berhasil ditambahkan.';
+        if ($mergedCount > 0) {
+            $message .= " {$mergedCount} data duplikat otomatis digabungkan.";
+        }
+
+        return redirect()->back()->with('success', $message);
     }
 
     public function show(Santri $santri): Response
@@ -100,6 +118,16 @@ class SantriController extends Controller
     {
         $data = $request->validated();
 
+        $mergeAction = $request->input('merge_action');
+        $mergeTargetId = $request->input('merge_target_id');
+
+        if ($mergeAction === 'keep_other' && $mergeTargetId) {
+            $other = Santri::findOrFail($mergeTargetId);
+            $this->mergeInto($santri, $other);
+            $this->syncPembinaan($other);
+            return redirect()->back()->with('success', 'Riwayat pelanggaran digabungkan ke ' . $other->nama . '.');
+        }
+
         if ($request->hasFile('foto')) {
             if ($santri->foto) {
                 Storage::disk('public')->delete($santri->foto);
@@ -108,7 +136,15 @@ class SantriController extends Controller
         }
 
         $santri->update($data);
-        return redirect()->back()->with('success', 'Santri berhasil diubah.');
+
+        $mergedCount = $this->autoMerge($santri);
+
+        $message = 'Santri berhasil diubah.';
+        if ($mergedCount > 0) {
+            $message .= " {$mergedCount} data duplikat otomatis digabungkan.";
+        }
+
+        return redirect()->back()->with('success', $message);
     }
 
     public function destroy(Santri $santri): RedirectResponse
@@ -133,6 +169,25 @@ class SantriController extends Controller
         return redirect()->back()->with('success', 'Santri berhasil dihapus.');
     }
 
+    public function cekNis(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $nis = $request->input('nis');
+        $excludeId = $request->input('exclude_id');
+
+        if (empty($nis)) {
+            return response()->json(['found' => false]);
+        }
+
+        $existing = Santri::where('nis', $nis)
+            ->when($excludeId, fn($q) => $q->where('id', '!=', $excludeId))
+            ->first(['id', 'nama', 'nis']);
+
+        return response()->json([
+            'found' => $existing !== null,
+            'santri' => $existing,
+        ]);
+    }
+
     public function import(Request $request): RedirectResponse
     {
         $request->validate(['file' => 'required|mimes:xlsx,xls']);
@@ -155,5 +210,97 @@ class SantriController extends Controller
         }
 
         return redirect()->back()->with('success', "Berhasil import {$imported} data santri.");
+    }
+
+    private function autoMerge(Santri $santri): int
+    {
+        $mergedCount = 0;
+        $processedIds = [];
+
+        if (! empty($santri->nis)) {
+            $duplicates = Santri::where('nis', $santri->nis)
+                ->where('id', '!=', $santri->id)
+                ->get();
+
+            foreach ($duplicates as $duplicate) {
+                $this->mergeInto($duplicate, $santri);
+                $processedIds[] = $duplicate->id;
+                $mergedCount++;
+            }
+        }
+
+        if (! empty($santri->nama) && ! empty($santri->asrama_id)) {
+            $query = Santri::where('nama', $santri->nama)
+                ->where('asrama_id', $santri->asrama_id)
+                ->where('id', '!=', $santri->id);
+
+            if (! empty($santri->iksass)) {
+                $query->where('iksass', $santri->iksass);
+            }
+
+            $duplicates = $query->get();
+
+            foreach ($duplicates as $duplicate) {
+                if (! in_array($duplicate->id, $processedIds) && ! $duplicate->trashed()) {
+                    $this->mergeInto($duplicate, $santri);
+                    $mergedCount++;
+                }
+            }
+        }
+
+        if ($mergedCount > 0) {
+            $this->syncPembinaan($santri);
+        }
+
+        return $mergedCount;
+    }
+
+    private function mergeInto(Santri $duplicate, Santri $primary): void
+    {
+        Pelanggaran::where('santri_id', $duplicate->id)
+            ->whereNotNull('santri_id')
+            ->update([
+                'santri_id' => $primary->id,
+                'asrama_id' => $primary->asrama_id,
+            ]);
+
+        $dupPembinaan = Pembinaan::where('santri_id', $duplicate->id)
+            ->whereNotNull('santri_id')
+            ->first();
+
+        if ($dupPembinaan) {
+            $primaryPembinaan = Pembinaan::firstOrNew(['santri_id' => $primary->id]);
+            $primaryPembinaan->shalawat_tertulis = ($primaryPembinaan->shalawat_tertulis ?? 0) + ($dupPembinaan->shalawat_tertulis ?? 0);
+            $primaryPembinaan->save();
+
+            $dupPembinaan->delete();
+        }
+
+        $duplicate->delete();
+    }
+
+    private function syncPembinaan(Santri $santri): void
+    {
+        $totalPelanggaran = Pelanggaran::where('santri_id', $santri->id)->count();
+
+        if ($totalPelanggaran === 0) {
+            Pembinaan::where('santri_id', $santri->id)->delete();
+            return;
+        }
+
+        $sanksi = $totalPelanggaran * 100;
+
+        $pembinaan = Pembinaan::firstOrNew(['santri_id' => $santri->id]);
+        $pembinaan->sanksi = $sanksi;
+        if (! $pembinaan->exists || $pembinaan->sisa_sanksi === 0) {
+            $pembinaan->sisa_sanksi = max(0, $sanksi - ($pembinaan->shalawat_tertulis ?? 0));
+        }
+        if ($pembinaan->exists && $sanksi > $pembinaan->getOriginal('sanksi')) {
+            $pembinaan->sisa_sanksi += ($sanksi - $pembinaan->getOriginal('sanksi'));
+        }
+        if ($pembinaan->exists && $sanksi < $pembinaan->getOriginal('sanksi')) {
+            $pembinaan->sisa_sanksi = max(0, $pembinaan->sisa_sanksi - ($pembinaan->getOriginal('sanksi') - $sanksi));
+        }
+        $pembinaan->save();
     }
 }

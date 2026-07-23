@@ -2,7 +2,6 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class StoreSantriRequest extends FormRequest
 {
@@ -18,14 +17,7 @@ class StoreSantriRequest extends FormRequest
     {
         return [
             'nama' => 'required|string|max:100',
-            'nis' => [
-                'nullable',
-                'string',
-                'max:50',
-                Rule::unique('santri', 'nis')
-                    ->ignore($this->route('santri'))
-                    ->whereNull('deleted_at'),
-            ],
+            'nis' => 'nullable|string|max:50',
             'iksass' => 'nullable|string|max:20',
             'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'asrama_id' => 'required|exists:asrama,id',

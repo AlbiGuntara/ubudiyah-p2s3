@@ -38,6 +38,7 @@ Route::middleware('auth')->group(function () {
     Route::post('daerah/bulk-delete', [DaerahController::class, 'bulkDelete'])->name('daerah.bulk-delete');
     Route::resource('asrama', AsramaController::class)->except(['show', 'create', 'edit']);
     Route::post('asrama/bulk-delete', [AsramaController::class, 'bulkDelete'])->name('asrama.bulk-delete');
+    Route::get('santri/cek-nis', [SantriController::class, 'cekNis'])->name('santri.cek-nis');
     Route::resource('santri', SantriController::class)->except(['create', 'edit']);
     Route::post('santri/import', [SantriController::class, 'import'])->name('santri.import');
     Route::post('santri/bulk-delete', [SantriController::class, 'bulkDelete'])->name('santri.bulk-delete');
@@ -56,7 +57,9 @@ Route::middleware('auth')->group(function () {
     // Surat Panggilan
     Route::get('pelanggaran/surat-panggilan/cetak', [SuratPanggilanController::class, 'cetak'])->name('pelanggaran.surat-panggilan.cetak');
     Route::get('pelanggaran/surat-panggilan/riwayat', [SuratPanggilanController::class, 'riwayat'])->name('pelanggaran.surat-panggilan.riwayat');
+    Route::get('pelanggaran/surat-panggilan/riwayat-global', [SuratPanggilanController::class, 'riwayatGlobal'])->name('pelanggaran.surat-panggilan.riwayat-global');
     Route::get('pelanggaran/surat-panggilan/{suratPanggilan}/cetak-ulang', [SuratPanggilanController::class, 'cetakUlang'])->name('pelanggaran.surat-panggilan.cetak-ulang');
+    Route::post('pelanggaran/surat-panggilan/delete-session', [SuratPanggilanController::class, 'destroySession'])->name('pelanggaran.surat-panggilan.delete-session');
     // Pembinaan
     Route::get('pembinaan', [PembinaanController::class, 'index'])->name('pembinaan.index');
     Route::put('pembinaan/{pembinaan}', [PembinaanController::class, 'update'])->name('pembinaan.update');
@@ -82,6 +85,7 @@ Route::middleware('auth')->group(function () {
         Route::get('tahunan/excel', [ExportController::class, 'excelTahunan'])->name('tahunan.excel');
         Route::get('bulanan/pdf', [ExportController::class, 'pdfBulanan'])->name('bulanan.pdf');
         Route::get('tahunan/pdf', [ExportController::class, 'pdfTahunan'])->name('tahunan.pdf');
+        Route::get('pelanggaran-full/pdf', [ExportController::class, 'pdfPelanggaranFull'])->name('export.pelanggaran-full.pdf');
     });
 
     // Search

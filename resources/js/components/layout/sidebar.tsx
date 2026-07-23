@@ -1,4 +1,4 @@
-import { Fragment, useState, useRef } from 'react';
+import { Fragment, useState, useRef, useCallback, useLayoutEffect } from 'react';
 import { Link, usePage } from '@inertiajs/react';
 import {
     LayoutDashboard,
@@ -98,6 +98,20 @@ export function Sidebar({
 
     const [tooltip, setTooltip] = useState<{ label: string; top: number } | null>(null);
     const asideRef = useRef<HTMLElement>(null);
+    const navScrollRef = useRef<HTMLDivElement>(null);
+    const scrollPos = useRef(0);
+
+    const onNavScroll = useCallback(() => {
+        if (navScrollRef.current) {
+            scrollPos.current = navScrollRef.current.scrollTop;
+        }
+    }, []);
+
+    useLayoutEffect(() => {
+        if (navScrollRef.current) {
+            navScrollRef.current.scrollTop = scrollPos.current;
+        }
+    });
 
     const showTooltip = (label: string, e: React.MouseEvent) => {
         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
@@ -144,7 +158,7 @@ export function Sidebar({
                     </div>
                 </div>
 
-                <nav className={cn('flex-1 overflow-y-auto py-3 sidebar-scroll', collapsed ? 'px-2' : 'px-3')}>
+                <nav ref={navScrollRef} onScroll={onNavScroll} className={cn('flex-1 overflow-y-auto py-3 sidebar-scroll', collapsed ? 'px-2' : 'px-3')}>
                     <div className={cn('space-y-5', collapsed && 'space-y-3')}>
                         {filteredGroups.map((group) => (
                             <Fragment key={group.title}>

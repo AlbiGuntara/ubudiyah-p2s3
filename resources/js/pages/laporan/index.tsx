@@ -87,13 +87,27 @@ export default function LaporanIndex() {
         <AppLayout>
             <Head title="Laporan" />
             <div className="space-y-6">
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight">
-                        Laporan
-                    </h1>
-                    <p className="text-muted-foreground">
-                        Laporan pelanggaran lengkap
-                    </p>
+                <div className="flex items-start justify-between">
+                    <div>
+                        <h1 className="text-2xl font-bold tracking-tight">
+                            Laporan
+                        </h1>
+                        <p className="text-muted-foreground">
+                            Laporan pelanggaran lengkap
+                        </p>
+                    </div>
+                    <Button
+                        variant="outline"
+                        onClick={() =>
+                            window.open(
+                                '/export/pelanggaran-full/pdf',
+                                '_blank',
+                            )
+                        }
+                    >
+                        <FileDown className="h-4 w-4" />
+                        Export Full
+                    </Button>
                 </div>
 
                 <Card>

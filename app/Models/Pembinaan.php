@@ -15,6 +15,8 @@ class Pembinaan extends Model
     protected $fillable = [
         'santri_id',
         'asrama_id',
+        'jenis_pelanggaran',
+        'tanggal_pelanggaran',
         'sanksi',
         'shalawat_tertulis',
         'sisa_sanksi',
@@ -23,6 +25,7 @@ class Pembinaan extends Model
     protected function casts(): array
     {
         return [
+            'tanggal_pelanggaran' => 'date',
             'sanksi' => 'integer',
             'shalawat_tertulis' => 'integer',
             'sisa_sanksi' => 'integer',

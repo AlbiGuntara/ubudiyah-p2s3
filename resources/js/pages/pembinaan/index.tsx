@@ -7,7 +7,7 @@ import { Modal } from '@/components/ui/modal';
 import { Badge } from '@/components/ui/badge';
 import { DataTable, type Column } from '@/components/shared/data-table';
 import { Select } from '@/components/ui/select';
-import { Edit2, BookOpen, PlusCircle, Printer } from 'lucide-react';
+import { BookOpen, PlusCircle, Printer } from 'lucide-react';
 
 export default function PembinaanIndex() {
     const {
@@ -21,16 +21,13 @@ export default function PembinaanIndex() {
         sort_direction,
     } = usePage<any>().props;
     const [perPage, setPerPage] = useState(parseInt(per_page) || 15);
-    const [showModal, setShowModal] = useState(false);
     const [showSetorModal, setShowSetorModal] = useState(false);
     const [showPemutihanModal, setShowPemutihanModal] = useState(false);
-    const [editing, setEditing] = useState<any>(null);
     const [setorTarget, setSetorTarget] = useState<any>(null);
     const [sortColumn, setSortColumn] = useState(sort_column || '');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | 'none'>(
         (sort_direction as 'asc' | 'desc' | 'none') || 'none',
     );
-    const [form, setForm] = useState({ sanksi: 0 });
     const [jumlahSetoran, setJumlahSetoran] = useState('');
     const [multiplier, setMultiplier] = useState('');
     const [search, setSearch] = useState(initialFilters?.search || '');
@@ -41,12 +38,6 @@ export default function PembinaanIndex() {
         initialFilters?.asrama_id || '',
     );
 
-    const openEdit = (p: any) => {
-        setEditing(p);
-        setForm({ sanksi: p.sanksi });
-        setShowModal(true);
-    };
-
     const openSetor = (p: any) => {
         setSetorTarget(p);
         setJumlahSetoran('');
@@ -56,14 +47,6 @@ export default function PembinaanIndex() {
     const openPemutihan = () => {
         setMultiplier('');
         setShowPemutihanModal(true);
-    };
-
-    const submit = () => {
-        if (editing) {
-            router.put(`/pembinaan/${editing.id}`, form, {
-                onSuccess: () => setShowModal(false),
-            });
-        }
     };
 
     const setorSanksi = () => {
@@ -233,13 +216,6 @@ export default function PembinaanIndex() {
                         <BookOpen className="h-4 w-4" />
                         Setor
                     </Button>
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => openEdit(p)}
-                    >
-                        <Edit2 className="h-4 w-4" />
-                    </Button>
                 </div>
             ),
         },
@@ -392,39 +368,6 @@ export default function PembinaanIndex() {
                     }
                 />
             </div>
-
-            {/* Edit Modal */}
-            <Modal
-                open={showModal}
-                onClose={() => setShowModal(false)}
-                title="Edit Pembinaan"
-            >
-                <div className="space-y-4">
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium">Sanksi</label>
-                        <Input
-                            type="number"
-                            min={0}
-                            value={form.sanksi}
-                            onChange={(e) =>
-                                setForm({
-                                    ...form,
-                                    sanksi: parseInt(e.target.value) || 0,
-                                })
-                            }
-                        />
-                    </div>
-                    <div className="flex justify-end gap-3 pt-2">
-                        <Button
-                            variant="outline"
-                            onClick={() => setShowModal(false)}
-                        >
-                            Batal
-                        </Button>
-                        <Button onClick={submit}>Simpan</Button>
-                    </div>
-                </div>
-            </Modal>
 
             {/* Setor Sanksi Modal */}
             <Modal

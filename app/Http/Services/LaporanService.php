@@ -62,10 +62,16 @@ class LaporanService
         $base = $this->buildBaseQuery($tanggalMulai, $tanggalSelesai, $bulan, $tahun, $daerahId, $asramaId, $iksass, $sumberPencatatan);
 
         // Ringkasan
-        $totalPelanggaran = (clone $base)->count();
+        $totalPelanggaran = (clone $base)
+            ->selectRaw("COALESCE(SUM(CASE WHEN santri_id IS NULL THEN jumlah ELSE 1 END), 0) as total")
+            ->value('total');
         $totalSantri = (clone $base)->whereNotNull('santri_id')->distinct()->count('santri_id');
-        $sumberPetugas = (clone $base)->where('sumber_pencatatan', 'petugas')->count();
-        $sumberKetuaKamar = (clone $base)->where('sumber_pencatatan', 'ketua_kamar')->count();
+        $sumberPetugas = (clone $base)->where('sumber_pencatatan', 'petugas')
+            ->selectRaw("COALESCE(SUM(CASE WHEN santri_id IS NULL THEN jumlah ELSE 1 END), 0) as total")
+            ->value('total');
+        $sumberKetuaKamar = (clone $base)->where('sumber_pencatatan', 'ketua_kamar')
+            ->selectRaw("COALESCE(SUM(CASE WHEN santri_id IS NULL THEN jumlah ELSE 1 END), 0) as total")
+            ->value('total');
 
         // Per Daerah
         $perDaerah = DB::table('pelanggaran')
@@ -75,7 +81,7 @@ class LaporanService
                 'daerah.id',
                 'daerah.kode',
                 'daerah.nama_daerah',
-                DB::raw('count(*) as jumlah_pelanggaran'),
+                DB::raw("SUM(CASE WHEN pelanggaran.santri_id IS NULL THEN pelanggaran.jumlah ELSE 1 END) as jumlah_pelanggaran"),
                 DB::raw('COUNT(DISTINCT pelanggaran.santri_id) as jumlah_santri')
             )
             ->when($tanggalMulai && $tanggalSelesai, fn($q) => $q->whereBetween('pelanggaran.tanggal', [$tanggalMulai, $tanggalSelesai]))
@@ -97,7 +103,7 @@ class LaporanService
                 'asrama.nomor',
                 'daerah.kode as daerah_kode',
                 'daerah.nama_daerah',
-                DB::raw('count(*) as jumlah_pelanggaran'),
+                DB::raw("SUM(CASE WHEN pelanggaran.santri_id IS NULL THEN pelanggaran.jumlah ELSE 1 END) as jumlah_pelanggaran"),
                 DB::raw('COUNT(DISTINCT pelanggaran.santri_id) as jumlah_santri')
             )
             ->when($tanggalMulai && $tanggalSelesai, fn($q) => $q->whereBetween('pelanggaran.tanggal', [$tanggalMulai, $tanggalSelesai]))
@@ -117,7 +123,7 @@ class LaporanService
             ->select(
                 'daftar_pelanggaran.id',
                 'daftar_pelanggaran.nama_pelanggaran',
-                DB::raw('count(*) as jumlah_pelanggaran'),
+                DB::raw("SUM(CASE WHEN pelanggaran.santri_id IS NULL THEN pelanggaran.jumlah ELSE 1 END) as jumlah_pelanggaran"),
                 DB::raw('COUNT(DISTINCT pelanggaran.santri_id) as jumlah_santri')
             )
             ->when($tanggalMulai && $tanggalSelesai, fn($q) => $q->whereBetween('pelanggaran.tanggal', [$tanggalMulai, $tanggalSelesai]))
@@ -134,7 +140,7 @@ class LaporanService
         $perSumber = (clone $base)
             ->select(
                 'sumber_pencatatan',
-                DB::raw('count(*) as jumlah_pelanggaran'),
+                DB::raw("SUM(CASE WHEN santri_id IS NULL THEN jumlah ELSE 1 END) as jumlah_pelanggaran"),
                 DB::raw('COUNT(DISTINCT santri_id) as jumlah_santri')
             )
             ->groupBy('sumber_pencatatan')
@@ -149,7 +155,7 @@ class LaporanService
                 'petugas.jabatan',
                 'petugas.tugas',
                 DB::raw('COALESCE(petugas.nama, "Petugas Tanpa Nama") as nama_petugas'),
-                DB::raw('count(*) as jumlah_pelanggaran'),
+                DB::raw("SUM(CASE WHEN pelanggaran.santri_id IS NULL THEN pelanggaran.jumlah ELSE 1 END) as jumlah_pelanggaran"),
                 DB::raw('COUNT(DISTINCT pelanggaran.santri_id) as jumlah_santri_dicatat')
             )
             ->whereNotNull('pelanggaran.petugas_id')
@@ -251,7 +257,9 @@ class LaporanService
             $query->whereHas('santri', fn($q) => $q->where('iksass', $iksass));
         }
 
-        $jumlahPelanggaran = (clone $query)->count();
+        $jumlahPelanggaran = (clone $query)
+            ->selectRaw("COALESCE(SUM(CASE WHEN santri_id IS NULL THEN jumlah ELSE 1 END), 0) as total")
+            ->value('total');
         $jumlahSantri = (clone $query)->whereNotNull('santri_id')->distinct()->count('santri_id');
 
         return [
@@ -277,7 +285,9 @@ class LaporanService
             $query->whereHas('santri', fn($q) => $q->where('iksass', $iksass));
         }
 
-        $jumlahPelanggaran = (clone $query)->count();
+        $jumlahPelanggaran = (clone $query)
+            ->selectRaw("COALESCE(SUM(CASE WHEN santri_id IS NULL THEN jumlah ELSE 1 END), 0) as total")
+            ->value('total');
         $jumlahSantri = (clone $query)->whereNotNull('santri_id')->distinct()->count('santri_id');
 
         return [
@@ -299,9 +309,15 @@ class LaporanService
         }
 
         return [
-            'total_pelanggaran' => (clone $query)->count(),
-            'sumber_petugas' => (clone $query)->where('sumber_pencatatan', 'petugas')->count(),
-            'sumber_ketua_kamar' => (clone $query)->where('sumber_pencatatan', 'ketua_kamar')->count(),
+            'total_pelanggaran' => (clone $query)
+                ->selectRaw("COALESCE(SUM(CASE WHEN santri_id IS NULL THEN jumlah ELSE 1 END), 0) as total")
+                ->value('total'),
+            'sumber_petugas' => (clone $query)->where('sumber_pencatatan', 'petugas')
+                ->selectRaw("COALESCE(SUM(CASE WHEN santri_id IS NULL THEN jumlah ELSE 1 END), 0) as total")
+                ->value('total'),
+            'sumber_ketua_kamar' => (clone $query)->where('sumber_pencatatan', 'ketua_kamar')
+                ->selectRaw("COALESCE(SUM(CASE WHEN santri_id IS NULL THEN jumlah ELSE 1 END), 0) as total")
+                ->value('total'),
         ];
     }
 
@@ -315,7 +331,7 @@ class LaporanService
                 'daerah.nama_daerah',
                 'asrama.id as asrama_id',
                 'asrama.nomor as asrama_nomor',
-                DB::raw('count(*) as jumlah_pelanggaran'),
+                DB::raw("SUM(CASE WHEN pelanggaran.santri_id IS NULL THEN pelanggaran.jumlah ELSE 1 END) as jumlah_pelanggaran"),
                 DB::raw('COUNT(DISTINCT pelanggaran.santri_id) as jumlah_santri')
             )
             ->where('pelanggaran.sumber_pencatatan', 'petugas')

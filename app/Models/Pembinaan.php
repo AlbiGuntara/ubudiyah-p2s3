@@ -25,7 +25,7 @@ class Pembinaan extends Model
     protected function casts(): array
     {
         return [
-            'tanggal_pelanggaran' => 'date',
+            'tanggal_pelanggaran' => 'date:Y-m-d',
             'sanksi' => 'integer',
             'shalawat_tertulis' => 'integer',
             'sisa_sanksi' => 'integer',

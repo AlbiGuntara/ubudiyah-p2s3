@@ -139,6 +139,20 @@
             DATA PELANGGARAN UBUDIYAH <br> DAERAH {{ strtoupper($daerah->nama_daerah) }}
         </div>
 
+        @if (!empty($filterInfo))
+            <div style="text-align: center; font-size: 9pt; margin-bottom: 4px;">
+                @if (!empty($filterInfo['bulan']))
+                    @php
+                        $y = substr($filterInfo['bulan'], 0, 4);
+                        $m = (int) substr($filterInfo['bulan'], 5, 2);
+                    @endphp
+                    Periode: {{ $bulanIndo[$m - 1] }} {{ $y }}
+                @elseif (!empty($filterInfo['tanggal_awal']) || !empty($filterInfo['tanggal_akhir']))
+                    Periode: {{ $filterInfo['tanggal_awal'] ?? '...' }} s.d. {{ $filterInfo['tanggal_akhir'] ?? '...' }}
+                @endif
+            </div>
+        @endif
+
         <div class="tanggal-cetak">
             Dicetak: {{ $hari }}, {{ $tgl }} {{ $bln }} {{ $thn }}
         </div>
@@ -153,7 +167,7 @@
                     <th>IKSASS</th>
                     <th>Jenis Pelanggaran</th>
                     <th>Tgl. Pelanggaran</th>
-                    <th>Total Sanksi</th>
+                    <th>Sisa Sanksi</th>
                     <th>Sanksi Disetor</th>
                     <th>Tgl. Setor</th>
                 </tr>
@@ -166,6 +180,8 @@
                         $asramaItem = $santriData['asrama'];
                         $pelanggarans = $santriData['pelanggarans'];
                         $totalSanksi = $santriData['total_sanksi'];
+                        $sanksiDisetor = $santriData['sanksi_disetor'] ?? 0;
+                        $tanggalSetor = $santriData['tanggal_setor'] ?? null;
 
                         $asramaText = '-';
                         if ($asramaItem) {
@@ -186,11 +202,11 @@
                             <td style="white-space: nowrap; text-align: left;">-</td>
                             <td style="text-align: center;">-</td>
                             <td style="text-align: center;">{{ number_format($totalSanksi) }}</td>
-                            <td style="text-align: center;"></td>
-                            <td style="text-align: center;"></td>
+                            <td style="text-align: center;">{{ $sanksiDisetor ? number_format($sanksiDisetor) : '-' }}</td>
+                            <td style="text-align: center;">{{ $tanggalSetor ? \Carbon\Carbon::parse($tanggalSetor)->format('d/m/Y') : '-' }}</td>
                         </tr>
                     @else
-                        @foreach ($pelanggarans as $item)
+                        @foreach ($pelanggarans as $itemIndex => $item)
                             <tr>
                                 <td style="text-align: center;">{{ $no }}</td>
                                 <td>{{ $santriItem?->nama ?? 'Tanpa Nama' }}</td>
@@ -202,9 +218,11 @@
                                 <td style="text-align: center;">
                                     {{ $item->tanggal ? \Carbon\Carbon::parse($item->tanggal)->format('d/m/Y') : '-' }}
                                 </td>
-                                <td style="text-align: center;">{{ number_format($totalSanksi) }}</td>
-                                <td style="text-align: center;"></td>
-                                <td style="text-align: center;"></td>
+                                @if ($itemIndex === 0)
+                                    <td style="text-align: center;" rowspan="{{ $pelanggarans->count() }}">{{ number_format($totalSanksi) }}</td>
+                                    <td style="text-align: center;" rowspan="{{ $pelanggarans->count() }}">{{ $sanksiDisetor ? number_format($sanksiDisetor) : '-' }}</td>
+                                    <td style="text-align: center;" rowspan="{{ $pelanggarans->count() }}">{{ $tanggalSetor ? \Carbon\Carbon::parse($tanggalSetor)->format('d/m/Y') : '-' }}</td>
+                                @endif
                             </tr>
                         @endforeach
                     @endif

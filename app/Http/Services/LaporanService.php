@@ -94,6 +94,22 @@ class LaporanService
             ->orderByDesc('jumlah_pelanggaran')
             ->get();
 
+        $totalSantriPerDaerah = DB::table('santri')
+            ->join('asrama', 'santri.asrama_id', '=', 'asrama.id')
+            ->join('daerah', 'asrama.daerah_id', '=', 'daerah.id')
+            ->select('daerah.id', DB::raw('COUNT(*) as total_santri'))
+            ->groupBy('daerah.id')
+            ->pluck('total_santri', 'id');
+
+        $perDaerah = $perDaerah->map(fn($item) => (object) [
+            'id' => $item->id,
+            'kode' => $item->kode,
+            'nama_daerah' => $item->nama_daerah,
+            'jumlah_pelanggaran' => (int) $item->jumlah_pelanggaran,
+            'jumlah_santri' => (int) $item->jumlah_santri,
+            'total_santri' => (int) ($totalSantriPerDaerah[$item->id] ?? 0),
+        ]);
+
         // Per Asrama
         $perAsrama = DB::table('pelanggaran')
             ->join('asrama', 'pelanggaran.asrama_id', '=', 'asrama.id')
@@ -116,6 +132,21 @@ class LaporanService
             ->orderBy('daerah.nama_daerah')
             ->orderByDesc('jumlah_pelanggaran')
             ->get();
+
+        $totalSantriPerAsrama = DB::table('santri')
+            ->select('asrama_id', DB::raw('COUNT(*) as total_santri'))
+            ->groupBy('asrama_id')
+            ->pluck('total_santri', 'asrama_id');
+
+        $perAsrama = $perAsrama->map(fn($item) => (object) [
+            'id' => $item->id,
+            'nomor' => $item->nomor,
+            'daerah_kode' => $item->daerah_kode,
+            'nama_daerah' => $item->nama_daerah,
+            'jumlah_pelanggaran' => (int) $item->jumlah_pelanggaran,
+            'jumlah_santri' => (int) $item->jumlah_santri,
+            'total_santri' => (int) ($totalSantriPerAsrama[$item->id] ?? 0),
+        ]);
 
         // Per Jenis Pelanggaran
         $perJenis = DB::table('pelanggaran')
@@ -222,6 +253,19 @@ class LaporanService
             ->orderByDesc('jumlah_pelanggaran')
             ->get();
 
+        $totalSantriPerIksass = DB::table('santri')
+            ->whereNotNull('iksass')
+            ->select('iksass', DB::raw('COUNT(*) as total_santri'))
+            ->groupBy('iksass')
+            ->pluck('total_santri', 'iksass');
+
+        $perIksass = $perIksass->map(fn($item) => (object) [
+            'iksass' => $item->iksass,
+            'jumlah_pelanggaran' => (int) $item->jumlah_pelanggaran,
+            'jumlah_santri' => (int) $item->jumlah_santri,
+            'total_santri' => (int) ($totalSantriPerIksass[$item->iksass] ?? 0),
+        ]);
+
         return [
             'ringkasan' => [
                 'total_pelanggaran' => $totalPelanggaran,
@@ -323,7 +367,7 @@ class LaporanService
 
     public function laporanPerDaerah(): array
     {
-        return DB::table('pelanggaran')
+        $data = DB::table('pelanggaran')
             ->join('asrama', 'pelanggaran.asrama_id', '=', 'asrama.id')
             ->join('daerah', 'asrama.daerah_id', '=', 'daerah.id')
             ->select(
@@ -338,11 +382,24 @@ class LaporanService
             ->groupBy('daerah.id', 'daerah.nama_daerah', 'asrama.id', 'asrama.nomor')
             ->orderBy('daerah.nama_daerah')
             ->orderByDesc('jumlah_pelanggaran')
-            ->get()
+            ->get();
+
+        $totalSantriPerAsrama = DB::table('santri')
+            ->select('asrama_id', DB::raw('COUNT(*) as total_santri'))
+            ->groupBy('asrama_id')
+            ->pluck('total_santri', 'asrama_id');
+
+        return $data
             ->groupBy('daerah_id')
             ->map(fn($items) => [
                 'nama_daerah' => $items->first()->nama_daerah,
-                'asrama' => $items,
+                'asrama' => $items->map(fn($item) => [
+                    'asrama_id' => $item->asrama_id,
+                    'asrama_nomor' => $item->asrama_nomor,
+                    'jumlah_pelanggaran' => (int) $item->jumlah_pelanggaran,
+                    'jumlah_santri' => (int) $item->jumlah_santri,
+                    'total_santri' => (int) ($totalSantriPerAsrama[$item->asrama_id] ?? 0),
+                ]),
             ])
             ->toArray();
     }

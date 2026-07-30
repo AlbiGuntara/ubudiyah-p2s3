@@ -20,6 +20,7 @@ class StoreSantriRequest extends FormRequest
             'nis' => 'nullable|string|max:50',
             'iksass' => 'nullable|string|max:20',
             'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'nama_panggilan' => 'nullable|string|max:50',
             'asrama_id' => 'required|exists:asrama,id',
         ];
     }

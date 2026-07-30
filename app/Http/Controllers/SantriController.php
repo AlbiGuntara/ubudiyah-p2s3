@@ -54,7 +54,7 @@ class SantriController extends Controller
 
         $sortColumn = $request->input('sort_column', 'created_at');
         $sortDirection = $request->input('sort_direction', 'desc');
-        $allowedSorts = ['nis', 'nama', 'iksass', 'asrama_id', 'created_at'];
+        $allowedSorts = ['nis', 'nama', 'iksass', 'nama_panggilan', 'asrama_id', 'created_at'];
         if (in_array($sortColumn, $allowedSorts)) {
             $query->orderBy($sortColumn, $sortDirection === 'asc' ? 'asc' : 'desc');
         } else {

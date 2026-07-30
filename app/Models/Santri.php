@@ -17,6 +17,7 @@ class Santri extends Model
         'nis',
         'iksass',
         'foto',
+        'nama_panggilan',
         'asrama_id',
     ];
 

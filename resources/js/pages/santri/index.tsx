@@ -15,6 +15,7 @@ import {
     Camera,
     X,
     FileText,
+    ZoomIn,
 } from 'lucide-react';
 
 export default function SantriIndex() {
@@ -46,6 +47,7 @@ export default function SantriIndex() {
         nama: '',
         nis: '',
         iksass: '',
+        nama_panggilan: '',
         foto: null as File | null,
         daerah_id: '',
         asrama_id: '',
@@ -54,6 +56,9 @@ export default function SantriIndex() {
     const [fotoPreview, setFotoPreview] = useState<string | null>(null);
     const [showMergeConfirm, setShowMergeConfirm] = useState(false);
     const [mergeExisting, setMergeExisting] = useState<any>(null);
+    const [showFotoModal, setShowFotoModal] = useState(false);
+    const [fotoModalSrc, setFotoModalSrc] = useState<string>('');
+    const [fotoModalNama, setFotoModalNama] = useState<string>('');
 
     useEffect(() => {
         if (!showModal) {
@@ -77,6 +82,7 @@ export default function SantriIndex() {
             nama: '',
             nis: '',
             iksass: '',
+            nama_panggilan: '',
             foto: null,
             daerah_id: '',
             asrama_id: '',
@@ -94,6 +100,7 @@ export default function SantriIndex() {
             nama: s.nama,
             nis: s.nis || '',
             iksass: s.iksass || '',
+            nama_panggilan: s.nama_panggilan || '',
             foto: null,
             daerah_id: daerahId,
             asrama_id: s.asrama_id,
@@ -144,6 +151,7 @@ export default function SantriIndex() {
         formData.append('nama', form.nama);
         formData.append('nis', form.nis || '');
         formData.append('iksass', form.iksass || '');
+        formData.append('nama_panggilan', form.nama_panggilan || '');
         formData.append('asrama_id', form.asrama_id);
         if (form.foto) {
             formData.append('foto', form.foto);
@@ -223,6 +231,12 @@ export default function SantriIndex() {
         });
     };
 
+    const openFotoModal = (src: string, nama: string) => {
+        setFotoModalSrc(src);
+        setFotoModalNama(nama);
+        setShowFotoModal(true);
+    };
+
     const columns: Column<any>[] = [
         {
             key: 'no',
@@ -235,11 +249,20 @@ export default function SantriIndex() {
             label: 'Foto',
             render: (s) =>
                 s.foto ? (
-                    <img
-                        src={`/storage/${s.foto}`}
-                        alt={s.nama}
-                        className="h-8 w-8 rounded-full object-cover"
-                    />
+                    <button
+                        type="button"
+                        onClick={() => openFotoModal(`/storage/${s.foto}`, s.nama)}
+                        className="group relative"
+                    >
+                        <img
+                            src={`/storage/${s.foto}`}
+                            alt={s.nama}
+                            className="h-8 w-8 rounded-full object-cover transition-transform hover:scale-110 hover:shadow-md"
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+                            <ZoomIn className="h-3.5 w-3.5 text-white" />
+                        </div>
+                    </button>
                 ) : (
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
                         <Camera className="h-4 w-4 text-muted-foreground" />
@@ -250,7 +273,16 @@ export default function SantriIndex() {
             key: 'nama',
             label: 'Nama',
             sortable: true,
-            render: (s) => <span className="font-medium">{s.nama}</span>,
+            render: (s) => (
+                <span className="font-medium">
+                    {s.nama}
+                    {s.nama_panggilan && (
+                        <span className="ml-1.5 text-xs text-muted-foreground">
+                            ({s.nama_panggilan})
+                        </span>
+                    )}
+                </span>
+            ),
         },
         { key: 'nis', label: 'NIS', sortable: true },
         { key: 'iksass', label: 'IKSASS', sortable: true },
@@ -497,6 +529,21 @@ export default function SantriIndex() {
                         />
                     </div>
                     <div className="space-y-2">
+                        <label className="text-sm font-medium">
+                            Nama Panggilan
+                        </label>
+                        <Input
+                            value={form.nama_panggilan}
+                            onChange={(e) =>
+                                setForm({
+                                    ...form,
+                                    nama_panggilan: e.target.value,
+                                })
+                            }
+                            placeholder="Nama panggilan santri"
+                        />
+                    </div>
+                    <div className="space-y-2">
                         <label className="text-sm font-medium">NIS</label>
                         <Input
                             value={form.nis}
@@ -679,6 +726,23 @@ export default function SantriIndex() {
                             Batal
                         </Button>
                     </div>
+                </div>
+            </Modal>
+
+            {/* Foto View Modal */}
+            <Modal
+                open={showFotoModal}
+                onClose={() => setShowFotoModal(false)}
+                title={fotoModalNama}
+                description="Foto Santri"
+                maxWidth="2xl"
+            >
+                <div className="flex items-center justify-center">
+                    <img
+                        src={fotoModalSrc}
+                        alt={fotoModalNama}
+                        className="max-h-[70vh] w-auto rounded-lg object-contain shadow-lg"
+                    />
                 </div>
             </Modal>
 

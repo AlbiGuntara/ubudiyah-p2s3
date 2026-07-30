@@ -135,25 +135,11 @@ body {
     background: var(--sidebar-foreground);
 }
 
-.modal-scroll::-webkit-scrollbar {
-    width: 5px;
-}
-
-.modal-scroll::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.modal-scroll::-webkit-scrollbar-thumb {
-    background: var(--border);
-    border-radius: 999px;
-    transition: background 0.2s ease;
-}
-
-.modal-scroll::-webkit-scrollbar-thumb:hover {
-    background: var(--muted-foreground);
-}
-
 .modal-scroll {
-    scrollbar-width: thin;
-    scrollbar-color: var(--border) transparent;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.modal-scroll::-webkit-scrollbar {
+    display: none;
 }

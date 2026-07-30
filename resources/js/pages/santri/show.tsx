@@ -67,6 +67,10 @@ export default function SantriShow() {
                                     <dd className="font-medium">{santri.iksass || '-'}</dd>
                                 </div>
                                 <div className="flex justify-between">
+                                    <dt className="text-muted-foreground">Nama Panggilan</dt>
+                                    <dd className="font-medium">{santri.nama_panggilan || '-'}</dd>
+                                </div>
+                                <div className="flex justify-between">
                                     <dt className="text-muted-foreground">Daerah</dt>
                                     <dd className="font-medium">{santri.asrama?.daerah?.nama_daerah}</dd>
                                 </div>

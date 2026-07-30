@@ -854,7 +854,7 @@ export default function PelanggaranIndex() {
                         )}
 
                     {!loadingRiwayat && reprintRiwayat.length > 0 && (
-                        <div className="max-h-80 space-y-2 overflow-y-auto">
+                        <div className="max-h-80 space-y-2 overflow-y-auto modal-scroll">
                             {reprintRiwayat.map((item: any) => (
                                 <div
                                     key={item.id}
@@ -934,7 +934,7 @@ export default function PelanggaranIndex() {
                     )}
 
                     {!loadingGlobalRiwayat && globalRiwayat.length > 0 && (
-                        <div className="max-h-96 space-y-3 overflow-y-auto">
+                        <div className="max-h-96 space-y-3 overflow-y-auto modal-scroll">
                             {globalRiwayat.map((item: any) => (
                                 <div
                                     key={item.printed_at}

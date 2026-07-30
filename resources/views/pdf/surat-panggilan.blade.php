@@ -12,7 +12,7 @@
 
         body {
             font-family: 'Times New Roman', Times, serif;
-            font-size: 11pt;
+            font-size: 12pt;
             line-height: 1.5;
             color: #000;
         }
@@ -91,7 +91,7 @@
             width: 100%;
             border-collapse: collapse;
             margin: 6px 0;
-            font-size: 10pt;
+            font-size: 12pt;
         }
 
         table.pelanggaran th {
@@ -215,9 +215,24 @@
             $bln = $bulanIndo[$tglCetak->month - 1];
             $thn = $tglCetak->year;
 
-            $chunkSize = 12;
-            $chunks = $pelanggaranList->isEmpty() ? collect([collect()]) : $pelanggaranList->chunk($chunkSize);
+            $firstPageSize = 9;
+            $continuationPageSize = 34;
             $counter = 0;
+
+            if ($pelanggaranList->isEmpty()) {
+                $chunks = collect([collect()]);
+            } else {
+                $firstPage = $pelanggaranList->take($firstPageSize);
+                $remaining = $pelanggaranList->slice($firstPageSize);
+
+                $chunks = collect([$firstPage]);
+
+                if ($remaining->isNotEmpty()) {
+                    foreach ($remaining->chunk($continuationPageSize) as $chunk) {
+                        $chunks->push($chunk);
+                    }
+                }
+            }
         @endphp
 
         @foreach ($chunks as $chunkIndex => $chunk)

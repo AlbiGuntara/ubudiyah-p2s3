@@ -150,22 +150,54 @@ class PembinaanController extends Controller
         return redirect()->back()->with('success', "Pemutihan berhasil! Semua sisa sanksi dikalikan {$multiplier}.");
     }
 
-    public function cetak(): \Illuminate\Http\Response|RedirectResponse
+    public function cetak(Request $request): \Illuminate\Http\Response|RedirectResponse
     {
         set_time_limit(0);
         ini_set('memory_limit', '512M');
 
-        $pembinaans = Pembinaan::with(['santri.asrama.daerah', 'asrama.daerah'])
-            ->where('sisa_sanksi', '>', 0)
-            ->get();
+        $filterInfo = [];
+        $hasFilter = $request->filled('bulan') || $request->filled('tanggal_awal') || $request->filled('tanggal_akhir');
 
-        $santriIds = $pembinaans->whereNotNull('santri_id')->pluck('santri_id')->unique()->values();
+        if ($hasFilter) {
+            $pelanggaranQuery = Pelanggaran::with('daftarPelanggaran')->orderBy('tanggal');
 
-        $pelanggaranBySantri = Pelanggaran::with('daftarPelanggaran')
-            ->whereIn('santri_id', $santriIds)
-            ->orderBy('tanggal')
-            ->get()
-            ->groupBy('santri_id');
+            if ($request->filled('bulan')) {
+                $bulan = $request->bulan;
+                $pelanggaranQuery->whereYear('tanggal', (int) substr($bulan, 0, 4))
+                    ->whereMonth('tanggal', (int) substr($bulan, 5, 2));
+                $filterInfo['bulan'] = $bulan;
+            }
+
+            if ($request->filled('tanggal_awal')) {
+                $pelanggaranQuery->whereDate('tanggal', '>=', $request->tanggal_awal);
+                $filterInfo['tanggal_awal'] = $request->tanggal_awal;
+            }
+
+            if ($request->filled('tanggal_akhir')) {
+                $pelanggaranQuery->whereDate('tanggal', '<=', $request->tanggal_akhir);
+                $filterInfo['tanggal_akhir'] = $request->tanggal_akhir;
+            }
+
+            $pelanggaranBySantri = $pelanggaranQuery->get()->groupBy('santri_id');
+            $santriIds = $pelanggaranBySantri->keys()->toArray();
+
+            $pembinaans = Pembinaan::with(['santri.asrama.daerah', 'asrama.daerah'])
+                ->where('sisa_sanksi', '>', 0)
+                ->whereIn('santri_id', $santriIds)
+                ->get();
+        } else {
+            $pembinaans = Pembinaan::with(['santri.asrama.daerah', 'asrama.daerah'])
+                ->where('sisa_sanksi', '>', 0)
+                ->get();
+
+            $santriIds = $pembinaans->whereNotNull('santri_id')->pluck('santri_id')->unique()->values();
+
+            $pelanggaranBySantri = Pelanggaran::with('daftarPelanggaran')
+                ->whereIn('santri_id', $santriIds)
+                ->orderBy('tanggal')
+                ->get()
+                ->groupBy('santri_id');
+        }
 
         $pembinaans = $pembinaans->sortBy(function ($p) {
             $nama = $p->santri?->nama ?? 'zzz';
@@ -202,6 +234,8 @@ class PembinaanController extends Controller
                     'asrama' => $p->santri?->asrama ?? $p->asrama,
                     'pelanggarans' => $pelanggarans,
                     'total_sanksi' => $p->sisa_sanksi,
+                    'sanksi_disetor' => $p->shalawat_tertulis,
+                    'tanggal_setor' => null,
                 ];
             }
         }
@@ -214,6 +248,7 @@ class PembinaanController extends Controller
             'groups' => $groups,
             'tanggal_cetak' => now()->format('d/m/Y H:i'),
             'user' => auth()->user()->name,
+            'filterInfo' => $filterInfo,
         ]);
 
         $pdf->setPaper('F4', 'landscape');

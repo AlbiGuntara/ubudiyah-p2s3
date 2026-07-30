@@ -34,7 +34,8 @@ export default function LaporanPerDaerah() {
                                             <TableHead>Ranking</TableHead>
                                             <TableHead>Asrama</TableHead>
                                             <TableHead>Jumlah Pelanggaran</TableHead>
-                                            <TableHead>Jumlah Santri</TableHead>
+                                            <TableHead>Jumlah Pelanggar</TableHead>
+                                            <TableHead>Total Santri</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -46,6 +47,7 @@ export default function LaporanPerDaerah() {
                                                 <TableCell className="font-medium">Asrama {a.asrama_nomor}</TableCell>
                                                 <TableCell>{a.jumlah_pelanggaran}</TableCell>
                                                 <TableCell>{a.jumlah_santri}</TableCell>
+                                                <TableCell>{a.total_santri}</TableCell>
                                             </TableRow>
                                         ))}
                                     </TableBody>

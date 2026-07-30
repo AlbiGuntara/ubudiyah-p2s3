@@ -255,7 +255,8 @@ export default function LaporanIndex() {
                             'Kode',
                             'Daerah',
                             'Jumlah Pelanggaran',
-                            'Jumlah Santri',
+                            'Jumlah Pelanggar',
+                            'Total Santri',
                         ]}
                         rows={(data?.per_daerah || []).map(
                             (d: any, i: number) => [
@@ -266,6 +267,7 @@ export default function LaporanIndex() {
                                     {d.jumlah_pelanggaran}
                                 </Badge>,
                                 d.jumlah_santri,
+                                d.total_santri,
                             ],
                         )}
                         exportSection="per_daerah"
@@ -281,7 +283,8 @@ export default function LaporanIndex() {
                             'Daerah',
                             'Asrama',
                             'Jumlah Pelanggaran',
-                            'Jumlah Santri',
+                            'Jumlah Pelanggar',
+                            'Total Santri',
                         ]}
                         rows={(data?.per_asrama || []).map(
                             (d: any, i: number) => [
@@ -294,6 +297,7 @@ export default function LaporanIndex() {
                                     {d.jumlah_pelanggaran}
                                 </Badge>,
                                 d.jumlah_santri,
+                                d.total_santri,
                             ],
                         )}
                         exportSection="per_asrama"
@@ -338,7 +342,8 @@ export default function LaporanIndex() {
                             'No',
                             'IKSASS',
                             'Jumlah Pelanggaran',
-                            'Jumlah Santri',
+                            'Jumlah Pelanggar',
+                            'Total Santri',
                         ]}
                         rows={(data?.per_iksass || []).map(
                             (d: any, i: number) => [
@@ -348,6 +353,7 @@ export default function LaporanIndex() {
                                     {d.jumlah_pelanggaran}
                                 </Badge>,
                                 d.jumlah_santri,
+                                d.total_santri,
                             ],
                         )}
                         exportSection="per_iksass"

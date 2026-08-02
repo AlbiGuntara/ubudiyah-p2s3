@@ -35,6 +35,7 @@ export default function SantriIndex() {
     const [filterDaerah, setFilterDaerah] = useState(filters?.daerah_id || '');
     const [filterAsrama, setFilterAsrama] = useState(filters?.asrama_id || '');
     const [filterIksass, setFilterIksass] = useState(filters?.iksass || '');
+    const [filterStatus, setFilterStatus] = useState(filters?.status || '');
     const [search, setSearch] = useState(filters?.search || '');
     const [sortColumn, setSortColumn] = useState(sort_column || '');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | 'none'>(
@@ -48,6 +49,7 @@ export default function SantriIndex() {
         nis: '',
         iksass: '',
         nama_panggilan: '',
+        status: 'aktif',
         foto: null as File | null,
         daerah_id: '',
         asrama_id: '',
@@ -83,6 +85,7 @@ export default function SantriIndex() {
             nis: '',
             iksass: '',
             nama_panggilan: '',
+            status: 'aktif',
             foto: null,
             daerah_id: '',
             asrama_id: '',
@@ -101,6 +104,7 @@ export default function SantriIndex() {
             nis: s.nis || '',
             iksass: s.iksass || '',
             nama_panggilan: s.nama_panggilan || '',
+            status: s.status || 'aktif',
             foto: null,
             daerah_id: daerahId,
             asrama_id: s.asrama_id,
@@ -152,6 +156,7 @@ export default function SantriIndex() {
         formData.append('nis', form.nis || '');
         formData.append('iksass', form.iksass || '');
         formData.append('nama_panggilan', form.nama_panggilan || '');
+        formData.append('status', form.status);
         formData.append('asrama_id', form.asrama_id);
         if (form.foto) {
             formData.append('foto', form.foto);
@@ -211,6 +216,7 @@ export default function SantriIndex() {
                 daerah_id: filterDaerah || undefined,
                 asrama_id: filterAsrama || undefined,
                 iksass: filterIksass || undefined,
+                status: filterStatus || undefined,
                 search: search || undefined,
                 per_page: perPage,
             },
@@ -374,6 +380,7 @@ export default function SantriIndex() {
                                 daerah_id: filterDaerah || undefined,
                                 asrama_id: filterAsrama || undefined,
                                 iksass: filterIksass || undefined,
+                                status: filterStatus || undefined,
                                 sort_column: sortColumn || undefined,
                                 sort_direction:
                                     sortDirection === 'none'
@@ -419,6 +426,7 @@ export default function SantriIndex() {
                                     daerah_id: filterDaerah || undefined,
                                     asrama_id: filterAsrama || undefined,
                                     iksass: filterIksass || undefined,
+                                    status: filterStatus || undefined,
                                     sort_column: sortColumn || undefined,
                                     sort_direction:
                                         sortDirection === 'none'
@@ -477,6 +485,19 @@ export default function SantriIndex() {
                                 placeholder="Cari asal..."
                                 className="max-w-[130px]"
                             />
+                            <Select
+                                value={filterStatus}
+                                onChange={(e) =>
+                                    setFilterStatus(e.target.value)
+                                }
+                                placeholder="Semua Status"
+                                options={[
+                                    { value: 'aktif', label: 'Aktif' },
+                                    { value: 'tidak aktif', label: 'Tidak Aktif' },
+                                    { value: 'berhenti', label: 'Berhenti' },
+                                ]}
+                                className="min-w-[140px]"
+                            />
                             <Button
                                 variant="outline"
                                 size="sm"
@@ -489,6 +510,7 @@ export default function SantriIndex() {
                                             asrama_id:
                                                 filterAsrama || undefined,
                                             iksass: filterIksass || undefined,
+                                            status: filterStatus || undefined,
                                             search: search || undefined,
                                             per_page: perPage,
                                             sort_column:
@@ -541,6 +563,20 @@ export default function SantriIndex() {
                                 })
                             }
                             placeholder="Nama panggilan santri"
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium">Status</label>
+                        <Select
+                            value={form.status}
+                            onChange={(e) =>
+                                setForm({ ...form, status: e.target.value })
+                            }
+                            options={[
+                                { value: 'aktif', label: 'Aktif' },
+                                { value: 'tidak aktif', label: 'Tidak Aktif' },
+                                { value: 'berhenti', label: 'Berhenti' },
+                            ]}
                         />
                     </div>
                     <div className="space-y-2">

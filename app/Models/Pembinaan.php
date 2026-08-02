@@ -41,4 +41,9 @@ class Pembinaan extends Model
     {
         return $this->belongsTo(Asrama::class);
     }
+
+    public function setoran()
+    {
+        return $this->hasMany(PembinaanSetoran::class);
+    }
 }

@@ -18,7 +18,12 @@ class Santri extends Model
         'iksass',
         'foto',
         'nama_panggilan',
+        'status',
         'asrama_id',
+    ];
+
+    protected $casts = [
+        'status' => 'string',
     ];
 
     public function asrama()

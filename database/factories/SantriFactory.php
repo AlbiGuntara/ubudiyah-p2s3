@@ -14,6 +14,7 @@ class SantriFactory extends Factory
             'nama' => fake()->name(),
             'nis' => (string) fake()->unique()->numberBetween(1000, 9999),
             'iksass' => fake()->randomElement(['Situbondo', 'Bondowoso', 'Jember', 'Banyuwangi', 'Probolinggo', 'Lumajang']),
+            'status' => fake()->randomElement(['aktif', 'tidak aktif', 'berhenti']),
             'asrama_id' => \App\Models\Asrama::factory(),
         ];
     }

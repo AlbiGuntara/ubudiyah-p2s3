@@ -33,6 +33,7 @@ class SantriSeeder extends Seeder
                         return $asal[array_rand($asal)];
                     })(),
                     'asrama_id' => $asramaId,
+                    'status' => 'aktif',
                 ];
                 $index++;
             }

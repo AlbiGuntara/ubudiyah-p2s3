@@ -7,7 +7,7 @@ import { Modal } from '@/components/ui/modal';
 import { Badge } from '@/components/ui/badge';
 import { DataTable, type Column } from '@/components/shared/data-table';
 import { Select } from '@/components/ui/select';
-import { BookOpen, PlusCircle, Printer } from 'lucide-react';
+import { BookOpen, PlusCircle, Printer, Clock } from 'lucide-react';
 
 export default function PembinaanIndex() {
     const {
@@ -29,6 +29,10 @@ export default function PembinaanIndex() {
         (sort_direction as 'asc' | 'desc' | 'none') || 'none',
     );
     const [jumlahSetoran, setJumlahSetoran] = useState('');
+    const [tanggalSetor, setTanggalSetor] = useState(
+        new Date().toISOString().split('T')[0],
+    );
+    const [showRiwayatModal, setShowRiwayatModal] = useState(false);
     const [multiplier, setMultiplier] = useState('');
     const [showCetakModal, setShowCetakModal] = useState(false);
     const [cetakMode, setCetakMode] = useState<'semua' | 'bulan' | 'rentang'>('semua');
@@ -46,6 +50,7 @@ export default function PembinaanIndex() {
     const openSetor = (p: any) => {
         setSetorTarget(p);
         setJumlahSetoran('');
+        setTanggalSetor(new Date().toISOString().split('T')[0]);
         setShowSetorModal(true);
     };
 
@@ -58,7 +63,10 @@ export default function PembinaanIndex() {
         if (!setorTarget || !jumlahSetoran) return;
         router.post(
             `/pembinaan/${setorTarget.id}/setor-sanksi`,
-            { jumlah_setoran: jumlahSetoran },
+            {
+                jumlah_setoran: jumlahSetoran,
+                tanggal_setor: tanggalSetor,
+            },
             {
                 onSuccess: () => {
                     setShowSetorModal(false);
@@ -142,6 +150,22 @@ export default function PembinaanIndex() {
         return a?.nomor || '-';
     };
 
+    const formatTanggal = (date: string) => {
+        if (!date) return '-';
+        const d = new Date(date);
+        if (isNaN(d.getTime())) return date;
+        return d.toLocaleDateString('id-ID', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+        });
+    };
+
+    const openRiwayat = (p: any) => {
+        setSetorTarget(p);
+        setShowRiwayatModal(true);
+    };
+
     const filteredAsrama = filterDaerah
         ? asrama.filter((a: any) => a.daerah_id === parseInt(filterDaerah))
         : asrama;
@@ -211,6 +235,16 @@ export default function PembinaanIndex() {
             className: 'text-right',
             render: (p) => (
                 <div className="flex justify-end gap-2">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openRiwayat(p)}
+                        title="Riwayat Setoran"
+                        className="inline-flex items-center gap-1"
+                    >
+                        <Clock className="h-4 w-4" />
+                        Riwayat
+                    </Button>
                     <Button
                         variant="outline"
                         size="sm"
@@ -516,6 +550,16 @@ export default function PembinaanIndex() {
                             placeholder="Masukkan jumlah setoran"
                         />
                     </div>
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium">
+                            Tanggal Setor
+                        </label>
+                        <Input
+                            type="date"
+                            value={tanggalSetor}
+                            onChange={(e) => setTanggalSetor(e.target.value)}
+                        />
+                    </div>
                     <div className="flex justify-end gap-3 pt-2">
                         <Button
                             variant="outline"
@@ -525,6 +569,79 @@ export default function PembinaanIndex() {
                         </Button>
                         <Button onClick={setorSanksi}>Setor</Button>
                     </div>
+                </div>
+            </Modal>
+
+            {/* Riwayat Setoran Modal */}
+            <Modal
+                open={showRiwayatModal}
+                onClose={() => setShowRiwayatModal(false)}
+                title="Riwayat Setoran"
+                description={
+                    setorTarget
+                        ? `${getNama(setorTarget)} - ${getAsrama(setorTarget)}`
+                        : ''
+                }
+            >
+                <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                        <thead>
+                            <tr className="border-b bg-muted/50">
+                                <th className="px-4 py-2 text-left font-semibold">
+                                    #
+                                </th>
+                                <th className="px-4 py-2 text-left font-semibold">
+                                    Tanggal Setor
+                                </th>
+                                <th className="px-4 py-2 text-right font-semibold">
+                                    Jumlah
+                                </th>
+                                <th className="px-4 py-2 text-left font-semibold">
+                                    Oleh
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {(setorTarget?.setoran || []).length === 0 ? (
+                                <tr>
+                                    <td
+                                        colSpan={4}
+                                        className="px-4 py-8 text-center text-muted-foreground"
+                                    >
+                                        Belum ada riwayat setoran
+                                    </td>
+                                </tr>
+                            ) : (
+                                [...(setorTarget?.setoran || [])]
+                                    .sort(
+                                        (a: any, b: any) =>
+                                            new Date(b.tanggal_setor).getTime() -
+                                            new Date(a.tanggal_setor).getTime(),
+                                    )
+                                    .map((s: any, i: number) => (
+                                        <tr
+                                            key={s.id}
+                                            className="border-b last:border-0"
+                                        >
+                                            <td className="px-4 py-2 text-muted-foreground">
+                                                {i + 1}
+                                            </td>
+                                            <td className="px-4 py-2">
+                                                {formatTanggal(
+                                                    s.tanggal_setor,
+                                                )}
+                                            </td>
+                                            <td className="px-4 py-2 text-right font-medium text-green-600">
+                                                {s.jumlah.toLocaleString()}
+                                            </td>
+                                            <td className="px-4 py-2">
+                                                {s.user_name || '-'}
+                                            </td>
+                                        </tr>
+                                    ))
+                            )}
+                        </tbody>
+                    </table>
                 </div>
             </Modal>
 

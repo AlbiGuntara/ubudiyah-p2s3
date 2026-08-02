@@ -266,6 +266,10 @@ class ExportController extends Controller
 
         $pembinaans = Pembinaan::with(['santri.asrama.daerah', 'asrama.daerah'])
             ->where('sisa_sanksi', '>', 0)
+            ->where(function ($q) {
+                $q->whereNull('santri_id')
+                    ->orWhereHas('santri', fn ($sq) => $sq->whereIn('status', ['aktif', 'tidak aktif']));
+            })
             ->get();
 
         $santriIds = $pembinaans->whereNotNull('santri_id')->pluck('santri_id')->unique()->values();

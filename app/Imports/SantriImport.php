@@ -22,6 +22,12 @@ class SantriImport implements ToModel, WithHeadingRow
         $iksass = trim($row['iksass'] ?? '');
         $asramaNomor = trim($row['asrama'] ?? '');
         $daerahInput = trim($row['daerah'] ?? '');
+        $status = strtolower(trim($row['status'] ?? ''));
+
+        if (!in_array($status, ['', 'aktif', 'tidak aktif', 'berhenti'])) {
+            $this->errors[] = "Baris {$this->row}: Status \"{$status}\" tidak valid (harus aktif, tidak aktif, atau berhenti)";
+            return null;
+        }
 
         if (empty($nama)) {
             $this->errors[] = "Baris {$this->row}: Nama tidak boleh kosong";
@@ -73,6 +79,7 @@ class SantriImport implements ToModel, WithHeadingRow
             'nama' => $nama,
             'nis' => $nis ?: null,
             'iksass' => $iksass ?: null,
+            'status' => $status ?: 'aktif',
             'asrama_id' => $asrama->id,
         ]);
     }

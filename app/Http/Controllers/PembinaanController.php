@@ -29,7 +29,7 @@ class PembinaanController extends Controller
 
     public function index(Request $request): Response
     {
-        $query = Pembinaan::with(['santri.asrama.daerah', 'asrama.daerah']);
+        $query = Pembinaan::with(['santri.asrama.daerah', 'asrama.daerah', 'setoran']);
 
         // Search by santri name or asrama name (for anonymous)
         if ($request->filled('search')) {
@@ -113,14 +113,23 @@ class PembinaanController extends Controller
     {
         $validated = $request->validate([
             'jumlah_setoran' => 'required|integer|min:1',
+            'tanggal_setor' => 'nullable|date',
         ]);
 
         $jumlahSetoran = (int) $validated['jumlah_setoran'];
+        $tanggalSetor = $validated['tanggal_setor'] ?? now()->format('Y-m-d');
 
         // Cannot setor more than remaining sisa_sanksi
         if ($jumlahSetoran > $pembinaan->sisa_sanksi) {
             return redirect()->back()->with('error', 'Jumlah setoran melebihi sisa sanksi.');
         }
+
+        $pembinaan->setoran()->create([
+            'jumlah' => $jumlahSetoran,
+            'tanggal_setor' => $tanggalSetor,
+            'user_id' => auth()->id(),
+            'user_name' => auth()->user()->name,
+        ]);
 
         $pembinaan->shalawat_tertulis += $jumlahSetoran;
         $pembinaan->sisa_sanksi = max(0, $pembinaan->sisa_sanksi - $jumlahSetoran);
@@ -182,13 +191,21 @@ class PembinaanController extends Controller
             $pelanggaranBySantri = $pelanggaranQuery->get()->groupBy('santri_id');
             $santriIds = $pelanggaranBySantri->keys()->toArray();
 
-            $pembinaans = Pembinaan::with(['santri.asrama.daerah', 'asrama.daerah'])
+            $pembinaans = Pembinaan::with(['santri.asrama.daerah', 'asrama.daerah', 'setoran'])
                 ->where('sisa_sanksi', '>', 0)
                 ->whereIn('santri_id', $santriIds)
+                ->where(function ($q) {
+                    $q->whereNull('santri_id')
+                        ->orWhereHas('santri', fn ($sq) => $sq->whereIn('status', ['aktif', 'tidak aktif']));
+                })
                 ->get();
         } else {
-            $pembinaans = Pembinaan::with(['santri.asrama.daerah', 'asrama.daerah'])
+            $pembinaans = Pembinaan::with(['santri.asrama.daerah', 'asrama.daerah', 'setoran'])
                 ->where('sisa_sanksi', '>', 0)
+                ->where(function ($q) {
+                    $q->whereNull('santri_id')
+                        ->orWhereHas('santri', fn ($sq) => $sq->whereIn('status', ['aktif', 'tidak aktif']));
+                })
                 ->get();
 
             $santriIds = $pembinaans->whereNotNull('santri_id')->pluck('santri_id')->unique()->values();
@@ -236,7 +253,7 @@ class PembinaanController extends Controller
                     'pelanggarans' => $pelanggarans,
                     'total_sanksi' => $p->sisa_sanksi,
                     'sanksi_disetor' => $p->shalawat_tertulis,
-                    'tanggal_setor' => null,
+                    'tanggal_setor' => $p->setoran->sortByDesc('tanggal_setor')->first()?->tanggal_setor,
                 ];
             }
         }

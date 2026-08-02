@@ -21,6 +21,7 @@ class StoreSantriRequest extends FormRequest
             'iksass' => 'nullable|string|max:20',
             'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'nama_panggilan' => 'nullable|string|max:50',
+            'status' => 'nullable|string|in:aktif,tidak aktif,berhenti',
             'asrama_id' => 'required|exists:asrama,id',
         ];
     }

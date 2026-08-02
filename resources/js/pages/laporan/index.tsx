@@ -311,23 +311,17 @@ export default function LaporanIndex() {
                         headers={[
                             'No',
                             'Jenis Pelanggaran',
-                            'Poin',
                             'Jumlah Pelanggaran',
                             'Jumlah Santri',
-                            'Total Poin',
                         ]}
                         rows={(data?.per_jenis_pelanggaran || []).map(
                             (d: any, i: number) => [
                                 i + 1,
                                 d.nama_pelanggaran,
-                                <Badge key="poin" variant="secondary">
-                                    {d.poin}
-                                </Badge>,
                                 <Badge key="jp" variant="default">
                                     {d.jumlah_pelanggaran}
                                 </Badge>,
                                 d.jumlah_santri,
-                                d.total_poin,
                             ],
                         )}
                         exportSection="per_jenis_pelanggaran"

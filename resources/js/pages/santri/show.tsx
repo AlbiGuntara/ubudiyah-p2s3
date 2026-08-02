@@ -15,6 +15,28 @@ export default function SantriShow() {
         return `${d}-${m}-${y}`;
     };
 
+    const setoranRows = (santri.pembinaan || [])
+        .flatMap((p: any) => {
+            const setoran = [...(p.setoran || [])].sort(
+                (a: any, b: any) =>
+                    new Date(a.tanggal_setor).getTime() -
+                    new Date(b.tanggal_setor).getTime(),
+            );
+            let sisa = p.sisa_sanksi || 0;
+            const rows: any[] = [];
+            for (let i = setoran.length - 1; i >= 0; i--) {
+                const s = setoran[i];
+                rows.push({ ...s, _sisa_sanksi: sisa });
+                sisa += s.jumlah || 0;
+            }
+            return rows;
+        })
+        .sort(
+            (a: any, b: any) =>
+                new Date(b.tanggal_setor).getTime() -
+                new Date(a.tanggal_setor).getTime(),
+        );
+
     return (
         <AppLayout>
             <Head title={santri.nama} />
@@ -70,6 +92,20 @@ export default function SantriShow() {
                                     <dt className="text-muted-foreground">Nama Panggilan</dt>
                                     <dd className="font-medium">{santri.nama_panggilan || '-'}</dd>
                                 </div>
+                                <div className="flex justify-between items-center">
+                                    <dt className="text-muted-foreground">Status</dt>
+                                    <dd>
+                                        <Badge variant={
+                                            santri.status === 'aktif'
+                                                ? 'success'
+                                                : santri.status === 'tidak aktif'
+                                                  ? 'warning'
+                                                  : 'destructive'
+                                        }>
+                                            {santri.status || 'aktif'}
+                                        </Badge>
+                                    </dd>
+                                </div>
                                 <div className="flex justify-between">
                                     <dt className="text-muted-foreground">Daerah</dt>
                                     <dd className="font-medium">{santri.asrama?.daerah?.nama_daerah}</dd>
@@ -113,6 +149,7 @@ export default function SantriShow() {
                                 { key: 'no', label: '#', render: (_p: any, idx: number) => <span>{idx + 1}</span>, className: 'text-muted-foreground text-xs w-10' },
                                 { key: 'tanggal', label: 'Tanggal', render: (p: any) => <span>{formatDate(p.tanggal)}</span> },
                                 { key: 'pelanggaran', label: 'Jenis Pelanggaran', render: (p: any) => p.daftar_pelanggaran?.nama_pelanggaran },
+                                { key: 'sanksi', label: 'Sanksi', render: (p: any) => <span className="font-semibold text-red-600">{(p.jumlah || 1) * 100}</span> },
                                 { key: 'sumber', label: 'Sumber', render: (p: any) => <Badge variant={p.sumber_pencatatan === 'petugas' ? 'success' : 'warning'}>{p.sumber_pencatatan}</Badge> },
                             ]}
                             data={santri.pelanggaran}
@@ -125,22 +162,22 @@ export default function SantriShow() {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle className="text-base">Riwayat Pembinaan</CardTitle>
+                        <CardTitle className="text-base">Riwayat Setoran</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <DataTable
                             columns={[
                                 { key: 'no', label: '#', render: (_p: any, idx: number) => <span>{idx + 1}</span>, className: 'text-muted-foreground text-xs w-10' },
-                                { key: 'sanksi', label: 'Total Sanksi', render: (p: any) => <span className="font-semibold text-red-600">{p.sanksi.toLocaleString()}</span> },
-                                { key: 'shalawat', label: 'Shalawat Dibayar', render: (p: any) => <span className="text-green-600">{p.shalawat_tertulis.toLocaleString()}</span> },
-                                { key: 'sisa', label: 'Sisa', render: (p: any) => {
-                                    const sisa = Math.max(0, p.sanksi - p.shalawat_tertulis);
+                                { key: 'tanggal_setor', label: 'Tanggal Setor', render: (s: any) => <span>{formatDate(s.tanggal_setor)}</span> },
+                                { key: 'jumlah', label: 'Jumlah Setoran', render: (s: any) => <span className="font-medium text-green-600">{s.jumlah.toLocaleString()}</span> },
+                                { key: 'sisa_sanksi', label: 'Sisa Sanksi', render: (s: any) => {
+                                    const sisa = s._sisa_sanksi;
                                     return <Badge variant={sisa > 0 ? 'warning' : 'success'}>{sisa.toLocaleString()}</Badge>;
                                 }},
                             ]}
-                            data={santri.pembinaan}
-                            meta={{ current_page: 1, last_page: 1, total: santri.pembinaan.length, from: 1, to: santri.pembinaan.length }}
-                            keyExtractor={(p: any) => p.id}
+                            data={setoranRows}
+                            meta={{ current_page: 1, last_page: 1, total: setoranRows.length, from: 1, to: setoranRows.length }}
+                            keyExtractor={(s: any) => s.id}
                             onPageChange={() => {}}
                         />
                     </CardContent>

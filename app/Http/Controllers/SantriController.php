@@ -44,6 +44,10 @@ class SantriController extends Controller
             $query->where('iksass', 'like', "%{$request->iksass}%");
         }
 
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
@@ -55,7 +59,7 @@ class SantriController extends Controller
 
         $sortColumn = $request->input('sort_column', 'created_at');
         $sortDirection = $request->input('sort_direction', 'desc');
-        $allowedSorts = ['nis', 'nama', 'iksass', 'nama_panggilan', 'asrama_id', 'created_at'];
+        $allowedSorts = ['nis', 'nama', 'iksass', 'nama_panggilan', 'status', 'asrama_id', 'created_at'];
         if (in_array($sortColumn, $allowedSorts)) {
             $query->orderBy($sortColumn, $sortDirection === 'asc' ? 'asc' : 'desc');
         } else {
@@ -70,7 +74,7 @@ class SantriController extends Controller
             'santri' => $santri,
             'daerah' => $daerah,
             'asrama' => $asrama,
-            'filters' => $request->only(['daerah_id', 'asrama_id', 'iksass', 'search', 'per_page', 'sort_column', 'sort_direction']),
+            'filters' => $request->only(['daerah_id', 'asrama_id', 'iksass', 'status', 'search', 'per_page', 'sort_column', 'sort_direction']),
         ]);
     }
 
@@ -104,7 +108,7 @@ class SantriController extends Controller
 
     public function show(Santri $santri): Response
     {
-        $santri->load(['asrama.daerah', 'pelanggaran.daftarPelanggaran', 'pembinaan']);
+        $santri->load(['asrama.daerah', 'pelanggaran.daftarPelanggaran', 'pembinaan.setoran']);
 
         return Inertia::render('santri/show', [
             'santri' => $santri,

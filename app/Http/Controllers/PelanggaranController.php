@@ -62,6 +62,7 @@ class PelanggaranController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->whereHas('santri', fn ($sq) => $sq->where('nama', 'like', "%{$search}%")
+                    ->orWhere('nama_panggilan', 'like', "%{$search}%")
                     ->orWhere('iksass', 'like', "%{$search}%"))
                   ->orWhereHas('asrama', fn ($aq) => $aq->where('nomor', 'like', "%{$search}%")
                       ->orWhereHas('daerah', fn ($dq) => $dq->where('kode', 'like', "%{$search}%")))

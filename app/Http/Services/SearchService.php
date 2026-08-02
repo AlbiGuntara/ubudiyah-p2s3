@@ -10,6 +10,7 @@ class SearchService
     public function search(string $query): array
     {
         $santri = Santri::where('nama', 'like', "%{$query}%")
+            ->orWhere('nama_panggilan', 'like', "%{$query}%")
             ->orWhere('nis', 'like', "%{$query}%")
             ->with('asrama.daerah')
             ->limit(5)

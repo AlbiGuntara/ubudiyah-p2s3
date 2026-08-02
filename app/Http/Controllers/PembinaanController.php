@@ -36,7 +36,8 @@ class PembinaanController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->whereHas('santri', function ($sq) use ($search) {
-                    $sq->where('nama', 'like', "%{$search}%");
+                    $sq->where('nama', 'like', "%{$search}%")
+                        ->orWhere('nama_panggilan', 'like', "%{$search}%");
                 })->orWhereHas('asrama', function ($aq) use ($search) {
                     $aq->whereHas('daerah', function ($dq) use ($search) {
                         $dq->where('kode', 'like', "%{$search}%");

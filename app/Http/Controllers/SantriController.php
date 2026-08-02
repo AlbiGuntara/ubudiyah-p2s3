@@ -48,6 +48,7 @@ class SantriController extends Controller
             $search = $request->search;
             $query->where(function($q) use ($search) {
                 $q->where('nama', 'like', "%{$search}%")
+                  ->orWhere('nama_panggilan', 'like', "%{$search}%")
                   ->orWhere('nis', 'like', "%{$search}%");
             });
         }

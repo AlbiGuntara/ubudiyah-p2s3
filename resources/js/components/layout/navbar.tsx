@@ -108,7 +108,7 @@ export function Navbar({
                     <div ref={searchRef} className="relative hidden sm:block">
                         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                         <Input
-                            placeholder="Cari santri, asrama..."
+                            placeholder="Cari santri, panggilan, asrama..."
                             value={searchQuery}
                             onChange={(e) => handleSearch(e.target.value)}
                             onFocus={() => searchQuery.length >= 2 && setShowSearch(true)}

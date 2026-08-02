@@ -402,7 +402,7 @@ export default function SantriIndex() {
                             { preserveState: true, preserveScroll: true },
                         );
                     }}
-                    searchPlaceholder="Cari nama/NIS..."
+                    searchPlaceholder="Cari nama, panggilan/NIS..."
                     sortColumn={sortColumn}
                     sortDirection={sortDirection}
                     onSort={handleSort}

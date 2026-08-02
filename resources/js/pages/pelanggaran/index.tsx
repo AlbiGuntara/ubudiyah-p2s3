@@ -638,7 +638,7 @@ export default function PelanggaranIndex() {
                             { preserveState: true, preserveScroll: true },
                         );
                     }}
-                    searchPlaceholder="Cari nama santri, IKSASS, asrama, atau pelanggaran..."
+                    searchPlaceholder="Cari nama, panggilan, IKSASS, asrama, atau pelanggaran..."
                     sortColumn={sortColumn}
                     sortDirection={sortDirection}
                     onSort={handleSort}

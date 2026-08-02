@@ -305,7 +305,7 @@ export default function PembinaanIndex() {
                             { preserveState: true, preserveScroll: true },
                         );
                     }}
-                    searchPlaceholder="Cari nama santri atau kamar..."
+                    searchPlaceholder="Cari nama, panggilan, atau kamar..."
                     sortColumn={sortColumn}
                     sortDirection={sortDirection}
                     onSort={handleSort}

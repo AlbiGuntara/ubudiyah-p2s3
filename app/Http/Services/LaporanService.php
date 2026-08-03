@@ -102,12 +102,25 @@ class LaporanService
             ->groupBy('daerah.id')
             ->pluck('total_santri', 'id');
 
+        $pembinaanPerDaerah = $this->pembinaanStatusQuery($tanggalMulai, $tanggalSelesai, $bulan, $tahun, $daerahId, $asramaId, $sumberPencatatan)
+            ->join('daerah', 'asrama.daerah_id', '=', 'daerah.id')
+            ->select(
+                'daerah.id',
+                DB::raw('COUNT(DISTINCT CASE WHEN pembinaan.sisa_sanksi = 0 THEN pelanggaran.santri_id END) as pembinaan_selesai'),
+                DB::raw('COUNT(DISTINCT CASE WHEN pembinaan.sisa_sanksi > 0 THEN pelanggaran.santri_id END) as pembinaan_belum_selesai')
+            )
+            ->groupBy('daerah.id')
+            ->get()
+            ->keyBy('id');
+
         $perDaerah = $perDaerah->map(fn($item) => (object) [
             'id' => $item->id,
             'kode' => $item->kode,
             'nama_daerah' => $item->nama_daerah,
             'jumlah_pelanggaran' => (int) $item->jumlah_pelanggaran,
             'jumlah_santri' => (int) $item->jumlah_santri,
+            'pembinaan_selesai' => (int) ($pembinaanPerDaerah[$item->id]->pembinaan_selesai ?? 0),
+            'pembinaan_belum_selesai' => (int) ($pembinaanPerDaerah[$item->id]->pembinaan_belum_selesai ?? 0),
             'total_santri' => (int) ($totalSantriPerDaerah[$item->id] ?? 0),
         ]);
 
@@ -140,6 +153,16 @@ class LaporanService
             ->groupBy('asrama_id')
             ->pluck('total_santri', 'asrama_id');
 
+        $pembinaanPerAsrama = $this->pembinaanStatusQuery($tanggalMulai, $tanggalSelesai, $bulan, $tahun, $daerahId, $asramaId, $sumberPencatatan)
+            ->select(
+                'asrama.id',
+                DB::raw('COUNT(DISTINCT CASE WHEN pembinaan.sisa_sanksi = 0 THEN pelanggaran.santri_id END) as pembinaan_selesai'),
+                DB::raw('COUNT(DISTINCT CASE WHEN pembinaan.sisa_sanksi > 0 THEN pelanggaran.santri_id END) as pembinaan_belum_selesai')
+            )
+            ->groupBy('asrama.id')
+            ->get()
+            ->keyBy('id');
+
         $perAsrama = $perAsrama->map(fn($item) => (object) [
             'id' => $item->id,
             'nomor' => $item->nomor,
@@ -147,6 +170,8 @@ class LaporanService
             'nama_daerah' => $item->nama_daerah,
             'jumlah_pelanggaran' => (int) $item->jumlah_pelanggaran,
             'jumlah_santri' => (int) $item->jumlah_santri,
+            'pembinaan_selesai' => (int) ($pembinaanPerAsrama[$item->id]->pembinaan_selesai ?? 0),
+            'pembinaan_belum_selesai' => (int) ($pembinaanPerAsrama[$item->id]->pembinaan_belum_selesai ?? 0),
             'total_santri' => (int) ($totalSantriPerAsrama[$item->id] ?? 0),
         ]);
 
@@ -262,10 +287,24 @@ class LaporanService
             ->groupBy('iksass')
             ->pluck('total_santri', 'iksass');
 
+        $pembinaanPerIksass = $this->pembinaanStatusQuery($tanggalMulai, $tanggalSelesai, $bulan, $tahun, $daerahId, $asramaId, $sumberPencatatan)
+            ->join('santri', 'pelanggaran.santri_id', '=', 'santri.id')
+            ->whereNotNull('santri.iksass')
+            ->select(
+                'santri.iksass',
+                DB::raw('COUNT(DISTINCT CASE WHEN pembinaan.sisa_sanksi = 0 THEN pelanggaran.santri_id END) as pembinaan_selesai'),
+                DB::raw('COUNT(DISTINCT CASE WHEN pembinaan.sisa_sanksi > 0 THEN pelanggaran.santri_id END) as pembinaan_belum_selesai')
+            )
+            ->groupBy('santri.iksass')
+            ->get()
+            ->keyBy('iksass');
+
         $perIksass = $perIksass->map(fn($item) => (object) [
             'iksass' => $item->iksass,
             'jumlah_pelanggaran' => (int) $item->jumlah_pelanggaran,
             'jumlah_santri' => (int) $item->jumlah_santri,
+            'pembinaan_selesai' => (int) ($pembinaanPerIksass[$item->iksass]->pembinaan_selesai ?? 0),
+            'pembinaan_belum_selesai' => (int) ($pembinaanPerIksass[$item->iksass]->pembinaan_belum_selesai ?? 0),
             'total_santri' => (int) ($totalSantriPerIksass[$item->iksass] ?? 0),
         ]);
 
@@ -321,6 +360,20 @@ class LaporanService
             'per_nama' => $perNama,
             'detail' => $detail,
         ];
+    }
+
+    protected function pembinaanStatusQuery(?string $tanggalMulai, ?string $tanggalSelesai, ?int $bulan, ?int $tahun, ?int $daerahId, ?int $asramaId, ?string $sumberPencatatan)
+    {
+        return DB::table('pelanggaran')
+            ->join('asrama', 'pelanggaran.asrama_id', '=', 'asrama.id')
+            ->join('pembinaan', 'pembinaan.santri_id', '=', 'pelanggaran.santri_id')
+            ->whereNotNull('pelanggaran.santri_id')
+            ->when($tanggalMulai && $tanggalSelesai, fn($q) => $q->whereBetween('pelanggaran.tanggal', [$tanggalMulai, $tanggalSelesai]))
+            ->when($bulan && $tahun, fn($q) => $q->whereMonth('pelanggaran.tanggal', $bulan)->whereYear('pelanggaran.tanggal', $tahun))
+            ->when($tahun && !$bulan, fn($q) => $q->whereYear('pelanggaran.tanggal', $tahun))
+            ->when($daerahId, fn($q) => $q->where('asrama.daerah_id', $daerahId))
+            ->when($asramaId, fn($q) => $q->where('pelanggaran.asrama_id', $asramaId))
+            ->when($sumberPencatatan, fn($q) => $q->where('pelanggaran.sumber_pencatatan', $sumberPencatatan));
     }
 
     public function laporanBulanan(int $bulan, int $tahun, ?int $daerahId = null, ?int $asramaId = null, ?string $iksass = null): array

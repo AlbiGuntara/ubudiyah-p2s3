@@ -24,6 +24,7 @@ class PembinaanController extends Controller
         $this->middleware('permission:create_pembinaan', ['only' => ['store']]);
         $this->middleware('permission:edit_pembinaan', ['only' => ['update']]);
         $this->middleware('permission:edit_pembinaan', ['only' => ['setorSanksi']]);
+        $this->middleware('permission:edit_pembinaan', ['only' => ['tambahSanksi']]);
         $this->middleware('role:super_admin|pembina', ['only' => ['pemutihan']]);
     }
 
@@ -136,6 +137,41 @@ class PembinaanController extends Controller
         $pembinaan->save();
 
         return redirect()->back()->with('success', "Sanksi {$jumlahSetoran} berhasil disetor. Sisa sanksi: {$pembinaan->sisa_sanksi}.");
+    }
+
+    /**
+     * Tambah sanksi kembali: mengoreksi setoran yang salah.
+     * Menambah sisa_sanksi dan mengurangi shalawat_tertulis,
+     * dibatasi tidak boleh melebihi total sanksi yang sudah disetor.
+     */
+    public function tambahSanksi(Request $request, Pembinaan $pembinaan): RedirectResponse
+    {
+        $validated = $request->validate([
+            'jumlah_tambah' => 'required|integer|min:1',
+            'tanggal_koreksi' => 'nullable|date',
+        ]);
+
+        $jumlahTambah = (int) $validated['jumlah_tambah'];
+        $tanggalKoreksi = $validated['tanggal_koreksi'] ?? now()->format('Y-m-d');
+
+        // Cannot add back more than the total that has been setor
+        if ($jumlahTambah > $pembinaan->shalawat_tertulis) {
+            return redirect()->back()->with('error', 'Jumlah tambah sanksi melebihi total sanksi yang sudah disetor.');
+        }
+
+        $pembinaan->setoran()->create([
+            'jumlah' => -$jumlahTambah,
+            'tanggal_setor' => $tanggalKoreksi,
+            'user_id' => auth()->id(),
+            'user_name' => auth()->user()->name,
+            'keterangan' => 'Koreksi tambah sanksi',
+        ]);
+
+        $pembinaan->shalawat_tertulis = max(0, $pembinaan->shalawat_tertulis - $jumlahTambah);
+        $pembinaan->sisa_sanksi += $jumlahTambah;
+        $pembinaan->save();
+
+        return redirect()->back()->with('success', "Sanksi {$jumlahTambah} berhasil ditambahkan kembali. Sisa sanksi: {$pembinaan->sisa_sanksi}.");
     }
 
     /**

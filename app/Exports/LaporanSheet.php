@@ -70,10 +70,10 @@ class LaporanSheet implements FromArray, WithTitle, ShouldAutoSize, WithEvents
     {
         return match ($this->section) {
             'ringkasan' => ['No', 'Indikator', 'Nilai'],
-            'per_daerah' => ['No', 'Kode', 'Daerah', 'Jumlah Pelanggaran', 'Jumlah Pelanggar', 'Total Santri'],
-            'per_asrama' => ['No', 'Daerah', 'Asrama', 'Jumlah Pelanggaran', 'Jumlah Pelanggar', 'Total Santri'],
+            'per_daerah' => ['No', 'Kode', 'Daerah', 'Jumlah Pelanggaran', 'Jumlah Pelanggar', 'Pembinaan Selesai', 'Pembinaan Belum Selesai', 'Total Santri'],
+            'per_asrama' => ['No', 'Daerah', 'Asrama', 'Jumlah Pelanggaran', 'Jumlah Pelanggar', 'Pembinaan Selesai', 'Pembinaan Belum Selesai', 'Total Santri'],
             'per_jenis_pelanggaran' => ['No', 'Jenis Pelanggaran', 'Jumlah Pelanggaran', 'Jumlah Santri'],
-            'per_iksass' => ['No', 'IKSASS', 'Jumlah Pelanggaran', 'Jumlah Pelanggar', 'Total Santri'],
+            'per_iksass' => ['No', 'IKSASS', 'Jumlah Pelanggaran', 'Jumlah Pelanggar', 'Pembinaan Selesai', 'Pembinaan Belum Selesai', 'Total Santri'],
             'per_nama' => ['No', 'Nama Santri', 'NIS', 'IKSASS', 'Asrama', 'Jumlah Pelanggaran'],
             default => [],
         };
@@ -104,14 +104,14 @@ class LaporanSheet implements FromArray, WithTitle, ShouldAutoSize, WithEvents
 
             case 'per_daerah':
                 foreach ($this->data['per_daerah'] ?? [] as $item) {
-                    $rows[] = [$no++, $item->kode, $item->nama_daerah, (int) $item->jumlah_pelanggaran, (int) $item->jumlah_santri, (int) $item->total_santri];
+                    $rows[] = [$no++, $item->kode, $item->nama_daerah, (int) $item->jumlah_pelanggaran, (int) $item->jumlah_santri, (int) $item->pembinaan_selesai, (int) $item->pembinaan_belum_selesai, (int) $item->total_santri];
                 }
                 break;
 
             case 'per_asrama':
                 foreach ($this->data['per_asrama'] ?? [] as $item) {
                     $label = $item->daerah_kode ? substr($item->daerah_kode, 0, 1) . '.' . $item->nomor : $item->nomor;
-                    $rows[] = [$no++, $item->nama_daerah, $label, (int) $item->jumlah_pelanggaran, (int) $item->jumlah_santri, (int) $item->total_santri];
+                    $rows[] = [$no++, $item->nama_daerah, $label, (int) $item->jumlah_pelanggaran, (int) $item->jumlah_santri, (int) $item->pembinaan_selesai, (int) $item->pembinaan_belum_selesai, (int) $item->total_santri];
                 }
                 break;
 
@@ -123,7 +123,7 @@ class LaporanSheet implements FromArray, WithTitle, ShouldAutoSize, WithEvents
 
             case 'per_iksass':
                 foreach ($this->data['per_iksass'] ?? [] as $item) {
-                    $rows[] = [$no++, $item->iksass ?: '-', (int) $item->jumlah_pelanggaran, (int) $item->jumlah_santri, (int) $item->total_santri];
+                    $rows[] = [$no++, $item->iksass ?: '-', (int) $item->jumlah_pelanggaran, (int) $item->jumlah_santri, (int) $item->pembinaan_selesai, (int) $item->pembinaan_belum_selesai, (int) $item->total_santri];
                 }
                 break;
 
@@ -148,10 +148,10 @@ class LaporanSheet implements FromArray, WithTitle, ShouldAutoSize, WithEvents
     {
         $sums = $this->sumColumns();
         return match ($this->section) {
-            'per_daerah' => ['', '', 'TOTAL', $sums[0], $sums[1], $sums[2]],
-            'per_asrama' => ['', '', 'TOTAL', $sums[0], $sums[1], $sums[2]],
+            'per_daerah' => ['', '', 'TOTAL', $sums[0], $sums[1], $sums[2], $sums[3], $sums[4]],
+            'per_asrama' => ['', '', 'TOTAL', $sums[0], $sums[1], $sums[2], $sums[3], $sums[4]],
             'per_jenis_pelanggaran' => ['', '', 'TOTAL', $sums[0], $sums[1]],
-            'per_iksass' => ['', 'TOTAL', $sums[0], $sums[1], $sums[2]],
+            'per_iksass' => ['', 'TOTAL', $sums[0], $sums[1], $sums[2], $sums[3], $sums[4]],
             'per_nama' => ['', 'TOTAL', '', '', '', $sums[0]],
             default => [],
         };
@@ -163,18 +163,22 @@ class LaporanSheet implements FromArray, WithTitle, ShouldAutoSize, WithEvents
 
         return match ($this->section) {
             'per_daerah', 'per_asrama' => [
-                collect($dataRows)->sum(3) ?: 0,
                 collect($dataRows)->sum(4) ?: 0,
                 collect($dataRows)->sum(5) ?: 0,
+                collect($dataRows)->sum(6) ?: 0,
+                collect($dataRows)->sum(7) ?: 0,
+                collect($dataRows)->sum(8) ?: 0,
             ],
             'per_jenis_pelanggaran' => [
                 collect($dataRows)->sum(3) ?: 0,
                 collect($dataRows)->sum(4) ?: 0,
             ],
             'per_iksass' => [
-                collect($dataRows)->sum(2) ?: 0,
                 collect($dataRows)->sum(3) ?: 0,
                 collect($dataRows)->sum(4) ?: 0,
+                collect($dataRows)->sum(5) ?: 0,
+                collect($dataRows)->sum(6) ?: 0,
+                collect($dataRows)->sum(7) ?: 0,
             ],
             'per_nama' => [
                 collect($dataRows)->sum(5) ?: 0,
@@ -275,10 +279,10 @@ class LaporanSheet implements FromArray, WithTitle, ShouldAutoSize, WithEvents
 
                     $numColIndices = match ($this->section) {
                         'ringkasan' => [3],
-                        'per_daerah' => [4, 5, 6],
-                        'per_asrama' => [4, 5, 6],
+                        'per_daerah' => [4, 5, 6, 7, 8],
+                        'per_asrama' => [4, 5, 6, 7, 8],
                         'per_jenis_pelanggaran' => [4, 5],
-                        'per_iksass' => [3, 4, 5],
+                        'per_iksass' => [3, 4, 5, 6, 7],
                         'per_nama' => [6],
                         default => [],
                     };

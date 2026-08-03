@@ -64,6 +64,7 @@ Route::middleware('auth')->group(function () {
     Route::get('pembinaan', [PembinaanController::class, 'index'])->name('pembinaan.index');
     Route::put('pembinaan/{pembinaan}', [PembinaanController::class, 'update'])->name('pembinaan.update');
     Route::post('pembinaan/{pembinaan}/setor-sanksi', [PembinaanController::class, 'setorSanksi'])->name('pembinaan.setor-sanksi');
+    Route::post('pembinaan/{pembinaan}/tambah-sanksi', [PembinaanController::class, 'tambahSanksi'])->name('pembinaan.tambah-sanksi');
     Route::post('pembinaan/pemutihan', [PembinaanController::class, 'pemutihan'])->name('pembinaan.pemutihan');
     Route::get('pembinaan/cetak', [PembinaanController::class, 'cetak'])->name('pembinaan.cetak');
 

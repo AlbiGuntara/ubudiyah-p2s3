@@ -169,7 +169,7 @@ export default function SantriShow() {
                             columns={[
                                 { key: 'no', label: '#', render: (_p: any, idx: number) => <span>{idx + 1}</span>, className: 'text-muted-foreground text-xs w-10' },
                                 { key: 'tanggal_setor', label: 'Tanggal Setor', render: (s: any) => <span>{formatDate(s.tanggal_setor)}</span> },
-                                { key: 'jumlah', label: 'Jumlah Setoran', render: (s: any) => <span className="font-medium text-green-600">{s.jumlah.toLocaleString()}</span> },
+                                { key: 'jumlah', label: 'Jumlah Setoran', render: (s: any) => <span className={`font-medium ${s.jumlah < 0 ? 'text-red-600' : 'text-green-600'}`}>{s.jumlah < 0 ? `-${Math.abs(s.jumlah).toLocaleString()}` : s.jumlah.toLocaleString()}</span> },
                                 { key: 'sisa_sanksi', label: 'Sisa Sanksi', render: (s: any) => {
                                     const sisa = s._sisa_sanksi;
                                     return <Badge variant={sisa > 0 ? 'warning' : 'success'}>{sisa.toLocaleString()}</Badge>;

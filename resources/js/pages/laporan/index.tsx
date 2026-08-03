@@ -258,6 +258,8 @@ export default function LaporanIndex() {
                             'Daerah',
                             'Jumlah Pelanggaran',
                             'Jumlah Pelanggar',
+                            'Pembinaan Selesai',
+                            'Pembinaan Belum Selesai',
                             'Total Santri',
                         ]}
                         rows={(data?.per_daerah || []).map(
@@ -269,6 +271,8 @@ export default function LaporanIndex() {
                                     {d.jumlah_pelanggaran}
                                 </Badge>,
                                 d.jumlah_santri,
+                                d.pembinaan_selesai,
+                                d.pembinaan_belum_selesai,
                                 d.total_santri,
                             ],
                         )}
@@ -286,6 +290,8 @@ export default function LaporanIndex() {
                             'Asrama',
                             'Jumlah Pelanggaran',
                             'Jumlah Pelanggar',
+                            'Pembinaan Selesai',
+                            'Pembinaan Belum Selesai',
                             'Total Santri',
                         ]}
                         rows={(data?.per_asrama || []).map(
@@ -299,6 +305,8 @@ export default function LaporanIndex() {
                                     {d.jumlah_pelanggaran}
                                 </Badge>,
                                 d.jumlah_santri,
+                                d.pembinaan_selesai,
+                                d.pembinaan_belum_selesai,
                                 d.total_santri,
                             ],
                         )}
@@ -339,6 +347,8 @@ export default function LaporanIndex() {
                             'IKSASS',
                             'Jumlah Pelanggaran',
                             'Jumlah Pelanggar',
+                            'Pembinaan Selesai',
+                            'Pembinaan Belum Selesai',
                             'Total Santri',
                         ]}
                         rows={(data?.per_iksass || []).map(
@@ -349,6 +359,8 @@ export default function LaporanIndex() {
                                     {d.jumlah_pelanggaran}
                                 </Badge>,
                                 d.jumlah_santri,
+                                d.pembinaan_selesai,
+                                d.pembinaan_belum_selesai,
                                 d.total_santri,
                             ],
                         )}

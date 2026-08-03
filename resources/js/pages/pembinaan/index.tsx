@@ -7,7 +7,7 @@ import { Modal } from '@/components/ui/modal';
 import { Badge } from '@/components/ui/badge';
 import { DataTable, type Column } from '@/components/shared/data-table';
 import { Select } from '@/components/ui/select';
-import { BookOpen, PlusCircle, Printer, Clock } from 'lucide-react';
+import { BookOpen, PlusCircle, Printer, Clock, Undo2 } from 'lucide-react';
 
 export default function PembinaanIndex() {
     const {
@@ -33,6 +33,11 @@ export default function PembinaanIndex() {
         new Date().toISOString().split('T')[0],
     );
     const [showRiwayatModal, setShowRiwayatModal] = useState(false);
+    const [showTambahModal, setShowTambahModal] = useState(false);
+    const [jumlahTambah, setJumlahTambah] = useState('');
+    const [tanggalKoreksi, setTanggalKoreksi] = useState(
+        new Date().toISOString().split('T')[0],
+    );
     const [multiplier, setMultiplier] = useState('');
     const [showCetakModal, setShowCetakModal] = useState(false);
     const [cetakMode, setCetakMode] = useState<'semua' | 'bulan' | 'rentang'>('semua');
@@ -57,6 +62,31 @@ export default function PembinaanIndex() {
     const openPemutihan = () => {
         setMultiplier('');
         setShowPemutihanModal(true);
+    };
+
+    const openTambah = (p: any) => {
+        setSetorTarget(p);
+        setJumlahTambah('');
+        setTanggalKoreksi(new Date().toISOString().split('T')[0]);
+        setShowTambahModal(true);
+    };
+
+    const tambahSanksi = () => {
+        if (!setorTarget || !jumlahTambah) return;
+        router.post(
+            `/pembinaan/${setorTarget.id}/tambah-sanksi`,
+            {
+                jumlah_tambah: jumlahTambah,
+                tanggal_koreksi: tanggalKoreksi,
+            },
+            {
+                onSuccess: () => {
+                    setShowTambahModal(false);
+                    setSetorTarget(null);
+                    setJumlahTambah('');
+                },
+            },
+        );
     };
 
     const setorSanksi = () => {
@@ -254,6 +284,16 @@ export default function PembinaanIndex() {
                     >
                         <BookOpen className="h-4 w-4" />
                         Setor
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openTambah(p)}
+                        title="Tambah Sanksi"
+                        className="inline-flex items-center gap-1"
+                    >
+                        <Undo2 className="h-4 w-4" />
+                        Tambah
                     </Button>
                 </div>
             ),
@@ -572,6 +612,63 @@ export default function PembinaanIndex() {
                 </div>
             </Modal>
 
+            {/* Tambah Sanksi Modal */}
+            <Modal
+                open={showTambahModal}
+                onClose={() => setShowTambahModal(false)}
+                title="Tambah Sanksi"
+                description={
+                    setorTarget
+                        ? `Sanksi: ${setorTarget.sanksi.toLocaleString()} | Sudah disetor: ${setorTarget.shalawat_tertulis.toLocaleString()} | Sisa: ${setorTarget.sisa_sanksi.toLocaleString()}`
+                        : ''
+                }
+            >
+                <div className="space-y-4">
+                    <p className="text-sm text-muted-foreground">
+                        Digunakan untuk mengoreksi setoran yang salah.
+                        Maksimal{' '}
+                        <strong>
+                            {(
+                                setorTarget?.shalawat_tertulis || 0
+                            ).toLocaleString()}
+                        </strong>{' '}
+                        (total sanksi yang sudah disetor).
+                    </p>
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium">
+                            Jumlah Sanksi Ditambahkan
+                        </label>
+                        <Input
+                            type="number"
+                            min={1}
+                            max={setorTarget?.shalawat_tertulis || 0}
+                            value={jumlahTambah}
+                            onChange={(e) => setJumlahTambah(e.target.value)}
+                            placeholder="Masukkan jumlah sanksi"
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium">
+                            Tanggal Koreksi
+                        </label>
+                        <Input
+                            type="date"
+                            value={tanggalKoreksi}
+                            onChange={(e) => setTanggalKoreksi(e.target.value)}
+                        />
+                    </div>
+                    <div className="flex justify-end gap-3 pt-2">
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowTambahModal(false)}
+                        >
+                            Batal
+                        </Button>
+                        <Button onClick={tambahSanksi}>Tambah</Button>
+                    </div>
+                </div>
+            </Modal>
+
             {/* Riwayat Setoran Modal */}
             <Modal
                 open={showRiwayatModal}
@@ -631,8 +728,12 @@ export default function PembinaanIndex() {
                                                     s.tanggal_setor,
                                                 )}
                                             </td>
-                                            <td className="px-4 py-2 text-right font-medium text-green-600">
-                                                {s.jumlah.toLocaleString()}
+                                            <td
+                                                className={`px-4 py-2 text-right font-medium ${s.jumlah < 0 ? 'text-red-600' : 'text-green-600'}`}
+                                            >
+                                                {s.jumlah < 0
+                                                    ? `-${Math.abs(s.jumlah).toLocaleString()}`
+                                                    : s.jumlah.toLocaleString()}
                                             </td>
                                             <td className="px-4 py-2">
                                                 {s.user_name || '-'}

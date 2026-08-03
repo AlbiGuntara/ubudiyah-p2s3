@@ -315,29 +315,33 @@ export default function LaporanIndex() {
                     />
                 )}
 
-                {activeTab === 'per_jenis' && (
-                    <SectionTable
-                        title="Pelanggaran Per Jenis"
-                        headers={[
-                            'No',
-                            'Jenis Pelanggaran',
-                            'Jumlah Pelanggaran',
-                            'Jumlah Santri',
-                        ]}
-                        rows={(data?.per_jenis_pelanggaran || []).map(
-                            (d: any, i: number) => [
-                                i + 1,
-                                d.nama_pelanggaran,
-                                <Badge key="jp" variant="default">
-                                    {d.jumlah_pelanggaran}
-                                </Badge>,
-                                d.jumlah_santri,
-                            ],
-                        )}
-                        exportSection="per_jenis_pelanggaran"
-                        filters={currentFilters}
-                    />
-                )}
+                {activeTab === 'per_jenis' &&
+                    (() => {
+                        const pj = data?.per_jenis_pelanggaran || {};
+                        const jenisDaerah = pj?.daerah || [];
+                        const jenisRows = pj?.rows || [];
+                        return (
+                            <SectionTable
+                                title="Pelanggaran Per Daerah × Per Jenis"
+                                headers={[
+                                    'No',
+                                    'Jenis Pelanggaran',
+                                    ...jenisDaerah.map((d: any) => d.kode),
+                                    'Total',
+                                ]}
+                                rows={jenisRows.map((r: any, i: number) => [
+                                    i + 1,
+                                    r.nama_pelanggaran,
+                                    ...jenisDaerah.map(
+                                        (d: any) => r.per_daerah?.[d.id] ?? 0,
+                                    ),
+                                    r.total,
+                                ])}
+                                exportSection="per_jenis_pelanggaran"
+                                filters={currentFilters}
+                            />
+                        );
+                    })()}
 
                 {activeTab === 'per_iksass' && (
                     <SectionTable

@@ -202,8 +202,8 @@
                             <td style="white-space: nowrap; text-align: left;">-</td>
                             <td style="text-align: center;">-</td>
                             <td style="text-align: center;">{{ number_format($totalSanksi) }}</td>
-                            <td style="text-align: center;">{{ $sanksiDisetor ? number_format($sanksiDisetor) : '-' }}</td>
-                            <td style="text-align: center;">{{ $tanggalSetor ? \Carbon\Carbon::parse($tanggalSetor)->format('d/m/Y') : '-' }}</td>
+                            <td style="text-align: center;"></td>
+                            <td style="text-align: center;"></td>
                         </tr>
                     @else
                         @foreach ($pelanggarans as $itemIndex => $item)
@@ -220,8 +220,8 @@
                                 </td>
                                 @if ($itemIndex === 0)
                                     <td style="text-align: center;" rowspan="{{ $pelanggarans->count() }}">{{ number_format($totalSanksi) }}</td>
-                                    <td style="text-align: center;" rowspan="{{ $pelanggarans->count() }}">{{ $sanksiDisetor ? number_format($sanksiDisetor) : '-' }}</td>
-                                    <td style="text-align: center;" rowspan="{{ $pelanggarans->count() }}">{{ $tanggalSetor ? \Carbon\Carbon::parse($tanggalSetor)->format('d/m/Y') : '-' }}</td>
+                                    <td style="text-align: center;" rowspan="{{ $pelanggarans->count() }}"></td>
+                                    <td style="text-align: center;" rowspan="{{ $pelanggarans->count() }}"></td>
                                 @endif
                             </tr>
                         @endforeach

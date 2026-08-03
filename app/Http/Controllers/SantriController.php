@@ -5,6 +5,7 @@ use App\Models\AuditLog;
 use App\Models\Santri;
 use App\Models\Pelanggaran;
 use App\Models\Pembinaan;
+use App\Models\PembinaanSetoran;
 use App\Models\Daerah;
 use App\Models\Asrama;
 use App\Http\Requests\StoreSantriRequest;
@@ -276,7 +277,12 @@ class SantriController extends Controller
         if ($dupPembinaan) {
             $primaryPembinaan = Pembinaan::firstOrNew(['santri_id' => $primary->id]);
             $primaryPembinaan->shalawat_tertulis = ($primaryPembinaan->shalawat_tertulis ?? 0) + ($dupPembinaan->shalawat_tertulis ?? 0);
+            $primaryPembinaan->sisa_sanksi = ($primaryPembinaan->sisa_sanksi ?? 0) + ($dupPembinaan->sisa_sanksi ?? 0);
+            $primaryPembinaan->sanksi = Pelanggaran::where('santri_id', $primary->id)->count() * 100;
             $primaryPembinaan->save();
+
+            PembinaanSetoran::where('pembinaan_id', $dupPembinaan->id)
+                ->update(['pembinaan_id' => $primaryPembinaan->id]);
 
             $dupPembinaan->delete();
         }

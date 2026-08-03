@@ -175,24 +175,66 @@ class LaporanService
             'total_santri' => (int) ($totalSantriPerAsrama[$item->id] ?? 0),
         ]);
 
-        // Per Jenis Pelanggaran
-        $perJenis = DB::table('pelanggaran')
+        // Per Daerah × Per Jenis Pelanggaran
+        $jenisDaerah = DB::table('pelanggaran')
+            ->join('asrama', 'pelanggaran.asrama_id', '=', 'asrama.id')
+            ->join('daerah', 'asrama.daerah_id', '=', 'daerah.id')
+            ->select('daerah.id', 'daerah.kode', 'daerah.nama_daerah')
+            ->when($tanggalMulai && $tanggalSelesai, fn($q) => $q->whereBetween('pelanggaran.tanggal', [$tanggalMulai, $tanggalSelesai]))
+            ->when($bulan && $tahun, fn($q) => $q->whereMonth('pelanggaran.tanggal', $bulan)->whereYear('pelanggaran.tanggal', $tahun))
+            ->when($tahun && !$bulan, fn($q) => $q->whereYear('pelanggaran.tanggal', $tahun))
+            ->when($daerahId, fn($q) => $q->where('asrama.daerah_id', $daerahId))
+            ->when($asramaId, fn($q) => $q->where('pelanggaran.asrama_id', $asramaId))
+            ->when($sumberPencatatan, fn($q) => $q->where('pelanggaran.sumber_pencatatan', $sumberPencatatan))
+            ->distinct()
+            ->orderBy('daerah.kode')
+            ->get()
+            ->map(fn($d) => ['id' => (int) $d->id, 'kode' => $d->kode, 'nama_daerah' => $d->nama_daerah])
+            ->values();
+
+        $perJenisQuery = DB::table('pelanggaran')
             ->join('daftar_pelanggaran', 'pelanggaran.daftar_pelanggaran_id', '=', 'daftar_pelanggaran.id')
+            ->join('asrama', 'pelanggaran.asrama_id', '=', 'asrama.id')
+            ->join('daerah', 'asrama.daerah_id', '=', 'daerah.id')
             ->select(
                 'daftar_pelanggaran.id',
                 'daftar_pelanggaran.nama_pelanggaran',
-                DB::raw("SUM(CASE WHEN pelanggaran.santri_id IS NULL THEN pelanggaran.jumlah ELSE 1 END) as jumlah_pelanggaran"),
-                DB::raw('COUNT(DISTINCT pelanggaran.santri_id) as jumlah_santri')
+                'daerah.id as daerah_id',
+                DB::raw("SUM(CASE WHEN pelanggaran.santri_id IS NULL THEN pelanggaran.jumlah ELSE 1 END) as jumlah_pelanggaran")
             )
             ->when($tanggalMulai && $tanggalSelesai, fn($q) => $q->whereBetween('pelanggaran.tanggal', [$tanggalMulai, $tanggalSelesai]))
             ->when($bulan && $tahun, fn($q) => $q->whereMonth('pelanggaran.tanggal', $bulan)->whereYear('pelanggaran.tanggal', $tahun))
             ->when($tahun && !$bulan, fn($q) => $q->whereYear('pelanggaran.tanggal', $tahun))
-            ->when($daerahId, fn($q) => $q->whereHas('asrama', fn($q2) => $q2->where('daerah_id', $daerahId)))
+            ->when($daerahId, fn($q) => $q->where('asrama.daerah_id', $daerahId))
             ->when($asramaId, fn($q) => $q->where('pelanggaran.asrama_id', $asramaId))
             ->when($sumberPencatatan, fn($q) => $q->where('pelanggaran.sumber_pencatatan', $sumberPencatatan))
-            ->groupBy('daftar_pelanggaran.id', 'daftar_pelanggaran.nama_pelanggaran')
-            ->orderByDesc('jumlah_pelanggaran')
+            ->groupBy('daftar_pelanggaran.id', 'daftar_pelanggaran.nama_pelanggaran', 'daerah.id')
             ->get();
+
+        $jenisRows = [];
+        $jenisDaerahTotals = [];
+        foreach ($perJenisQuery as $item) {
+            $nama = $item->nama_pelanggaran;
+            if (!isset($jenisRows[$nama])) {
+                $jenisRows[$nama] = [
+                    'nama_pelanggaran' => $nama,
+                    'per_daerah' => [],
+                    'total' => 0,
+                ];
+            }
+            $daerahKey = (int) $item->daerah_id;
+            $jumlah = (int) $item->jumlah_pelanggaran;
+            $jenisRows[$nama]['per_daerah'][$daerahKey] = $jumlah;
+            $jenisRows[$nama]['total'] += $jumlah;
+            $jenisDaerahTotals[$daerahKey] = ($jenisDaerahTotals[$daerahKey] ?? 0) + $jumlah;
+        }
+        $jenisRows = collect($jenisRows)->sortByDesc('total')->values();
+
+        $perJenis = [
+            'daerah' => $jenisDaerah,
+            'rows' => $jenisRows,
+            'totals' => $jenisDaerahTotals,
+        ];
 
         // Per Sumber Pencatatan
         $perSumber = (clone $base)

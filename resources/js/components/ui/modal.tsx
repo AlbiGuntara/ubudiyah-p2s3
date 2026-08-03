@@ -38,7 +38,39 @@ export function Modal({ open, onClose, title, description, children, className, 
     useEffect(() => {
         if (!open) return;
         const handler = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') onClose();
+            if (e.key === 'Escape') {
+                onClose();
+                return;
+            }
+            if (e.key !== 'Enter' || e.shiftKey) return;
+
+            const target = e.target as HTMLElement | null;
+            const tag = target?.tagName;
+            if (
+                !target ||
+                !(target instanceof HTMLElement) ||
+                tag === 'TEXTAREA' ||
+                tag === 'SELECT' ||
+                tag === 'BUTTON'
+            ) {
+                return;
+            }
+
+            const panel = panelRef.current;
+            if (!panel) return;
+
+            e.preventDefault();
+
+            const form = panel.querySelector('form') as HTMLFormElement | null;
+            if (form) {
+                form.requestSubmit();
+                return;
+            }
+
+            const buttons = panel.querySelectorAll('button');
+            if (buttons.length > 0) {
+                (buttons[buttons.length - 1] as HTMLButtonElement).click();
+            }
         };
         document.addEventListener('keydown', handler);
         document.body.style.overflow = 'hidden';

@@ -14,6 +14,7 @@ import {
     Building2,
     BookOpen,
     Users,
+    User,
 } from 'lucide-react';
 
 const bulanList = Array.from({ length: 12 }, (_, i) => ({
@@ -81,6 +82,7 @@ export default function LaporanIndex() {
         { key: 'per_asrama', label: 'Per Asrama', icon: Building2 },
         { key: 'per_jenis', label: 'Per Jenis', icon: BookOpen },
         { key: 'per_iksass', label: 'Per IKSASS', icon: Users },
+        { key: 'per_nama', label: 'Per Nama', icon: User },
     ];
 
     return (
@@ -351,6 +353,34 @@ export default function LaporanIndex() {
                             ],
                         )}
                         exportSection="per_iksass"
+                        filters={currentFilters}
+                    />
+                )}
+
+                {activeTab === 'per_nama' && (
+                    <SectionTable
+                        title="Pelanggaran Per Nama (10 Besar)"
+                        headers={[
+                            'No',
+                            'Nama Santri',
+                            'NIS',
+                            'IKSASS',
+                            'Asrama',
+                            'Jumlah Pelanggaran',
+                        ]}
+                        rows={(data?.per_nama || []).map(
+                            (d: any, i: number) => [
+                                i + 1,
+                                d.nama,
+                                d.nis || '-',
+                                d.iksass || '-',
+                                d.asrama || '-',
+                                <Badge key="jp" variant="default">
+                                    {d.jumlah_pelanggaran}
+                                </Badge>,
+                            ],
+                        )}
+                        exportSection="per_nama"
                         filters={currentFilters}
                     />
                 )}

@@ -38,6 +38,7 @@ class LaporanSheet implements FromArray, WithTitle, ShouldAutoSize, WithEvents
             'per_asrama' => 'REKAP PER ASRAMA',
             'per_jenis_pelanggaran' => 'REKAP PER JENIS PELANGGARAN',
             'per_iksass' => 'REKAP PER IKSASS',
+            'per_nama' => 'REKAP PER NAMA (10 BESAR)',
         ];
         $this->sectionLabel = $labels[$section] ?? strtoupper($title);
     }
@@ -73,6 +74,7 @@ class LaporanSheet implements FromArray, WithTitle, ShouldAutoSize, WithEvents
             'per_asrama' => ['No', 'Daerah', 'Asrama', 'Jumlah Pelanggaran', 'Jumlah Pelanggar', 'Total Santri'],
             'per_jenis_pelanggaran' => ['No', 'Jenis Pelanggaran', 'Jumlah Pelanggaran', 'Jumlah Santri'],
             'per_iksass' => ['No', 'IKSASS', 'Jumlah Pelanggaran', 'Jumlah Pelanggar', 'Total Santri'],
+            'per_nama' => ['No', 'Nama Santri', 'NIS', 'IKSASS', 'Asrama', 'Jumlah Pelanggaran'],
             default => [],
         };
     }
@@ -124,6 +126,12 @@ class LaporanSheet implements FromArray, WithTitle, ShouldAutoSize, WithEvents
                     $rows[] = [$no++, $item->iksass ?: '-', (int) $item->jumlah_pelanggaran, (int) $item->jumlah_santri, (int) $item->total_santri];
                 }
                 break;
+
+            case 'per_nama':
+                foreach ($this->data['per_nama'] ?? [] as $item) {
+                    $rows[] = [$no++, $item->nama, $item->nis ?? '-', $item->iksass ?? '-', $item->asrama ?? '-', (int) $item->jumlah_pelanggaran];
+                }
+                break;
         }
 
         return $rows;
@@ -132,7 +140,7 @@ class LaporanSheet implements FromArray, WithTitle, ShouldAutoSize, WithEvents
     protected function hasTotal(): bool
     {
         return in_array($this->section, [
-            'per_daerah', 'per_asrama', 'per_jenis_pelanggaran', 'per_iksass',
+            'per_daerah', 'per_asrama', 'per_jenis_pelanggaran', 'per_iksass', 'per_nama',
         ]) && count($this->getDataRows()) > 0;
     }
 
@@ -144,6 +152,7 @@ class LaporanSheet implements FromArray, WithTitle, ShouldAutoSize, WithEvents
             'per_asrama' => ['', '', 'TOTAL', $sums[0], $sums[1], $sums[2]],
             'per_jenis_pelanggaran' => ['', '', 'TOTAL', $sums[0], $sums[1]],
             'per_iksass' => ['', 'TOTAL', $sums[0], $sums[1], $sums[2]],
+            'per_nama' => ['', 'TOTAL', '', '', '', $sums[0]],
             default => [],
         };
     }
@@ -166,6 +175,9 @@ class LaporanSheet implements FromArray, WithTitle, ShouldAutoSize, WithEvents
                 collect($dataRows)->sum(2) ?: 0,
                 collect($dataRows)->sum(3) ?: 0,
                 collect($dataRows)->sum(4) ?: 0,
+            ],
+            'per_nama' => [
+                collect($dataRows)->sum(5) ?: 0,
             ],
             default => [],
         };
@@ -267,6 +279,7 @@ class LaporanSheet implements FromArray, WithTitle, ShouldAutoSize, WithEvents
                         'per_asrama' => [4, 5, 6],
                         'per_jenis_pelanggaran' => [4, 5],
                         'per_iksass' => [3, 4, 5],
+                        'per_nama' => [6],
                         default => [],
                     };
                     foreach ($numColIndices as $idx) {

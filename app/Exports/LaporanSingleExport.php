@@ -23,6 +23,7 @@ class LaporanSingleExport implements WithMultipleSheets
             'per_asrama' => 'Per Asrama',
             'per_jenis_pelanggaran' => 'Per Jenis Pelanggaran',
             'per_iksass' => 'Per IKSASS',
+            'per_nama' => 'Per Nama',
         };
 
         return [

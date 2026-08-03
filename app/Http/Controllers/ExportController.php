@@ -25,7 +25,7 @@ class ExportController extends Controller
         set_time_limit(0);
         ini_set('memory_limit', '512M');
 
-        $valid = ['per_daerah', 'per_asrama', 'per_jenis_pelanggaran', 'per_iksass'];
+        $valid = ['per_daerah', 'per_asrama', 'per_jenis_pelanggaran', 'per_iksass', 'per_nama'];
         if (!in_array($section, $valid)) {
             abort(404);
         }
@@ -394,7 +394,7 @@ class ExportController extends Controller
             return "{$d1} - {$d2}";
         }
         if ($bulan && $tahun) {
-            $namaBulan = \Carbon\Carbon::create()->month($bulan)->format('F');
+            $namaBulan = \Carbon\Carbon::create()->month((int) $bulan)->format('F');
             return "{$namaBulan} {$tahun}";
         }
         if ($tahun) {

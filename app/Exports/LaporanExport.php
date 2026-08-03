@@ -22,6 +22,7 @@ class LaporanExport implements WithMultipleSheets
             new LaporanSheet($this->data, 'Per Asrama', $this->periode, 'per_asrama'),
             new LaporanSheet($this->data, 'Per Jenis Pelanggaran', $this->periode, 'per_jenis_pelanggaran'),
             new LaporanSheet($this->data, 'Per IKSASS', $this->periode, 'per_iksass'),
+            new LaporanSheet($this->data, 'Per Nama', $this->periode, 'per_nama'),
         ];
     }
 }

@@ -269,6 +269,42 @@ class LaporanService
             'total_santri' => (int) ($totalSantriPerIksass[$item->iksass] ?? 0),
         ]);
 
+        // Per Nama (Top 10)
+        $perNama = DB::table('pelanggaran')
+            ->join('santri', 'pelanggaran.santri_id', '=', 'santri.id')
+            ->join('asrama', 'santri.asrama_id', '=', 'asrama.id')
+            ->join('daerah', 'asrama.daerah_id', '=', 'daerah.id')
+            ->select(
+                'santri.id as santri_id',
+                'santri.nama',
+                'santri.nis',
+                'santri.iksass',
+                'asrama.nomor as asrama_nomor',
+                'daerah.kode as daerah_kode',
+                DB::raw("SUM(CASE WHEN pelanggaran.santri_id IS NULL THEN pelanggaran.jumlah ELSE 1 END) as jumlah_pelanggaran")
+            )
+            ->whereNotNull('pelanggaran.santri_id')
+            ->when($tanggalMulai && $tanggalSelesai, fn($q) => $q->whereBetween('pelanggaran.tanggal', [$tanggalMulai, $tanggalSelesai]))
+            ->when($bulan && $tahun, fn($q) => $q->whereMonth('pelanggaran.tanggal', $bulan)->whereYear('pelanggaran.tanggal', $tahun))
+            ->when($tahun && !$bulan, fn($q) => $q->whereYear('pelanggaran.tanggal', $tahun))
+            ->when($daerahId, fn($q) => $q->where('asrama.daerah_id', $daerahId))
+            ->when($asramaId, fn($q) => $q->where('pelanggaran.asrama_id', $asramaId))
+            ->when($sumberPencatatan, fn($q) => $q->where('pelanggaran.sumber_pencatatan', $sumberPencatatan))
+            ->groupBy('santri.id', 'santri.nama', 'santri.nis', 'santri.iksass', 'asrama.nomor', 'daerah.kode')
+            ->orderByDesc('jumlah_pelanggaran')
+            ->limit(10)
+            ->get()
+            ->map(fn($item) => (object) [
+                'santri_id' => $item->santri_id,
+                'nama' => $item->nama,
+                'nis' => $item->nis,
+                'iksass' => $item->iksass,
+                'asrama' => $item->daerah_kode
+                    ? substr($item->daerah_kode, 0, 1) . '.' . $item->asrama_nomor
+                    : $item->asrama_nomor,
+                'jumlah_pelanggaran' => (int) $item->jumlah_pelanggaran,
+            ]);
+
         return [
             'ringkasan' => [
                 'total_pelanggaran' => $totalPelanggaran,
@@ -282,6 +318,7 @@ class LaporanService
             'per_sumber' => $perSumber,
             'per_petugas' => $perPetugas,
             'per_iksass' => $perIksass,
+            'per_nama' => $perNama,
             'detail' => $detail,
         ];
     }

@@ -22,7 +22,7 @@ class PelanggaranController extends Controller
     {
         $this->middleware('permission:view_pelanggaran', ['only' => ['index']]);
         $this->middleware('permission:create_pelanggaran', ['only' => ['store', 'storeMassal']]);
-        $this->middleware('permission:edit_pelanggaran', ['only' => ['update']]);
+        $this->middleware('permission:edit_pelanggaran', ['only' => ['update', 'bulkUpdate']]);
         $this->middleware('permission:delete_pelanggaran', ['only' => ['destroy', 'bulkDelete']]);
     }
 
@@ -177,6 +177,33 @@ class PelanggaranController extends Controller
         $data = $request->validated();
         $data['petugas_id'] = $data['petugas_id'] ?? $pelanggaran->petugas_id;
         $pelanggaran->update($data);
+
+        return redirect()->back()->with('success', 'Pelanggaran berhasil diubah.');
+    }
+
+    public function bulkUpdate(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'integer|exists:pelanggaran,id',
+            'sumber_pencatatan' => 'required|in:petugas,ketua_kamar',
+            'keterangan' => 'nullable|string',
+        ]);
+
+        $ids = $validated['ids'];
+
+        Pelanggaran::whereIn('id', $ids)->update([
+            'sumber_pencatatan' => $validated['sumber_pencatatan'],
+            'keterangan' => $validated['keterangan'] ?? null,
+        ]);
+
+        AuditLog::create([
+            'user_id' => Auth::id(),
+            'user_name' => Auth::user()->name,
+            'aktivitas' => 'mengubah banyak Pelanggaran',
+            'model_type' => Pelanggaran::class,
+            'data' => ['ids' => $ids, 'count' => count($ids)],
+        ]);
 
         return redirect()->back()->with('success', 'Pelanggaran berhasil diubah.');
     }

@@ -35,6 +35,7 @@ class StorePelanggaranRequest extends FormRequest
 
         if ($this->isMethod('PUT')) {
             $rules['tanggal'] = 'required|date';
+            $rules['asrama_id'] = 'sometimes|exists:asrama,id';
         }
 
         return $rules;

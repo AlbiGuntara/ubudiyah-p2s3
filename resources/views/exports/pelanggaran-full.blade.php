@@ -77,6 +77,49 @@
         .page-break {
             page-break-after: always;
         }
+
+        .txt-selesai {
+            color: #16a34a;
+        }
+
+        .txt-sebagian {
+            color: #ca8a04;
+        }
+
+        .txt-belum {
+            color: #000000;
+        }
+
+        .catatan-warna {
+            font-size: 8pt;
+            margin-top: 8px;
+            padding: 6px 8px;
+            border: 1px solid #000;
+        }
+
+        .catatan-warna b {
+            font-size: 8.5pt;
+        }
+
+        .warna-sw {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            margin-right: 3px;
+            border: 1px solid #000;
+        }
+
+        .warna-sw.txt-selesai {
+            background-color: #16a34a;
+        }
+
+        .warna-sw.txt-sebagian {
+            background-color: #ca8a04;
+        }
+
+        .warna-sw.txt-belum {
+            background-color: #000000;
+        }
     </style>
 </head>
 
@@ -136,11 +179,12 @@
                         $pelanggarans = $santriData['pelanggarans'];
                         $isAnon = $santriData['is_anonymous'] ?? false;
                         $anonSummary = $santriData['anon_summary'] ?? null;
+                        $warnaStatus = $santriData['warna_status'] ?? 'belum';
                     @endphp
 
                     @if ($isAnon)
                         @foreach ($pelanggarans as $item)
-                            <tr>
+                            <tr class="txt-{{ $warnaStatus }}">
                                 <td style="text-align: center;">{{ $no }}</td>
                                 <td>{{ $santriNama }}</td>
                                 <td style="text-align: center;">{{ $santriNis }}</td>
@@ -153,7 +197,7 @@
                             </tr>
                         @endforeach
                     @elseif ($pelanggarans->isEmpty())
-                        <tr>
+                        <tr class="txt-{{ $warnaStatus }}">
                             <td style="text-align: center;">{{ $no }}</td>
                             <td>{{ $santriNama }}</td>
                             <td style="text-align: center;">{{ $santriNis }}</td>
@@ -163,7 +207,7 @@
                         </tr>
                     @else
                         @foreach ($pelanggarans as $item)
-                            <tr>
+                            <tr class="txt-{{ $warnaStatus }}">
                                 <td style="text-align: center;">{{ $no }}</td>
                                 <td>{{ $santriNama }}</td>
                                 <td style="text-align: center;">{{ $santriNis }}</td>
@@ -180,6 +224,22 @@
                 @endforeach
             </tbody>
         </table>
+
+        <div class="catatan-warna">
+            <b>Keterangan Warna Teks:</b>
+            <div style="margin-top: 2px;">
+                <span class="warna-sw txt-selesai"></span>
+                <b class="txt-selesai">Hijau</b> : Sudah menyelesaikan semua pembinaan
+            </div>
+            <div>
+                <span class="warna-sw txt-sebagian"></span>
+                <b class="txt-sebagian">Kuning</b> : Sudah menyelesaikan sebagian pembinaan
+            </div>
+            <div>
+                <span class="warna-sw txt-belum"></span>
+                <b class="txt-belum">Hitam</b> : Belum melaksanakan pembinaan sama sekali
+            </div>
+        </div>
 
         @if (!$loop->last)
             <div class="page-break"></div>

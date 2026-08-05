@@ -259,16 +259,25 @@ class ExportController extends Controller
             ->header('Content-Disposition', 'attachment; filename="laporan-tahunan.pdf"');
     }
 
-    public function pdfPelanggaranFull()
+    public function pdfPelanggaranFull(Request $request)
     {
         set_time_limit(0);
         ini_set('memory_limit', '512M');
 
+        $daerahId = $request->input('daerah_id');
+        $tanggalMulai = $request->input('tanggal_mulai');
+        $tanggalSelesai = $request->input('tanggal_selesai');
+
         $pembinaans = Pembinaan::with(['santri.asrama.daerah', 'asrama.daerah'])
-            ->where('sisa_sanksi', '>', 0)
             ->where(function ($q) {
                 $q->whereNull('santri_id')
                     ->orWhereHas('santri', fn ($sq) => $sq->whereIn('status', ['aktif', 'tidak aktif']));
+            })
+            ->when($daerahId, function ($q) use ($daerahId) {
+                $q->where(function ($sub) use ($daerahId) {
+                    $sub->whereHas('asrama', fn ($sq) => $sq->where('daerah_id', $daerahId))
+                        ->orWhereHas('santri', fn ($sq) => $sq->whereHas('asrama', fn ($sq2) => $sq2->where('daerah_id', $daerahId)));
+                });
             })
             ->get();
 
@@ -277,6 +286,8 @@ class ExportController extends Controller
 
         $pelanggaranBySantri = Pelanggaran::with('daftarPelanggaran')
             ->whereIn('santri_id', $santriIds)
+            ->when($tanggalMulai, fn ($q) => $q->whereDate('tanggal', '>=', $tanggalMulai))
+            ->when($tanggalSelesai, fn ($q) => $q->whereDate('tanggal', '<=', $tanggalSelesai))
             ->orderBy('tanggal')
             ->get()
             ->groupBy('santri_id');
@@ -284,6 +295,8 @@ class ExportController extends Controller
         $anonPelanggaranByAsrama = Pelanggaran::with('daftarPelanggaran')
             ->whereNull('santri_id')
             ->whereIn('asrama_id', $anonAsramaIds)
+            ->when($tanggalMulai, fn ($q) => $q->whereDate('tanggal', '>=', $tanggalMulai))
+            ->when($tanggalSelesai, fn ($q) => $q->whereDate('tanggal', '<=', $tanggalSelesai))
             ->get()
             ->groupBy('asrama_id');
 
@@ -292,7 +305,26 @@ class ExportController extends Controller
             $anonCounts[$asramaId] = $pelanggarans->sum('jumlah');
         }
 
+        if ($tanggalMulai || $tanggalSelesai) {
+            $pembinaans = $pembinaans->filter(function ($p) use ($pelanggaranBySantri, $anonPelanggaranByAsrama) {
+                if (!is_null($p->santri_id)) {
+                    return isset($pelanggaranBySantri[$p->santri_id]) && $pelanggaranBySantri[$p->santri_id]->count() > 0;
+                }
+                return isset($anonPelanggaranByAsrama[$p->asrama_id]) && $anonPelanggaranByAsrama[$p->asrama_id]->count() > 0;
+            });
+        }
+
         $daerahGroups = [];
+        $warnaStatus = function (Pembinaan $p): string {
+            if ((int) $p->sisa_sanksi === 0) {
+                return 'selesai';
+            }
+            if ((int) $p->shalawat_tertulis > 0) {
+                return 'sebagian';
+            }
+            return 'belum';
+        };
+
         foreach ($pembinaans as $p) {
             $isAnon = is_null($p->santri_id);
             $santriKey = $isAnon ? 'anon_' . $p->asrama_id : 'santri_' . $p->santri_id;
@@ -330,6 +362,7 @@ class ExportController extends Controller
                         'asrama_label' => $asramaLabel,
                         'asrama_sort' => $asramaSort,
                         'pelanggarans' => $anonPels,
+                        'warna_status' => $warnaStatus($p),
                     ];
                 } else {
                     $pelanggarans = collect();
@@ -345,6 +378,7 @@ class ExportController extends Controller
                         'asrama_sort' => $asramaSort,
                         'pelanggarans' => $pelanggarans,
                         'anon_summary' => null,
+                        'warna_status' => $warnaStatus($p),
                     ];
                 }
             }

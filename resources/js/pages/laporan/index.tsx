@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Modal } from '@/components/ui/modal';
 import { Pagination } from '@/components/ui/pagination';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import {
@@ -40,7 +41,7 @@ function buildExportUrl(section: string, filters: any): string {
 }
 
 export default function LaporanIndex() {
-    const { data, tahunTersedia, filters } = usePage<any>().props;
+    const { data, daerah, tahunTersedia, filters } = usePage<any>().props;
 
     const [modeTanggal, setModeTanggal] = useState<'bulanan' | 'rentang'>(
         filters?.tanggal_mulai ? 'rentang' : 'bulanan',
@@ -55,6 +56,8 @@ export default function LaporanIndex() {
     );
     const [sumber, setSumber] = useState(filters?.sumber_pencatatan || '');
     const [activeTab, setActiveTab] = useState('per_daerah');
+    const [showExportModal, setShowExportModal] = useState(false);
+    const [exportDaerahId, setExportDaerahId] = useState('');
 
     const filter = () => {
         const params: any = {};
@@ -75,6 +78,29 @@ export default function LaporanIndex() {
         tanggal_mulai: tanggalMulai,
         tanggal_selesai: tanggalSelesai,
         sumber_pencatatan: sumber,
+    };
+
+    const exportUrl = (daerahId?: string) => {
+        const params = new URLSearchParams();
+        if (daerahId) params.set('daerah_id', daerahId);
+        if (modeTanggal === 'bulanan' && bulan && tahun) {
+            const last = new Date(Number(tahun), Number(bulan), 0).getDate();
+            params.set(
+                'tanggal_mulai',
+                `${tahun}-${String(bulan).padStart(2, '0')}-01`,
+            );
+            params.set(
+                'tanggal_selesai',
+                `${tahun}-${String(bulan).padStart(2, '0')}-${String(last).padStart(2, '0')}`,
+            );
+        } else {
+            if (tanggalMulai) params.set('tanggal_mulai', tanggalMulai);
+            if (tanggalSelesai) params.set('tanggal_selesai', tanggalSelesai);
+        }
+        const qs = params.toString();
+        return qs
+            ? `/export/pelanggaran-full/pdf?${qs}`
+            : '/export/pelanggaran-full/pdf';
     };
 
     const tabs = [
@@ -100,12 +126,7 @@ export default function LaporanIndex() {
                     </div>
                     <Button
                         variant="outline"
-                        onClick={() =>
-                            window.open(
-                                '/export/pelanggaran-full/pdf',
-                                '_blank',
-                            )
-                        }
+                        onClick={() => setShowExportModal(true)}
                     >
                         <FileDown className="h-4 w-4" />
                         Export Full
@@ -401,6 +422,67 @@ export default function LaporanIndex() {
                     />
                 )}
             </div>
+
+            <Modal
+                open={showExportModal}
+                onClose={() => setShowExportModal(false)}
+                title="Export PDF Pelanggaran"
+                description="Pilih export semua data atau per daerah."
+            >
+                <div className="space-y-4">
+                    <Button
+                        className="w-full"
+                        onClick={() => {
+                            setShowExportModal(false);
+                            window.open(exportUrl(), '_blank');
+                        }}
+                    >
+                        <FileDown className="h-4 w-4" />
+                        Export Semua Data
+                    </Button>
+
+                    <div className="relative">
+                        <div className="absolute inset-0 flex items-center">
+                            <span className="w-full border-t" />
+                        </div>
+                        <div className="relative flex justify-center text-xs uppercase">
+                            <span className="bg-card px-2 text-muted-foreground">
+                                atau
+                            </span>
+                        </div>
+                    </div>
+
+                    <div className="space-y-3">
+                        <label className="text-sm font-medium">
+                            Export Per Daerah
+                        </label>
+                        <Select
+                            value={exportDaerahId}
+                            onChange={(e) => setExportDaerahId(e.target.value)}
+                            placeholder="Pilih Daerah"
+                            options={(daerah || []).map((d: any) => ({
+                                value: d.id,
+                                label: d.nama_daerah,
+                            }))}
+                        />
+                        <Button
+                            className="w-full"
+                            disabled={!exportDaerahId}
+                            onClick={() => {
+                                if (!exportDaerahId) return;
+                                setShowExportModal(false);
+                                window.open(
+                                    exportUrl(exportDaerahId),
+                                    '_blank',
+                                );
+                            }}
+                        >
+                            <FileDown className="h-4 w-4" />
+                            Export Per Daerah
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
         </AppLayout>
     );
 }

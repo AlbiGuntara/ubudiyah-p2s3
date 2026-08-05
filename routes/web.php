@@ -53,6 +53,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('pelanggaran', PelanggaranController::class)->except(['create', 'edit', 'show']);
     Route::post('pelanggaran/massal', [PelanggaranController::class, 'storeMassal'])->name('pelanggaran.massal');
     Route::post('pelanggaran/bulk-delete', [PelanggaranController::class, 'bulkDelete'])->name('pelanggaran.bulk-delete');
+    Route::post('pelanggaran/bulk-update', [PelanggaranController::class, 'bulkUpdate'])->name('pelanggaran.bulk-update');
 
     // Surat Panggilan
     Route::get('pelanggaran/surat-panggilan/cetak', [SuratPanggilanController::class, 'cetak'])->name('pelanggaran.surat-panggilan.cetak');

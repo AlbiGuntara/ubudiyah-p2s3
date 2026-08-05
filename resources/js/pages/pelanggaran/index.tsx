@@ -6,7 +6,15 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Modal } from '@/components/ui/modal';
 import { DataTable, type Column } from '@/components/shared/data-table';
-import { Edit2, Trash2, Plus, X, Printer, RefreshCw, ChevronDown } from 'lucide-react';
+import {
+    Edit2,
+    Trash2,
+    Plus,
+    X,
+    Printer,
+    RefreshCw,
+    ChevronDown,
+} from 'lucide-react';
 import {
     DropdownMenu,
     DropdownMenuTrigger,
@@ -48,6 +56,18 @@ export default function PelanggaranIndex() {
         (sort_direction as 'asc' | 'desc' | 'none') || 'none',
     );
     const [selectedIds, setSelectedIds] = useState<(string | number)[]>([]);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [editForm, setEditForm] = useState({
+        daftar_pelanggaran_id: '',
+        tanggal: '',
+        sumber_pencatatan: 'petugas',
+        keterangan: '',
+    });
+    const [showBulkEditModal, setShowBulkEditModal] = useState(false);
+    const [bulkForm, setBulkForm] = useState({
+        sumber_pencatatan: 'petugas',
+        keterangan: '',
+    });
 
     const [showCetakUlang, setShowCetakUlang] = useState(false);
     const [reprintDaerahId, setReprintDaerahId] = useState('');
@@ -66,7 +86,9 @@ export default function PelanggaranIndex() {
         setShowRiwayatGlobal(true);
         setLoadingGlobalRiwayat(true);
         try {
-            const res = await fetch('/pelanggaran/surat-panggilan/riwayat-global');
+            const res = await fetch(
+                '/pelanggaran/surat-panggilan/riwayat-global',
+            );
             const data = await res.json();
             setGlobalRiwayat(data);
         } catch {
@@ -77,18 +99,28 @@ export default function PelanggaranIndex() {
     }, []);
 
     const hapusRiwayat = useCallback(async (printedAt: string) => {
-        if (!confirm('Yakin ingin menghapus sesi cetak ini? Semua surat dalam sesi ini akan dihapus dan pelanggaran akan kembali ke daftar cetak.')) return;
+        if (
+            !confirm(
+                'Yakin ingin menghapus sesi cetak ini? Semua surat dalam sesi ini akan dihapus dan pelanggaran akan kembali ke daftar cetak.',
+            )
+        )
+            return;
         try {
-            const res = await fetch('/pelanggaran/surat-panggilan/delete-session', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': (window as any).csrfToken || '',
+            const res = await fetch(
+                '/pelanggaran/surat-panggilan/delete-session',
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': (window as any).csrfToken || '',
+                    },
+                    body: JSON.stringify({ printed_at: printedAt }),
                 },
-                body: JSON.stringify({ printed_at: printedAt }),
-            });
+            );
             if (res.ok) {
-                setGlobalRiwayat((prev) => prev.filter((r) => r.printed_at !== printedAt));
+                setGlobalRiwayat((prev) =>
+                    prev.filter((r) => r.printed_at !== printedAt),
+                );
             }
         } catch {}
     }, []);
@@ -218,47 +250,13 @@ export default function PelanggaranIndex() {
 
     const openEdit = (p: any) => {
         setEditing(p);
-        setForm({
-            asrama_id: p.asrama_id,
-            petugas_id: p.petugas_id,
-            sumber_pencatatan: p.sumber_pencatatan,
+        setEditForm({
+            daftar_pelanggaran_id: String(p.daftar_pelanggaran_id || ''),
             tanggal: p.tanggal ? p.tanggal.split('T')[0] : '',
+            sumber_pencatatan: p.sumber_pencatatan || 'petugas',
             keterangan: p.keterangan || '',
         });
-        const a = asrama.find((a: any) => String(a.id) === String(p.asrama_id));
-        setDaerahId(a?.daerah_id ? String(a.daerah_id) : '');
-        const existingTanggal = p.tanggal ? p.tanggal.split('T')[0] : new Date().toISOString().split('T')[0];
-        if (p.santri) {
-            setNextSantriId(1);
-            setSantriEntries([
-                {
-                    uid: 0,
-                    santri_id: p.santri.id,
-                    nama: p.santri.nama,
-                    daftar_pelanggaran_id: String(p.daftar_pelanggaran_id),
-                    tanggal: existingTanggal,
-                },
-            ]);
-        } else {
-            setSantriEntries([]);
-            // Edit anonymous record
-            setNextAnonId(1);
-            setAnonymousEntries([
-                {
-                    uid: 0,
-                    jumlah: String(p.jumlah),
-                    daftar_pelanggaran_id: String(p.daftar_pelanggaran_id),
-                    tanggal: existingTanggal,
-                },
-            ]);
-        }
-        setPendingSantriId('');
-        setPendingSantriSearch('');
-        setShowSantriDropdown(false);
-        setPendingPelanggaranId('');
-        setPendingAnonJumlah('1');
-        setPendingAnonPelanggaranId('');
-        setShowModal(true);
+        setShowEditModal(true);
     };
 
     const addSantri = () => {
@@ -352,44 +350,49 @@ export default function PelanggaranIndex() {
     };
 
     const submit = () => {
-        if (editing) {
-            const entry = santriEntries[0];
-            const anon = anonymousEntries[0];
-            const data = {
-                santri_id: entry?.santri_id || null,
-                asrama_id: form.asrama_id,
-                daftar_pelanggaran_id:
-                    entry?.daftar_pelanggaran_id || anon?.daftar_pelanggaran_id,
-                petugas_id: form.petugas_id || null,
-                jumlah: entry ? 1 : parseInt(anon?.jumlah) || 1,
-                sumber_pencatatan: form.sumber_pencatatan,
-                tanggal: form.tanggal,
-                keterangan: form.keterangan,
-            };
-            router.put(`/pelanggaran/${editing.id}`, data, {
-                onSuccess: () => setShowModal(false),
-            });
-        } else {
-            const data: Record<string, any> = {
-                santri_pelanggaran: santriEntries.map((s) => ({
-                    santri_id: s.santri_id,
-                    daftar_pelanggaran_id: s.daftar_pelanggaran_id,
-                    tanggal: s.tanggal,
-                })),
-                anonymous_entries: anonymousEntries.map((a) => ({
-                    jumlah: parseInt(a.jumlah),
-                    daftar_pelanggaran_id: a.daftar_pelanggaran_id,
-                    tanggal: a.tanggal,
-                })),
-                asrama_id: form.asrama_id,
-                petugas_id: form.petugas_id || null,
-                sumber_pencatatan: form.sumber_pencatatan,
-                keterangan: form.keterangan,
-            };
-            router.post('/pelanggaran', data, {
-                onSuccess: () => setShowModal(false),
-            });
-        }
+        const data: Record<string, any> = {
+            santri_pelanggaran: santriEntries.map((s) => ({
+                santri_id: s.santri_id,
+                daftar_pelanggaran_id: s.daftar_pelanggaran_id,
+                tanggal: s.tanggal,
+            })),
+            anonymous_entries: anonymousEntries.map((a) => ({
+                jumlah: parseInt(a.jumlah),
+                daftar_pelanggaran_id: a.daftar_pelanggaran_id,
+                tanggal: a.tanggal,
+            })),
+            asrama_id: form.asrama_id,
+            petugas_id: form.petugas_id || null,
+            sumber_pencatatan: form.sumber_pencatatan,
+            keterangan: form.keterangan,
+        };
+        router.post('/pelanggaran', data, {
+            onSuccess: () => setShowModal(false),
+        });
+    };
+
+    const submitEdit = () => {
+        if (!editing) return;
+        router.put(`/pelanggaran/${editing.id}`, editForm, {
+            onSuccess: () => setShowEditModal(false),
+        });
+    };
+
+    const submitBulkEdit = () => {
+        router.post(
+            '/pelanggaran/bulk-update',
+            {
+                ids: selectedIds,
+                sumber_pencatatan: bulkForm.sumber_pencatatan,
+                keterangan: bulkForm.keterangan,
+            },
+            {
+                onSuccess: () => {
+                    setShowBulkEditModal(false);
+                    setSelectedIds([]);
+                },
+            },
+        );
     };
 
     const destroy = (id: number) => {
@@ -544,7 +547,9 @@ export default function PelanggaranIndex() {
                                         <Printer className="h-4 w-4" />
                                         Cetak Ulang
                                     </Button>
-                                    <Button onClick={() => setShowPrintModal(true)}>
+                                    <Button
+                                        onClick={() => setShowPrintModal(true)}
+                                    >
                                         <Printer className="h-4 w-4" />
                                         Cetak Surat{' '}
                                         <span className="hidden sm:inline">
@@ -562,15 +567,23 @@ export default function PelanggaranIndex() {
                                             </Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
-                                            <DropdownMenuItem onClick={() => setShowPrintModal(true)}>
+                                            <DropdownMenuItem
+                                                onClick={() =>
+                                                    setShowPrintModal(true)
+                                                }
+                                            >
                                                 <Printer className="h-4 w-4" />
                                                 Cetak Surat Panggilan
                                             </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={openCetakUlang}>
+                                            <DropdownMenuItem
+                                                onClick={openCetakUlang}
+                                            >
                                                 <Printer className="h-4 w-4" />
                                                 Cetak Ulang
                                             </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={openRiwayatGlobal}>
+                                            <DropdownMenuItem
+                                                onClick={openRiwayatGlobal}
+                                            >
                                                 <RefreshCw className="h-4 w-4" />
                                                 Riwayat Cetak
                                             </DropdownMenuItem>
@@ -671,14 +684,24 @@ export default function PelanggaranIndex() {
                     onSelectionChange={setSelectedIds}
                     bulkActions={
                         selectedIds.length > 0 && (
-                            <Button
-                                variant="destructive"
-                                size="sm"
-                                onClick={bulkDelete}
-                            >
-                                <Trash2 className="h-4 w-4" />
-                                Hapus ({selectedIds.length})
-                            </Button>
+                            <div className="flex items-center gap-2">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setShowBulkEditModal(true)}
+                                >
+                                    <Edit2 className="h-4 w-4" />
+                                    Edit
+                                </Button>
+                                <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={bulkDelete}
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                    Hapus ({selectedIds.length})
+                                </Button>
+                            </div>
                         )
                     }
                     filters={
@@ -854,7 +877,7 @@ export default function PelanggaranIndex() {
                         )}
 
                     {!loadingRiwayat && reprintRiwayat.length > 0 && (
-                        <div className="max-h-80 space-y-2 overflow-y-auto modal-scroll">
+                        <div className="modal-scroll max-h-80 space-y-2 overflow-y-auto">
                             {reprintRiwayat.map((item: any) => (
                                 <div
                                     key={item.id}
@@ -934,7 +957,7 @@ export default function PelanggaranIndex() {
                     )}
 
                     {!loadingGlobalRiwayat && globalRiwayat.length > 0 && (
-                        <div className="max-h-96 space-y-3 overflow-y-auto modal-scroll">
+                        <div className="modal-scroll max-h-96 space-y-3 overflow-y-auto">
                             {globalRiwayat.map((item: any) => (
                                 <div
                                     key={item.printed_at}
@@ -946,9 +969,11 @@ export default function PelanggaranIndex() {
                                                 {item.tanggal_display}
                                             </p>
                                             <p className="text-xs text-muted-foreground">
-                                                {item.jumlah_surat} surat &middot;{' '}
+                                                {item.jumlah_surat} surat
+                                                &middot;{' '}
                                                 {item.jumlah_pelanggaran}{' '}
-                                                pelanggaran &middot; {item.pencetak}
+                                                pelanggaran &middot;{' '}
+                                                {item.pencetak}
                                             </p>
                                         </div>
                                         <Button
@@ -992,7 +1017,10 @@ export default function PelanggaranIndex() {
                         onClick={() => {
                             setShowPrintModal(false);
                             setPrintDaerahId('');
-                            window.open('/pelanggaran/surat-panggilan/cetak', '_blank');
+                            window.open(
+                                '/pelanggaran/surat-panggilan/cetak',
+                                '_blank',
+                            );
                         }}
                     >
                         <Printer className="h-4 w-4" />
@@ -1004,12 +1032,16 @@ export default function PelanggaranIndex() {
                             <span className="w-full border-t" />
                         </div>
                         <div className="relative flex justify-center text-xs uppercase">
-                            <span className="bg-card px-2 text-muted-foreground">atau</span>
+                            <span className="bg-card px-2 text-muted-foreground">
+                                atau
+                            </span>
                         </div>
                     </div>
 
                     <div className="space-y-3">
-                        <label className="text-sm font-medium">Cetak Per Daerah</label>
+                        <label className="text-sm font-medium">
+                            Cetak Per Daerah
+                        </label>
                         <Select
                             value={printDaerahId}
                             onChange={(e) => setPrintDaerahId(e.target.value)}
@@ -1033,6 +1065,162 @@ export default function PelanggaranIndex() {
                             <Printer className="h-4 w-4" />
                             Cetak
                         </Button>
+                    </div>
+                </div>
+            </Modal>
+
+            <Modal
+                open={showBulkEditModal}
+                onClose={() => setShowBulkEditModal(false)}
+                title={`Edit ${selectedIds.length} Pelanggaran`}
+            >
+                <div className="space-y-4">
+                    <p className="text-sm text-muted-foreground">
+                        Perubahan sumber dan keterangan akan diterapkan ke{' '}
+                        {selectedIds.length} pelanggaran yang dipilih.
+                    </p>
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium">Sumber</label>
+                        <Select
+                            value={bulkForm.sumber_pencatatan}
+                            onChange={(e) =>
+                                setBulkForm({
+                                    ...bulkForm,
+                                    sumber_pencatatan: e.target.value,
+                                })
+                            }
+                            options={[
+                                { value: 'petugas', label: 'Petugas' },
+                                {
+                                    value: 'ketua_kamar',
+                                    label: 'Ketua Kamar',
+                                },
+                            ]}
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium">
+                            Keterangan
+                        </label>
+                        <Input
+                            value={bulkForm.keterangan}
+                            onChange={(e) =>
+                                setBulkForm({
+                                    ...bulkForm,
+                                    keterangan: e.target.value,
+                                })
+                            }
+                        />
+                    </div>
+                    <div className="flex justify-end gap-3 pt-2">
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowBulkEditModal(false)}
+                        >
+                            Batal
+                        </Button>
+                        <Button onClick={submitBulkEdit}>Simpan</Button>
+                    </div>
+                </div>
+            </Modal>
+
+            <Modal
+                open={showEditModal}
+                onClose={() => setShowEditModal(false)}
+                title="Edit Pelanggaran"
+            >
+                <div className="space-y-4">
+                    <div className="rounded-lg border bg-muted/30 p-3 text-sm">
+                        <div className="flex items-center justify-between">
+                            <span className="font-medium">
+                                {editing?.santri?.nama ||
+                                    `${editing?.jumlah ?? ''} Orang`}
+                            </span>
+                            <span className="text-muted-foreground">
+                                {editing?.asrama?.daerah?.kode
+                                    ? `${editing.asrama.daerah.kode.charAt(0)}.${editing.asrama.nomor}`
+                                    : editing?.asrama?.nomor || '-'}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium">
+                            Jenis Pelanggaran
+                        </label>
+                        <Select
+                            value={editForm.daftar_pelanggaran_id}
+                            onChange={(e) =>
+                                setEditForm({
+                                    ...editForm,
+                                    daftar_pelanggaran_id: e.target.value,
+                                })
+                            }
+                            placeholder="Pilih Jenis Pelanggaran"
+                            options={daftarPelanggaran.map((d: any) => ({
+                                value: d.id,
+                                label: d.nama_pelanggaran,
+                            }))}
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium">Tanggal</label>
+                        <Input
+                            type="date"
+                            value={editForm.tanggal}
+                            onChange={(e) =>
+                                setEditForm({
+                                    ...editForm,
+                                    tanggal: e.target.value,
+                                })
+                            }
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium">Sumber</label>
+                        <Select
+                            value={editForm.sumber_pencatatan}
+                            onChange={(e) =>
+                                setEditForm({
+                                    ...editForm,
+                                    sumber_pencatatan: e.target.value,
+                                })
+                            }
+                            options={[
+                                { value: 'petugas', label: 'Petugas' },
+                                {
+                                    value: 'ketua_kamar',
+                                    label: 'Ketua Kamar',
+                                },
+                            ]}
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium">
+                            Keterangan
+                        </label>
+                        <Input
+                            value={editForm.keterangan}
+                            onChange={(e) =>
+                                setEditForm({
+                                    ...editForm,
+                                    keterangan: e.target.value,
+                                })
+                            }
+                        />
+                    </div>
+
+                    <div className="flex justify-end gap-3 pt-2">
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowEditModal(false)}
+                        >
+                            Batal
+                        </Button>
+                        <Button onClick={submitEdit}>Simpan</Button>
                     </div>
                 </div>
             </Modal>

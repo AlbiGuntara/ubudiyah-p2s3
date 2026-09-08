@@ -10,9 +10,9 @@ use App\Models\DaftarPelanggaran;
 use App\Models\Pelanggaran;
 use App\Models\Pembinaan;
 use App\Models\Santri;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -64,9 +64,9 @@ class PelanggaranController extends Controller
                 $q->whereHas('santri', fn ($sq) => $sq->where('nama', 'like', "%{$search}%")
                     ->orWhere('nama_panggilan', 'like', "%{$search}%")
                     ->orWhere('iksass', 'like', "%{$search}%"))
-                  ->orWhereHas('asrama', fn ($aq) => $aq->where('nomor', 'like', "%{$search}%")
-                      ->orWhereHas('daerah', fn ($dq) => $dq->where('kode', 'like', "%{$search}%")))
-                  ->orWhereHas('daftarPelanggaran', fn ($dpq) => $dpq->where('nama_pelanggaran', 'like', "%{$search}%"));
+                    ->orWhereHas('asrama', fn ($aq) => $aq->where('nomor', 'like', "%{$search}%")
+                        ->orWhereHas('daerah', fn ($dq) => $dq->where('kode', 'like', "%{$search}%")))
+                    ->orWhereHas('daftarPelanggaran', fn ($dpq) => $dpq->where('nama_pelanggaran', 'like', "%{$search}%"));
             });
         }
 
@@ -127,6 +127,7 @@ class PelanggaranController extends Controller
                     'daftar_pelanggaran_id' => $item['daftar_pelanggaran_id'],
                     'petugas_id' => $petugasId,
                     'jumlah' => 1,
+                    'sisa_sanksi' => 100,
                     'sumber_pencatatan' => $data['sumber_pencatatan'],
                     'tanggal' => $item['tanggal'],
                     'keterangan' => $data['keterangan'],
@@ -149,6 +150,7 @@ class PelanggaranController extends Controller
                         'daftar_pelanggaran_id' => $entry['daftar_pelanggaran_id'],
                         'petugas_id' => $petugasId,
                         'jumlah' => $jumlah,
+                        'sisa_sanksi' => $jumlah * 100,
                         'sumber_pencatatan' => $data['sumber_pencatatan'],
                         'tanggal' => $entry['tanggal'],
                         'keterangan' => $data['keterangan'] ?? 'Tanpa nama',
@@ -164,6 +166,7 @@ class PelanggaranController extends Controller
         if (empty($santriPelanggaran) && empty($anonymousEntries) && ! empty($data['santri_id'])) {
             $record = $data;
             $record['petugas_id'] = $petugasId;
+            $record['sisa_sanksi'] = ($record['jumlah'] ?? 1) * 100;
             Pelanggaran::create($record);
             $this->syncPembinaan((int) $data['santri_id']);
         }
@@ -260,6 +263,7 @@ class PelanggaranController extends Controller
 
         if ($totalPelanggaran === 0) {
             Pembinaan::where('santri_id', $santriId)->delete();
+
             return;
         }
 
@@ -290,6 +294,7 @@ class PelanggaranController extends Controller
 
         if ($totalPelanggaran === 0) {
             Pembinaan::whereNull('santri_id')->where('asrama_id', $asramaId)->delete();
+
             return;
         }
 

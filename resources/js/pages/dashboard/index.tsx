@@ -3,17 +3,48 @@ import { AppLayout } from '@/components/layout/app-layout';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
-    Calendar, Users, AlertTriangle, BookOpen,
-    TrendingUp, MapPin, Home,
+    Calendar,
+    Users,
+    AlertTriangle,
+    BookOpen,
+    TrendingUp,
+    MapPin,
+    Home,
 } from 'lucide-react';
 import {
-    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-    ResponsiveContainer, PieChart, Pie, Cell, Legend,
+    BarChart,
+    Bar,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    ResponsiveContainer,
+    PieChart,
+    Pie,
+    Cell,
+    Legend,
 } from 'recharts';
 
-const CHART_COLORS = ['#16a34a', '#8b5cf6', '#f59e0b', '#ef4444', '#06b6d4', '#ec4899'];
+const CHART_COLORS = [
+    '#16a34a',
+    '#8b5cf6',
+    '#f59e0b',
+    '#ef4444',
+    '#06b6d4',
+    '#ec4899',
+];
 
-function StatCard({ title, value, icon: Icon, description }: { title: string; value: string | number; icon: React.ElementType; description?: string }) {
+function StatCard({
+    title,
+    value,
+    icon: Icon,
+    description,
+}: {
+    title: string;
+    value: string | number;
+    icon: React.ElementType;
+    description?: string;
+}) {
     return (
         <Card>
             <CardContent className="p-6">
@@ -21,9 +52,13 @@ function StatCard({ title, value, icon: Icon, description }: { title: string; va
                     <div className="space-y-1">
                         <p className="text-sm text-muted-foreground">{title}</p>
                         <p className="text-3xl font-bold">{value}</p>
-                        {description && <p className="text-xs text-muted-foreground">{description}</p>}
+                        {description && (
+                            <p className="text-xs text-muted-foreground">
+                                {description}
+                            </p>
+                        )}
                     </div>
-                    <div className="w-12 h-12 rounded-full bg-green-600/20 flex items-center justify-center">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-600/20">
                         <Icon className="h-6 w-6 text-green-600" />
                     </div>
                 </div>
@@ -32,8 +67,21 @@ function StatCard({ title, value, icon: Icon, description }: { title: string; va
     );
 }
 
-function BarChartCard({ title, labels, data, color = '#16a34a' }: { title: string; labels: string[]; data: number[]; color?: string }) {
-    const chartData = labels.map((label, i) => ({ name: label, value: data[i] }));
+function BarChartCard({
+    title,
+    labels,
+    data,
+    color = '#16a34a',
+}: {
+    title: string;
+    labels: string[];
+    data: number[];
+    color?: string;
+}) {
+    const chartData = labels.map((label, i) => ({
+        name: label,
+        value: data[i],
+    }));
     return (
         <Card>
             <CardHeader>
@@ -41,15 +89,44 @@ function BarChartCard({ title, labels, data, color = '#16a34a' }: { title: strin
             </CardHeader>
             <CardContent>
                 {data.every((v) => v === 0) ? (
-                    <p className="text-sm text-muted-foreground text-center py-8">Belum ada data</p>
+                    <p className="py-8 text-center text-sm text-muted-foreground">
+                        Belum ada data
+                    </p>
                 ) : (
                     <ResponsiveContainer width="100%" height={250}>
                         <BarChart data={chartData} barCategoryGap="20%">
-                            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
-                            <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#6b7280' }} axisLine={{ stroke: '#e5e7eb' }} tickLine={false} />
-                            <YAxis tick={{ fontSize: 12, fill: '#6b7280' }} axisLine={false} tickLine={false} allowDecimals={false} />
-                            <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }} cursor={{ fill: 'rgba(22, 163, 74, 0.08)' }} />
-                            <Bar dataKey="value" fill={color} radius={[4, 4, 0, 0]} maxBarSize={48} />
+                            <CartesianGrid
+                                strokeDasharray="3 3"
+                                stroke="#e5e7eb"
+                                vertical={false}
+                            />
+                            <XAxis
+                                dataKey="name"
+                                tick={{ fontSize: 12, fill: '#6b7280' }}
+                                axisLine={{ stroke: '#e5e7eb' }}
+                                tickLine={false}
+                            />
+                            <YAxis
+                                tick={{ fontSize: 12, fill: '#6b7280' }}
+                                axisLine={false}
+                                tickLine={false}
+                                allowDecimals={false}
+                            />
+                            <Tooltip
+                                contentStyle={{
+                                    backgroundColor: '#fff',
+                                    border: '1px solid #e5e7eb',
+                                    borderRadius: '8px',
+                                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                                }}
+                                cursor={{ fill: 'rgba(22, 163, 74, 0.08)' }}
+                            />
+                            <Bar
+                                dataKey="value"
+                                fill={color}
+                                radius={[4, 4, 0, 0]}
+                                maxBarSize={48}
+                            />
                         </BarChart>
                     </ResponsiveContainer>
                 )}
@@ -58,7 +135,15 @@ function BarChartCard({ title, labels, data, color = '#16a34a' }: { title: strin
     );
 }
 
-function PieChartCard({ title, labels, data }: { title: string; labels: string[]; data: number[] }) {
+function PieChartCard({
+    title,
+    labels,
+    data,
+}: {
+    title: string;
+    labels: string[];
+    data: number[];
+}) {
     const chartData = labels
         .map((label, i) => ({ name: label, value: data[i] }))
         .filter((d) => d.value > 0);
@@ -70,7 +155,9 @@ function PieChartCard({ title, labels, data }: { title: string; labels: string[]
             </CardHeader>
             <CardContent>
                 {chartData.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-8">Belum ada data</p>
+                    <p className="py-8 text-center text-sm text-muted-foreground">
+                        Belum ada data
+                    </p>
                 ) : (
                     <ResponsiveContainer width="100%" height={280}>
                         <PieChart>
@@ -82,10 +169,19 @@ function PieChartCard({ title, labels, data }: { title: string; labels: string[]
                                 outerRadius={100}
                                 paddingAngle={3}
                                 dataKey="value"
-                                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                label={({ name, percent }) =>
+                                    `${name} ${(percent * 100).toFixed(0)}%`
+                                }
                             >
                                 {chartData.map((_, i) => (
-                                    <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                                    <Cell
+                                        key={i}
+                                        fill={
+                                            CHART_COLORS[
+                                                i % CHART_COLORS.length
+                                            ]
+                                        }
+                                    />
                                 ))}
                             </Pie>
                             <Tooltip
@@ -105,7 +201,17 @@ function PieChartCard({ title, labels, data }: { title: string; labels: string[]
     );
 }
 
-function SimpleBarCard({ title, labels, data, color = '#16a34a' }: { title: string; labels: string[]; data: number[]; color?: string }) {
+function SimpleBarCard({
+    title,
+    labels,
+    data,
+    color = '#16a34a',
+}: {
+    title: string;
+    labels: string[];
+    data: number[];
+    color?: string;
+}) {
     const max = Math.max(...data, 1);
     return (
         <Card>
@@ -113,27 +219,56 @@ function SimpleBarCard({ title, labels, data, color = '#16a34a' }: { title: stri
                 <CardTitle className="text-base">{title}</CardTitle>
             </CardHeader>
             <CardContent>
-                <div className="flex items-end gap-2 h-40">
+                <div className="flex h-40 items-end gap-2">
                     {labels.map((label, i) => (
-                        <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                            <span className="text-xs font-medium">{data[i]}</span>
+                        <div
+                            key={i}
+                            className="flex flex-1 flex-col items-center gap-1"
+                        >
+                            <span className="text-xs font-medium">
+                                {data[i]}
+                            </span>
                             <div
                                 className="w-full rounded-t-md transition-all"
-                                style={{ height: `${(data[i] / max) * 100}%`, minHeight: data[i] > 0 ? '4px' : '0', backgroundColor: color }}
+                                style={{
+                                    height: `${(data[i] / max) * 100}%`,
+                                    minHeight: data[i] > 0 ? '4px' : '0',
+                                    backgroundColor: color,
+                                }}
                             />
-                            <span className="text-[10px] text-muted-foreground text-center truncate w-full">
-                                {label.length > 8 ? label.slice(0, 8) + '...' : label}
+                            <span className="w-full truncate text-center text-[10px] text-muted-foreground">
+                                {label.length > 8
+                                    ? label.slice(0, 8) + '...'
+                                    : label}
                             </span>
                         </div>
                     ))}
                 </div>
-                {data.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">Belum ada data</p>}
+                {data.length === 0 && (
+                    <p className="py-8 text-center text-sm text-muted-foreground">
+                        Belum ada data
+                    </p>
+                )}
             </CardContent>
         </Card>
     );
 }
 
-function TopList({ title, items, valueLabel }: { title: string; items: { nama?: string; nama_daerah?: string; label?: string; asrama_label?: string; total: number }[]; valueLabel: string }) {
+function TopList({
+    title,
+    items,
+    valueLabel,
+}: {
+    title: string;
+    items: {
+        nama?: string;
+        nama_daerah?: string;
+        label?: string;
+        asrama_label?: string;
+        total: number;
+    }[];
+    valueLabel: string;
+}) {
     return (
         <Card>
             <CardHeader>
@@ -141,21 +276,38 @@ function TopList({ title, items, valueLabel }: { title: string; items: { nama?: 
             </CardHeader>
             <CardContent>
                 {items.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-4">Belum ada data</p>
+                    <p className="py-4 text-center text-sm text-muted-foreground">
+                        Belum ada data
+                    </p>
                 ) : (
                     <div className="space-y-3">
                         {items.map((item, i) => (
-                            <div key={i} className="flex items-center justify-between">
+                            <div
+                                key={i}
+                                className="flex items-center justify-between"
+                            >
                                 <div className="flex items-center gap-3">
-                                    <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${i < 3 ? 'bg-green-600 text-white' : 'bg-muted text-muted-foreground'}`}>
+                                    <span
+                                        className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${i < 3 ? 'bg-green-600 text-white' : 'bg-muted text-muted-foreground'}`}
+                                    >
                                         {i + 1}
                                     </span>
                                     <div>
-                                        <span className="text-sm">{item.label || item.nama_daerah || item.nama}</span>
-                                        {item.asrama_label && <span className="text-xs text-muted-foreground ml-1">{item.asrama_label}</span>}
+                                        <span className="text-sm">
+                                            {item.label ||
+                                                item.nama_daerah ||
+                                                item.nama}
+                                        </span>
+                                        {item.asrama_label && (
+                                            <span className="ml-1 text-xs text-muted-foreground">
+                                                {item.asrama_label}
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
-                                <Badge variant="secondary">{item.total} {valueLabel}</Badge>
+                                <Badge variant="secondary">
+                                    {item.total} {valueLabel}
+                                </Badge>
                             </div>
                         ))}
                     </div>
@@ -187,32 +339,77 @@ export default function Dashboard(props: PageProps) {
 
             <div className="space-y-6">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-                    <p className="text-muted-foreground">Overview pelanggaran ubudiyah</p>
+                    <h1 className="text-2xl font-bold tracking-tight">
+                        Dashboard
+                    </h1>
+                    <p className="text-muted-foreground">
+                        Overview pelanggaran ubudiyah
+                    </p>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <StatCard title="Pelanggaran Hari Ini" value={props.stats.pelanggaran_hari_ini} icon={Calendar} />
-                    <StatCard title="Santri Melanggar Hari Ini" value={props.stats.santri_melanggar_hari_ini} icon={Users} />
-                    <StatCard title="Pelanggaran Bulan Ini" value={props.stats.pelanggaran_bulan_ini} icon={AlertTriangle} />
-                    <StatCard title="Santri Melanggar Bulan Ini" value={props.stats.santri_melanggar_bulan_ini} icon={BookOpen} />
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <StatCard
+                        title="Pelanggaran Hari Ini"
+                        value={props.stats.pelanggaran_hari_ini}
+                        icon={Calendar}
+                    />
+                    <StatCard
+                        title="Santri Melanggar Hari Ini"
+                        value={props.stats.santri_melanggar_hari_ini}
+                        icon={Users}
+                    />
+                    <StatCard
+                        title="Pelanggaran Bulan Ini"
+                        value={props.stats.pelanggaran_bulan_ini}
+                        icon={AlertTriangle}
+                    />
+                    <StatCard
+                        title="Santri Melanggar Bulan Ini"
+                        value={props.stats.santri_melanggar_bulan_ini}
+                        icon={BookOpen}
+                    />
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <BarChartCard title="Grafik Pelanggaran Harian (7 Hari)" labels={props.harianChart.labels} data={props.harianChart.data} />
-                    <PieChartCard title="Grafik Pelanggaran Bulanan (6 Bulan)" labels={props.bulananChart.labels} data={props.bulananChart.data} />
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                    <BarChartCard
+                        title="Grafik Pelanggaran Harian (7 Hari)"
+                        labels={props.harianChart.labels}
+                        data={props.harianChart.data}
+                    />
+                    <PieChartCard
+                        title="Grafik Pelanggaran Bulanan (6 Bulan)"
+                        labels={props.bulananChart.labels}
+                        data={props.bulananChart.data}
+                    />
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                     <div className="lg:col-span-2">
-                        <SimpleBarCard title="Pelanggaran Berdasarkan Daerah" labels={props.daerahChart.labels} data={props.daerahChart.data} color="#16a34a" />
+                        <SimpleBarCard
+                            title="Pelanggaran Berdasarkan Daerah"
+                            labels={props.daerahChart.labels}
+                            data={props.daerahChart.data}
+                            color="#16a34a"
+                        />
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <TopList title="Top 10 Daerah" items={props.topDaerah} valueLabel="pelanggaran" />
-                    <TopList title="Top 10 Asrama" items={props.topAsrama} valueLabel="pelanggaran" />
-                    <TopList title="Top 10 Santri" items={props.topSantri} valueLabel="pelanggaran" />
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                    <TopList
+                        title="Top 10 Daerah"
+                        items={props.topDaerah}
+                        valueLabel="pelanggaran"
+                    />
+                    <TopList
+                        title="Top 10 Asrama"
+                        items={props.topAsrama}
+                        valueLabel="pelanggaran"
+                    />
+                    <TopList
+                        title="Top 10 Santri"
+                        items={props.topSantri}
+                        valueLabel="pelanggaran"
+                    />
                 </div>
             </div>
         </AppLayout>

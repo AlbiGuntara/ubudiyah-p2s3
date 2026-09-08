@@ -10,6 +10,8 @@ use App\Models\Pelanggaran;
 use App\Models\Pembinaan;
 use App\Models\Santri;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -113,16 +115,59 @@ class PembinaanController extends Controller
     public function setorSanksi(Request $request, Pembinaan $pembinaan): RedirectResponse
     {
         $validated = $request->validate([
+            'pelanggaran_ids' => 'required|array|min:1',
+            'pelanggaran_ids.*' => 'integer',
             'jumlah_setoran' => 'required|integer|min:1',
             'tanggal_setor' => 'nullable|date',
         ]);
 
         $jumlahSetoran = (int) $validated['jumlah_setoran'];
         $tanggalSetor = $validated['tanggal_setor'] ?? now()->format('Y-m-d');
+        $pelanggaranIds = array_values(array_unique($validated['pelanggaran_ids']));
 
-        // Cannot setor more than remaining sisa_sanksi
-        if ($jumlahSetoran > $pembinaan->sisa_sanksi) {
-            return redirect()->back()->with('error', 'Jumlah setoran melebihi sisa sanksi.');
+        // Determine which pelanggaran belong to this pembinaan
+        // Preserve the user's selection order so the "last selected"
+        // pelanggaran absorbs the remainder of the setor.
+        $poolPelanggaran = $this->getPembinaanPelanggaran($pembinaan)
+            ->whereIn('id', $pelanggaranIds)
+            ->keyBy('id');
+
+        if ($poolPelanggaran->count() !== count($pelanggaranIds)) {
+            return redirect()->back()->with('error', 'Beberapa pelanggaran terpilih tidak valid atau sudah diselesaikan.');
+        }
+
+        $pelanggarans = collect($pelanggaranIds)
+            ->map(fn ($id) => $poolPelanggaran->get((int) $id))
+            ->filter()
+            ->values();
+
+        $count = $pelanggarans->count();
+
+        // Max = sum of remaining sisa of the selected pelanggaran.
+        // Min = max - sisa of the last selected pelanggaran (i.e. at least
+        // settle all but the last one fully). When every selected pelanggaran
+        // is fully unsettled (100 each), this becomes count*100 and (count-1)*100.
+        $maxSetoran = $pelanggarans->sum('sisa_sanksi');
+        $minSetoran = $maxSetoran - (int) $pelanggarans->last()->sisa_sanksi;
+
+        if ($jumlahSetoran > $maxSetoran) {
+            return redirect()->back()->with('error', "Jumlah setoran maksimal {$maxSetoran} sesuai jumlah pelanggaran yang dipilih.");
+        }
+
+        if ($jumlahSetoran < $minSetoran) {
+            return redirect()->back()->with('error', "Jumlah setoran minimal {$minSetoran} sesuai jumlah pelanggaran yang dipilih.");
+        }
+
+        // Distribute: settle every selected pelanggaran except the last one fully,
+        // the last selected pelanggaran absorbs the remainder.
+        foreach ($pelanggarans as $index => $pelanggaran) {
+            if ($index === $count - 1) {
+                $pelanggaran->sisa_sanksi = $maxSetoran - $jumlahSetoran;
+                $pelanggaran->save();
+            } else {
+                $pelanggaran->sisa_sanksi = 0;
+                $pelanggaran->save();
+            }
         }
 
         $pembinaan->setoran()->create([
@@ -167,6 +212,31 @@ class PembinaanController extends Controller
             'keterangan' => 'Koreksi tambah sanksi',
         ]);
 
+        // Restore the amount back to individual pelanggaran so the sum of
+        // per-pelanggaran sisa stays consistent with pembinaan.sisa_sanksi.
+        if ($pembinaan->santri_id) {
+            $query = Pelanggaran::where('santri_id', $pembinaan->santri_id);
+        } else {
+            $query = Pelanggaran::whereNull('santri_id')->where('asrama_id', $pembinaan->asrama_id);
+        }
+        $pelanggarans = $query->get();
+        $remaining = $jumlahTambah;
+        // Reverse of the setor distribution: restore the amount back into the
+        // pelanggaran (fully-settled ones first) so the sum of per-pelanggaran
+        // sisa stays consistent with pembinaan.sisa_sanksi. No fixed
+        // per-pelanggaran cap is applied because pemutihan may have scaled
+        // sisa_sanksi beyond jumlah * 100; over-restoration is already bounded
+        // by the pembinaan-level shalawat_tertulis check above.
+        $pelanggarans = $pelanggarans->sortBy(fn ($pl) => $pl->sisa_sanksi);
+        foreach ($pelanggarans as $pelanggaran) {
+            if ($remaining <= 0) {
+                break;
+            }
+            $pelanggaran->sisa_sanksi = $pelanggaran->sisa_sanksi + $remaining;
+            $pelanggaran->save();
+            $remaining = 0;
+        }
+
         $pembinaan->shalawat_tertulis = max(0, $pembinaan->shalawat_tertulis - $jumlahTambah);
         $pembinaan->sisa_sanksi += $jumlahTambah;
         $pembinaan->save();
@@ -190,10 +260,59 @@ class PembinaanController extends Controller
             foreach ($pembinaans as $pembinaan) {
                 $pembinaan->sisa_sanksi = $pembinaan->sisa_sanksi * $multiplier;
                 $pembinaan->save();
+
+                $query = Pelanggaran::where('sisa_sanksi', '>', 0);
+                if ($pembinaan->santri_id) {
+                    $query->where('santri_id', $pembinaan->santri_id);
+                } else {
+                    $query->whereNull('santri_id')->where('asrama_id', $pembinaan->asrama_id);
+                }
+
+                $query->get()->each(function ($pelanggaran) use ($multiplier) {
+                    $pelanggaran->sisa_sanksi = $pelanggaran->sisa_sanksi * $multiplier;
+                    $pelanggaran->save();
+                });
             }
         });
 
         return redirect()->back()->with('success', "Pemutihan berhasil! Semua sisa sanksi dikalikan {$multiplier}.");
+    }
+
+    /**
+     * Return the list of pelanggaran for a given pembinaan (only unsettled ones),
+     * used by the setor sanksi modal.
+     */
+    public function getPelanggaran(Pembinaan $pembinaan): JsonResponse
+    {
+        $pelanggarans = $this->getPembinaanPelanggaran($pembinaan);
+
+        return response()->json($pelanggarans->map(fn ($p) => [
+            'id' => $p->id,
+            'nama_pelanggaran' => $p->daftarPelanggaran?->nama_pelanggaran ?? '-',
+            'tanggal' => $p->tanggal?->format('d/m/Y'),
+            'sisa_sanksi' => (int) $p->sisa_sanksi,
+            'sanksi' => (int) $p->jumlah * 100,
+        ]));
+    }
+
+    /**
+     * Query pelanggaran belonging to a pembinaan.
+     * For named santri: match santri_id. For anonymous: match asrama_id with null santri_id.
+     * Only returns pelanggaran that still have remaining sanction (sisa_sanksi > 0).
+     */
+    private function getPembinaanPelanggaran(Pembinaan $pembinaan): Collection
+    {
+        $query = Pelanggaran::with('daftarPelanggaran')
+            ->where('sisa_sanksi', '>', 0);
+
+        if ($pembinaan->santri_id) {
+            $query->where('santri_id', $pembinaan->santri_id);
+        } else {
+            $query->whereNull('santri_id')
+                ->where('asrama_id', $pembinaan->asrama_id);
+        }
+
+        return $query->orderBy('tanggal')->get();
     }
 
     public function cetak(Request $request): \Illuminate\Http\Response|RedirectResponse
@@ -205,7 +324,9 @@ class PembinaanController extends Controller
         $hasFilter = $request->filled('bulan') || $request->filled('tanggal_awal') || $request->filled('tanggal_akhir');
 
         if ($hasFilter) {
-            $pelanggaranQuery = Pelanggaran::with('daftarPelanggaran')->orderBy('tanggal');
+            $pelanggaranQuery = Pelanggaran::with('daftarPelanggaran')
+                ->where('sisa_sanksi', '>', 0)
+                ->orderBy('tanggal');
 
             if ($request->filled('bulan')) {
                 $bulan = $request->bulan;
@@ -224,12 +345,17 @@ class PembinaanController extends Controller
                 $filterInfo['tanggal_akhir'] = $request->tanggal_akhir;
             }
 
-            $pelanggaranBySantri = $pelanggaranQuery->get()->groupBy('santri_id');
+            $allPelanggaran = $pelanggaranQuery->get();
+            $pelanggaranBySantri = $allPelanggaran->whereNotNull('santri_id')->groupBy('santri_id');
+            $pelanggaranByAsrama = $allPelanggaran->whereNull('santri_id')->groupBy('asrama_id');
             $santriIds = $pelanggaranBySantri->keys()->toArray();
 
             $pembinaans = Pembinaan::with(['santri.asrama.daerah', 'asrama.daerah', 'setoran'])
                 ->where('sisa_sanksi', '>', 0)
-                ->whereIn('santri_id', $santriIds)
+                ->where(function ($q) use ($santriIds) {
+                    $q->whereNull('santri_id')
+                        ->orWhereIn('santri_id', $santriIds);
+                })
                 ->where(function ($q) {
                     $q->whereNull('santri_id')
                         ->orWhereHas('santri', fn ($sq) => $sq->whereIn('status', ['aktif', 'tidak aktif']));
@@ -246,17 +372,22 @@ class PembinaanController extends Controller
 
             $santriIds = $pembinaans->whereNotNull('santri_id')->pluck('santri_id')->unique()->values();
 
-            $pelanggaranBySantri = Pelanggaran::with('daftarPelanggaran')
-                ->whereIn('santri_id', $santriIds)
+            $allPelanggaran = Pelanggaran::with('daftarPelanggaran')
+                ->where('sisa_sanksi', '>', 0)
                 ->orderBy('tanggal')
-                ->get()
+                ->get();
+
+            $pelanggaranBySantri = $allPelanggaran->whereNotNull('santri_id')
+                ->whereIn('santri_id', $santriIds)
                 ->groupBy('santri_id');
+            $pelanggaranByAsrama = $allPelanggaran->whereNull('santri_id')->groupBy('asrama_id');
         }
 
         $pembinaans = $pembinaans->sortBy(function ($p) {
             $nama = $p->santri?->nama ?? 'zzz';
             $asramaNomor = $p->santri?->asrama?->nomor ?? $p->asrama?->nomor ?? 0;
             $daerahId = $p->santri?->asrama?->daerah_id ?? $p->asrama?->daerah_id ?? 0;
+
             return [$daerahId, (int) $asramaNomor, $nama];
         });
 
@@ -264,23 +395,25 @@ class PembinaanController extends Controller
         foreach ($pembinaans as $p) {
             $daerahId = $p->santri?->asrama?->daerah_id ?? $p->asrama?->daerah_id;
             $daerah = $p->santri?->asrama?->daerah ?? $p->asrama?->daerah;
-            if (!$daerah) {
+            if (! $daerah) {
                 continue;
             }
 
-            $santriKey = $p->santri_id ? 'santri_' . $p->santri_id : 'anon_' . $p->asrama_id;
+            $santriKey = $p->santri_id ? 'santri_'.$p->santri_id : 'anon_'.$p->asrama_id;
 
-            if (!isset($groups[$daerahId])) {
+            if (! isset($groups[$daerahId])) {
                 $groups[$daerahId] = [
                     'daerah' => $daerah,
                     'santri' => [],
                 ];
             }
 
-            if (!isset($groups[$daerahId]['santri'][$santriKey])) {
+            if (! isset($groups[$daerahId]['santri'][$santriKey])) {
                 $pelanggarans = collect();
                 if ($p->santri_id && isset($pelanggaranBySantri[$p->santri_id])) {
                     $pelanggarans = $pelanggaranBySantri[$p->santri_id];
+                } elseif (! $p->santri_id && $p->asrama_id && isset($pelanggaranByAsrama[$p->asrama_id])) {
+                    $pelanggarans = $pelanggaranByAsrama[$p->asrama_id];
                 }
 
                 $groups[$daerahId]['santri'][$santriKey] = [
@@ -310,7 +443,8 @@ class PembinaanController extends Controller
         try {
             $content = $pdf->output();
         } catch (\Exception $e) {
-            Log::error('Gagal mencetak laporan pembinaan: ' . $e->getMessage());
+            Log::error('Gagal mencetak laporan pembinaan: '.$e->getMessage());
+
             return redirect()->back()->with('error', 'Gagal mencetak laporan pembinaan. Data terlalu besar.');
         }
 
@@ -328,6 +462,6 @@ class PembinaanController extends Controller
 
         return response($content, 200)
             ->header('Content-Type', 'application/pdf')
-            ->header('Content-Disposition', 'attachment; filename="pembinaan-ubudiyah-' . now()->format('Y-m-d') . '.pdf"');
+            ->header('Content-Disposition', 'attachment; filename="pembinaan-ubudiyah-'.now()->format('Y-m-d').'.pdf"');
     }
 }

@@ -1,9 +1,10 @@
 <?php
+
 namespace App\Models;
 
 use App\Traits\Auditable;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Pelanggaran extends Model
@@ -18,6 +19,7 @@ class Pelanggaran extends Model
         'daftar_pelanggaran_id',
         'petugas_id',
         'jumlah',
+        'sisa_sanksi',
         'sumber_pencatatan',
         'tanggal',
         'keterangan',
@@ -27,6 +29,8 @@ class Pelanggaran extends Model
     {
         return [
             'tanggal' => 'date:Y-m-d',
+            'jumlah' => 'integer',
+            'sisa_sanksi' => 'integer',
         ];
     }
 

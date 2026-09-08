@@ -40,7 +40,9 @@ export default function PembinaanIndex() {
     );
     const [multiplier, setMultiplier] = useState('');
     const [showCetakModal, setShowCetakModal] = useState(false);
-    const [cetakMode, setCetakMode] = useState<'semua' | 'bulan' | 'rentang'>('semua');
+    const [cetakMode, setCetakMode] = useState<'semua' | 'bulan' | 'rentang'>(
+        'semua',
+    );
     const [cetakBulan, setCetakBulan] = useState('');
     const [cetakTanggalAwal, setCetakTanggalAwal] = useState('');
     const [cetakTanggalAkhir, setCetakTanggalAkhir] = useState('');
@@ -51,11 +53,27 @@ export default function PembinaanIndex() {
     const [filterAsrama, setFilterAsrama] = useState(
         initialFilters?.asrama_id || '',
     );
+    const [pelanggaranOptions, setPelanggaranOptions] = useState<any[]>([]);
+    const [selectedPelanggaran, setSelectedPelanggaran] = useState<number[]>(
+        [],
+    );
+
+    const fetchPelanggaran = async (p: any) => {
+        try {
+            const res = await fetch(`/pembinaan/${p.id}/pelanggaran`);
+            const data = await res.json();
+            setPelanggaranOptions(data || []);
+        } catch {
+            setPelanggaranOptions([]);
+        }
+    };
 
     const openSetor = (p: any) => {
         setSetorTarget(p);
         setJumlahSetoran('');
         setTanggalSetor(new Date().toISOString().split('T')[0]);
+        setSelectedPelanggaran([]);
+        fetchPelanggaran(p);
         setShowSetorModal(true);
     };
 
@@ -89,11 +107,33 @@ export default function PembinaanIndex() {
         );
     };
 
+    const togglePelanggaran = (id: number) => {
+        setSelectedPelanggaran((prev) =>
+            prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+        );
+    };
+
+    const selectedCount = selectedPelanggaran.length;
+    const selectedOptions = selectedPelanggaran
+        .map((id) => pelanggaranOptions.find((pl) => pl.id === id))
+        .filter(Boolean);
+    const maxSetoran = selectedOptions.reduce(
+        (sum, pl: any) => sum + (pl.sisa_sanksi || 0),
+        0,
+    );
+    const minSetoran =
+        selectedOptions.length > 0
+            ? maxSetoran -
+              (selectedOptions[selectedOptions.length - 1].sisa_sanksi || 0)
+            : 0;
+
     const setorSanksi = () => {
         if (!setorTarget || !jumlahSetoran) return;
+        if (selectedPelanggaran.length === 0) return;
         router.post(
             `/pembinaan/${setorTarget.id}/setor-sanksi`,
             {
+                pelanggaran_ids: selectedPelanggaran,
                 jumlah_setoran: jumlahSetoran,
                 tanggal_setor: tanggalSetor,
             },
@@ -102,6 +142,7 @@ export default function PembinaanIndex() {
                     setShowSetorModal(false);
                     setSetorTarget(null);
                     setJumlahSetoran('');
+                    setSelectedPelanggaran([]);
                 },
             },
         );
@@ -579,15 +620,65 @@ export default function PembinaanIndex() {
                 <div className="space-y-4">
                     <div className="space-y-2">
                         <label className="text-sm font-medium">
+                            Pilih Pelanggaran
+                        </label>
+                        {pelanggaranOptions.length === 0 ? (
+                            <p className="py-2 text-sm text-muted-foreground">
+                                Tidak ada pelanggaran yang belum diselesaikan.
+                            </p>
+                        ) : (
+                            <div className="modal-scroll max-h-48 space-y-1 overflow-y-auto rounded-md">
+                                {pelanggaranOptions.map((pl) => (
+                                    <label
+                                        key={pl.id}
+                                        className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-sm hover:bg-muted/50"
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedPelanggaran.includes(
+                                                pl.id,
+                                            )}
+                                            onChange={() =>
+                                                togglePelanggaran(pl.id)
+                                            }
+                                            className="accent-blue-600"
+                                        />
+                                        <span className="flex-1">
+                                            {pl.nama_pelanggaran}
+                                            <span className="ml-2 text-muted-foreground">
+                                                ({pl.tanggal})
+                                            </span>
+                                        </span>
+                                        <span className="text-xs font-semibold text-amber-600">
+                                            Sisa:{' '}
+                                            {pl.sisa_sanksi.toLocaleString()}
+                                        </span>
+                                    </label>
+                                ))}
+                            </div>
+                        )}
+                        {selectedCount > 0 && (
+                            <p className="text-xs text-muted-foreground">
+                                {selectedCount} pelanggaran dipilih. Maksimal
+                                setor:{' '}
+                                <strong>{maxSetoran.toLocaleString()}</strong> |
+                                Minimal setor:{' '}
+                                <strong>{minSetoran.toLocaleString()}</strong>
+                            </p>
+                        )}
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium">
                             Jumlah Setoran
                         </label>
                         <Input
                             type="number"
-                            min={1}
-                            max={setorTarget?.sisa_sanksi || 0}
+                            min={selectedCount > 0 ? minSetoran : 1}
+                            max={selectedCount > 0 ? maxSetoran : 0}
                             value={jumlahSetoran}
                             onChange={(e) => setJumlahSetoran(e.target.value)}
                             placeholder="Masukkan jumlah setoran"
+                            disabled={selectedCount === 0}
                         />
                     </div>
                     <div className="space-y-2">
@@ -607,7 +698,17 @@ export default function PembinaanIndex() {
                         >
                             Batal
                         </Button>
-                        <Button onClick={setorSanksi}>Setor</Button>
+                        <Button
+                            onClick={setorSanksi}
+                            disabled={
+                                selectedCount === 0 ||
+                                !jumlahSetoran ||
+                                Number(jumlahSetoran) > maxSetoran ||
+                                Number(jumlahSetoran) < minSetoran
+                            }
+                        >
+                            Setor
+                        </Button>
                     </div>
                 </div>
             </Modal>
@@ -625,8 +726,7 @@ export default function PembinaanIndex() {
             >
                 <div className="space-y-4">
                     <p className="text-sm text-muted-foreground">
-                        Digunakan untuk mengoreksi setoran yang salah.
-                        Maksimal{' '}
+                        Digunakan untuk mengoreksi setoran yang salah. Maksimal{' '}
                         <strong>
                             {(
                                 setorTarget?.shalawat_tertulis || 0
@@ -712,7 +812,9 @@ export default function PembinaanIndex() {
                                 [...(setorTarget?.setoran || [])]
                                     .sort(
                                         (a: any, b: any) =>
-                                            new Date(b.tanggal_setor).getTime() -
+                                            new Date(
+                                                b.tanggal_setor,
+                                            ).getTime() -
                                             new Date(a.tanggal_setor).getTime(),
                                     )
                                     .map((s: any, i: number) => (
@@ -724,9 +826,7 @@ export default function PembinaanIndex() {
                                                 {i + 1}
                                             </td>
                                             <td className="px-4 py-2">
-                                                {formatTanggal(
-                                                    s.tanggal_setor,
-                                                )}
+                                                {formatTanggal(s.tanggal_setor)}
                                             </td>
                                             <td
                                                 className={`px-4 py-2 text-right font-medium ${s.jumlah < 0 ? 'text-red-600' : 'text-green-600'}`}

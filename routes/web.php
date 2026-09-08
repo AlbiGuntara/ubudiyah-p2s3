@@ -13,9 +13,9 @@ use App\Http\Controllers\PembinaanController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\PetugasController;
 use App\Http\Controllers\RoleController;
-use App\Http\Controllers\SuratPanggilanController;
 use App\Http\Controllers\SantriController;
 use App\Http\Controllers\SearchController;
+use App\Http\Controllers\SuratPanggilanController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -68,6 +68,7 @@ Route::middleware('auth')->group(function () {
     Route::post('pembinaan/{pembinaan}/tambah-sanksi', [PembinaanController::class, 'tambahSanksi'])->name('pembinaan.tambah-sanksi');
     Route::post('pembinaan/pemutihan', [PembinaanController::class, 'pemutihan'])->name('pembinaan.pemutihan');
     Route::get('pembinaan/cetak', [PembinaanController::class, 'cetak'])->name('pembinaan.cetak');
+    Route::get('pembinaan/{pembinaan}/pelanggaran', [PembinaanController::class, 'getPelanggaran'])->name('pembinaan.pelanggaran');
 
     // Laporan
     Route::prefix('laporan')->name('laporan.')->group(function () {

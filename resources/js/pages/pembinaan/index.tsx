@@ -40,12 +40,7 @@ export default function PembinaanIndex() {
     );
     const [multiplier, setMultiplier] = useState('');
     const [showCetakModal, setShowCetakModal] = useState(false);
-    const [cetakMode, setCetakMode] = useState<'semua' | 'bulan' | 'rentang'>(
-        'semua',
-    );
-    const [cetakBulan, setCetakBulan] = useState('');
-    const [cetakTanggalAwal, setCetakTanggalAwal] = useState('');
-    const [cetakTanggalAkhir, setCetakTanggalAkhir] = useState('');
+    const [cetakDaerahId, setCetakDaerahId] = useState('');
     const [search, setSearch] = useState(initialFilters?.search || '');
     const [filterDaerah, setFilterDaerah] = useState(
         initialFilters?.daerah_id || '',
@@ -490,116 +485,61 @@ export default function PembinaanIndex() {
             {/* Cetak Modal */}
             <Modal
                 open={showCetakModal}
-                onClose={() => setShowCetakModal(false)}
+                onClose={() => {
+                    setShowCetakModal(false);
+                    setCetakDaerahId('');
+                }}
                 title="Cetak Pembinaan"
-                description="Pilih periode data pembinaan yang akan dicetak."
             >
                 <div className="space-y-4">
-                    <div className="space-y-3">
-                        <label className="flex items-center gap-2 text-sm">
-                            <input
-                                type="radio"
-                                name="cetakMode"
-                                value="semua"
-                                checked={cetakMode === 'semua'}
-                                onChange={() => setCetakMode('semua')}
-                                className="accent-blue-600"
-                            />
-                            Semua Data
-                        </label>
+                    <Button
+                        className="w-full"
+                        onClick={() => {
+                            setShowCetakModal(false);
+                            setCetakDaerahId('');
+                            window.open('/pembinaan/cetak', '_blank');
+                        }}
+                    >
+                        <Printer className="h-4 w-4" />
+                        Cetak Semua
+                    </Button>
 
-                        <label className="flex items-center gap-2 text-sm">
-                            <input
-                                type="radio"
-                                name="cetakMode"
-                                value="bulan"
-                                checked={cetakMode === 'bulan'}
-                                onChange={() => setCetakMode('bulan')}
-                                className="accent-blue-600"
-                            />
-                            Per Bulan
-                        </label>
-                        {cetakMode === 'bulan' && (
-                            <div className="ml-6">
-                                <Input
-                                    type="month"
-                                    value={cetakBulan}
-                                    onChange={(e) =>
-                                        setCetakBulan(e.target.value)
-                                    }
-                                    className="max-w-[200px]"
-                                />
-                            </div>
-                        )}
-
-                        <label className="flex items-center gap-2 text-sm">
-                            <input
-                                type="radio"
-                                name="cetakMode"
-                                value="rentang"
-                                checked={cetakMode === 'rentang'}
-                                onChange={() => setCetakMode('rentang')}
-                                className="accent-blue-600"
-                            />
-                            Rentang Tanggal
-                        </label>
-                        {cetakMode === 'rentang' && (
-                            <div className="ml-6 flex items-center gap-2">
-                                <Input
-                                    type="date"
-                                    value={cetakTanggalAwal}
-                                    onChange={(e) =>
-                                        setCetakTanggalAwal(e.target.value)
-                                    }
-                                    className="max-w-[180px]"
-                                />
-                                <span className="text-muted-foreground">
-                                    s.d.
-                                </span>
-                                <Input
-                                    type="date"
-                                    value={cetakTanggalAkhir}
-                                    onChange={(e) =>
-                                        setCetakTanggalAkhir(e.target.value)
-                                    }
-                                    className="max-w-[180px]"
-                                />
-                            </div>
-                        )}
+                    <div className="relative">
+                        <div className="absolute inset-0 flex items-center">
+                            <span className="w-full border-t" />
+                        </div>
+                        <div className="relative flex justify-center text-xs uppercase">
+                            <span className="bg-card px-2 text-muted-foreground">
+                                atau
+                            </span>
+                        </div>
                     </div>
 
-                    <div className="flex justify-end gap-3 pt-2">
+                    <div className="space-y-3">
+                        <label className="text-sm font-medium">
+                            Cetak Per Daerah
+                        </label>
+                        <Select
+                            value={cetakDaerahId}
+                            onChange={(e) => setCetakDaerahId(e.target.value)}
+                            placeholder="Pilih Daerah"
+                            options={daerah.map((d: any) => ({
+                                value: d.id,
+                                label: d.nama_daerah,
+                            }))}
+                        />
                         <Button
-                            variant="outline"
-                            onClick={() => setShowCetakModal(false)}
-                        >
-                            Batal
-                        </Button>
-                        <Button
+                            className="w-full"
+                            disabled={!cetakDaerahId}
                             onClick={() => {
-                                const params = new URLSearchParams();
-                                if (cetakMode === 'bulan' && cetakBulan) {
-                                    params.set('bulan', cetakBulan);
-                                } else if (cetakMode === 'rentang') {
-                                    if (cetakTanggalAwal)
-                                        params.set(
-                                            'tanggal_awal',
-                                            cetakTanggalAwal,
-                                        );
-                                    if (cetakTanggalAkhir)
-                                        params.set(
-                                            'tanggal_akhir',
-                                            cetakTanggalAkhir,
-                                        );
-                                }
-                                const qs = params.toString();
-                                const url = qs
-                                    ? `/pembinaan/cetak?${qs}`
-                                    : '/pembinaan/cetak';
-                                window.open(url, '_blank');
+                                if (!cetakDaerahId) return;
                                 setShowCetakModal(false);
+                                const url = `/pembinaan/cetak?daerah_id=${cetakDaerahId}`;
+                                window.open(url, '_blank');
+                                setCetakDaerahId('');
                             }}
                         >
+                            <Printer className="h-4 w-4" />
                             Cetak
                         </Button>
                     </div>

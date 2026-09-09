@@ -184,7 +184,7 @@
 
                     @if ($isAnon)
                         @foreach ($pelanggarans as $item)
-                            <tr class="txt-{{ $warnaStatus }}">
+                            <tr class="txt-{{ $item->warna_status ?? $warnaStatus }}">
                                 <td style="text-align: center;">{{ $no }}</td>
                                 <td>{{ $santriNama }}</td>
                                 <td style="text-align: center;">{{ $santriNis }}</td>
@@ -207,7 +207,7 @@
                         </tr>
                     @else
                         @foreach ($pelanggarans as $item)
-                            <tr class="txt-{{ $warnaStatus }}">
+                            <tr class="txt-{{ $item->warna_status ?? $warnaStatus }}">
                                 <td style="text-align: center;">{{ $no }}</td>
                                 <td>{{ $santriNama }}</td>
                                 <td style="text-align: center;">{{ $santriNis }}</td>
@@ -229,15 +229,15 @@
             <b>Keterangan Warna Teks:</b>
             <div style="margin-top: 2px;">
                 <span class="warna-sw txt-selesai"></span>
-                <b class="txt-selesai">Hijau</b> : Sudah menyelesaikan semua pembinaan
+                <b class="txt-selesai">Hijau</b> : Pelanggaran sudah selesai diurus
             </div>
             <div>
                 <span class="warna-sw txt-sebagian"></span>
-                <b class="txt-sebagian">Kuning</b> : Sudah menyelesaikan sebagian pembinaan
+                <b class="txt-sebagian">Kuning</b> : Pelanggaran baru sebagian diurus
             </div>
             <div>
                 <span class="warna-sw txt-belum"></span>
-                <b class="txt-belum">Hitam</b> : Belum melaksanakan pembinaan sama sekali
+                <b class="txt-belum">Hitam</b> : Pelanggaran belum diurus
             </div>
         </div>
 

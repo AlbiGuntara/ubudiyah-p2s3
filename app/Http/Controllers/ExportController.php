@@ -324,6 +324,17 @@ class ExportController extends Controller
             }
             return 'belum';
         };
+        $warnaPelanggaran = function (Pelanggaran $pl): string {
+            $sisa = (int) $pl->sisa_sanksi;
+            $total = max(1, (int) $pl->jumlah * 100);
+            if ($sisa <= 0) {
+                return 'selesai';
+            }
+            if ($sisa >= $total) {
+                return 'belum';
+            }
+            return 'sebagian';
+        };
 
         foreach ($pembinaans as $p) {
             $isAnon = is_null($p->santri_id);
@@ -355,6 +366,10 @@ class ExportController extends Controller
                     if (isset($anonPelanggaranByAsrama[$p->asrama_id])) {
                         $anonPels = $anonPelanggaranByAsrama[$p->asrama_id];
                     }
+                    $anonPels = $anonPels->map(function ($item) use ($warnaPelanggaran) {
+                        $item->warna_status = $warnaPelanggaran($item);
+                        return $item;
+                    });
                     $daerahGroups[$daerahId]['santri'][$santriKey] = [
                         'is_anonymous' => true,
                         'santri_nama' => $total . ' Tanpa Nama',
@@ -369,6 +384,10 @@ class ExportController extends Controller
                     if ($p->santri_id && isset($pelanggaranBySantri[$p->santri_id])) {
                         $pelanggarans = $pelanggaranBySantri[$p->santri_id];
                     }
+                    $pelanggarans = $pelanggarans->map(function ($item) use ($warnaPelanggaran) {
+                        $item->warna_status = $warnaPelanggaran($item);
+                        return $item;
+                    });
 
                     $daerahGroups[$daerahId]['santri'][$santriKey] = [
                         'is_anonymous' => false,

@@ -321,7 +321,7 @@ class PembinaanController extends Controller
         ini_set('memory_limit', '512M');
 
         $filterInfo = [];
-        $hasFilter = $request->filled('bulan') || $request->filled('tanggal_awal') || $request->filled('tanggal_akhir');
+        $hasFilter = $request->filled('bulan') || $request->filled('tanggal_awal') || $request->filled('tanggal_akhir') || $request->filled('daerah_id');
 
         if ($hasFilter) {
             $pelanggaranQuery = Pelanggaran::with('daftarPelanggaran')
@@ -345,6 +345,14 @@ class PembinaanController extends Controller
                 $filterInfo['tanggal_akhir'] = $request->tanggal_akhir;
             }
 
+            if ($request->filled('daerah_id')) {
+                $daerahId = (int) $request->daerah_id;
+                $pelanggaranQuery->where(function ($q) use ($daerahId) {
+                    $q->whereHas('asrama', fn ($aq) => $aq->where('daerah_id', $daerahId));
+                });
+                $filterInfo['daerah_id'] = $daerahId;
+            }
+
             $allPelanggaran = $pelanggaranQuery->get();
             $pelanggaranBySantri = $allPelanggaran->whereNotNull('santri_id')->groupBy('santri_id');
             $pelanggaranByAsrama = $allPelanggaran->whereNull('santri_id')->groupBy('asrama_id');
@@ -359,8 +367,17 @@ class PembinaanController extends Controller
                 ->where(function ($q) {
                     $q->whereNull('santri_id')
                         ->orWhereHas('santri', fn ($sq) => $sq->whereIn('status', ['aktif', 'tidak aktif']));
-                })
-                ->get();
+                });
+
+            if ($request->filled('daerah_id')) {
+                $daerahId = (int) $request->daerah_id;
+                $pembinaans->where(function ($q) use ($daerahId) {
+                    $q->whereHas('asrama', fn ($aq) => $aq->where('daerah_id', $daerahId))
+                        ->orWhereHas('santri.asrama', fn ($sq) => $sq->where('daerah_id', $daerahId));
+                });
+            }
+
+            $pembinaans = $pembinaans->get();
         } else {
             $pembinaans = Pembinaan::with(['santri.asrama.daerah', 'asrama.daerah', 'setoran'])
                 ->where('sisa_sanksi', '>', 0)

@@ -17,6 +17,7 @@ use App\Http\Controllers\SantriController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SuratPanggilanController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\VoicePelanggaranController;
 use Illuminate\Support\Facades\Route;
 
 // Guest routes
@@ -54,6 +55,9 @@ Route::middleware('auth')->group(function () {
     Route::post('pelanggaran/massal', [PelanggaranController::class, 'storeMassal'])->name('pelanggaran.massal');
     Route::post('pelanggaran/bulk-delete', [PelanggaranController::class, 'bulkDelete'])->name('pelanggaran.bulk-delete');
     Route::post('pelanggaran/bulk-update', [PelanggaranController::class, 'bulkUpdate'])->name('pelanggaran.bulk-update');
+    Route::post('pelanggaran/voice', [VoicePelanggaranController::class, 'store'])
+        ->middleware('throttle:'.config('voice.throttle.transcribe'))
+        ->name('pelanggaran.voice');
 
     // Surat Panggilan
     Route::get('pelanggaran/surat-panggilan/cetak', [SuratPanggilanController::class, 'cetak'])->name('pelanggaran.surat-panggilan.cetak');

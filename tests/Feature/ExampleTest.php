@@ -1,7 +1,5 @@
 <?php
 
-test('returns a successful response', function () {
-    $response = $this->get(route('home'));
-
-    $response->assertOk();
+test('halaman awal dialihkan ke login bila belum masuk', function () {
+    $this->get('/')->assertRedirect(route('login'));
 });

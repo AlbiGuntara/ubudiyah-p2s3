@@ -107,6 +107,10 @@ class PelanggaranController extends Controller
             'daerah' => $daerah,
             'daftarPelanggaran' => $daftarPelanggaran,
             'filters' => $request->only(['search', 'tanggal', 'tanggal_mulai', 'tanggal_selesai', 'daerah_id', 'asrama_id', 'iksass', 'petugas_id', 'per_page', 'sort_column', 'sort_direction']),
+            'voice' => [
+                'enabled' => (bool) config('voice.enabled'),
+                'max_duration' => (int) config('voice.recording.max_duration'),
+            ],
         ]);
     }
 
@@ -123,14 +127,14 @@ class PelanggaranController extends Controller
             foreach ($santriPelanggaran as $item) {
                 Pelanggaran::create([
                     'santri_id' => $item['santri_id'],
-                    'asrama_id' => $data['asrama_id'],
+                    'asrama_id' => $item['asrama_id'] ?? $data['asrama_id'],
                     'daftar_pelanggaran_id' => $item['daftar_pelanggaran_id'],
                     'petugas_id' => $petugasId,
                     'jumlah' => 1,
                     'sisa_sanksi' => 100,
-                    'sumber_pencatatan' => $data['sumber_pencatatan'],
+                    'sumber_pencatatan' => $item['sumber_pencatatan'] ?? $data['sumber_pencatatan'],
                     'tanggal' => $item['tanggal'],
-                    'keterangan' => $data['keterangan'],
+                    'keterangan' => $item['keterangan'] ?? $data['keterangan'],
                 ]);
                 $this->syncPembinaan((int) $item['santri_id']);
             }
@@ -139,26 +143,32 @@ class PelanggaranController extends Controller
         // Create records for anonymous santri (each entry has jumlah + daftar_pelanggaran_id)
         $anonymousEntries = $data['anonymous_entries'] ?? [];
         if (! empty($anonymousEntries)) {
-            $hasAnonymous = false;
+            // Satu pengiriman bisa memuat beberapa asrama, sehingga pembinaan
+            // disinkronkan untuk setiap asrama yang benar-benar tersentuh.
+            $asramaTersentuh = [];
+
             foreach ($anonymousEntries as $entry) {
                 $jumlah = (int) ($entry['jumlah'] ?? 0);
                 if ($jumlah > 0) {
-                    $hasAnonymous = true;
+                    $asramaId = $entry['asrama_id'] ?? $data['asrama_id'];
+                    $asramaTersentuh[(int) $asramaId] = true;
+
                     Pelanggaran::create([
                         'santri_id' => null,
-                        'asrama_id' => $data['asrama_id'],
+                        'asrama_id' => $asramaId,
                         'daftar_pelanggaran_id' => $entry['daftar_pelanggaran_id'],
                         'petugas_id' => $petugasId,
                         'jumlah' => $jumlah,
                         'sisa_sanksi' => $jumlah * 100,
-                        'sumber_pencatatan' => $data['sumber_pencatatan'],
+                        'sumber_pencatatan' => $entry['sumber_pencatatan'] ?? $data['sumber_pencatatan'],
                         'tanggal' => $entry['tanggal'],
-                        'keterangan' => $data['keterangan'] ?? 'Tanpa nama',
+                        'keterangan' => $entry['keterangan'] ?? $data['keterangan'] ?? 'Tanpa nama',
                     ]);
                 }
             }
-            if ($hasAnonymous) {
-                $this->syncAnonymousPembinaan((int) $data['asrama_id']);
+
+            foreach (array_keys($asramaTersentuh) as $asramaId) {
+                $this->syncAnonymousPembinaan($asramaId);
             }
         }
 

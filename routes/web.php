@@ -93,6 +93,7 @@ Route::middleware('auth')->group(function () {
         Route::get('bulanan/pdf', [ExportController::class, 'pdfBulanan'])->name('bulanan.pdf');
         Route::get('tahunan/pdf', [ExportController::class, 'pdfTahunan'])->name('tahunan.pdf');
         Route::get('pelanggaran-full/pdf', [ExportController::class, 'pdfPelanggaranFull'])->name('export.pelanggaran-full.pdf');
+        Route::get('santri-validasi/pdf', [ExportController::class, 'pdfValidasiSantri'])->name('santri-validasi.pdf');
     });
 
     // Search

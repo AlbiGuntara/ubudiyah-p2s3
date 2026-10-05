@@ -1,14 +1,16 @@
 <?php
+
 namespace App\Models;
 
 use App\Traits\Auditable;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Daerah extends Model
 {
-    use Auditable, SoftDeletes, HasFactory;
+    use Auditable, HasFactory, SoftDeletes;
 
     protected $table = 'daerah';
 
@@ -17,7 +19,10 @@ class Daerah extends Model
         'nama_daerah',
     ];
 
-    public function asrama()
+    /**
+     * @return HasMany<Asrama, $this>
+     */
+    public function asrama(): HasMany
     {
         return $this->hasMany(Asrama::class);
     }

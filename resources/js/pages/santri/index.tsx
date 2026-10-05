@@ -15,6 +15,8 @@ import {
     Camera,
     X,
     FileText,
+    FileDown,
+    Printer,
     ZoomIn,
 } from 'lucide-react';
 
@@ -33,6 +35,8 @@ export default function SantriIndex() {
     const [showImport, setShowImport] = useState(false);
     const [editing, setEditing] = useState<any>(null);
     const [filterDaerah, setFilterDaerah] = useState(filters?.daerah_id || '');
+    const [showExportModal, setShowExportModal] = useState(false);
+    const [exportDaerah, setExportDaerah] = useState('');
     const [filterAsrama, setFilterAsrama] = useState(filters?.asrama_id || '');
     const [filterIksass, setFilterIksass] = useState(filters?.iksass || '');
     const [filterStatus, setFilterStatus] = useState(filters?.status || '');
@@ -257,7 +261,9 @@ export default function SantriIndex() {
                 s.foto ? (
                     <button
                         type="button"
-                        onClick={() => openFotoModal(`/storage/${s.foto}`, s.nama)}
+                        onClick={() =>
+                            openFotoModal(`/storage/${s.foto}`, s.nama)
+                        }
                         className="group relative"
                     >
                         <img
@@ -349,6 +355,14 @@ export default function SantriIndex() {
                         </p>
                     </div>
                     <div className="flex gap-2">
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowExportModal(true)}
+                            title="Export PDF data Santri per daerah untuk divalidasi asrama"
+                        >
+                            <FileDown className="h-4 w-4" />
+                            Export
+                        </Button>
                         <Button
                             variant="outline"
                             onClick={() => {
@@ -493,7 +507,10 @@ export default function SantriIndex() {
                                 placeholder="Semua Status"
                                 options={[
                                     { value: 'aktif', label: 'Aktif' },
-                                    { value: 'tidak aktif', label: 'Tidak Aktif' },
+                                    {
+                                        value: 'tidak aktif',
+                                        label: 'Tidak Aktif',
+                                    },
                                     { value: 'berhenti', label: 'Berhenti' },
                                 ]}
                                 className="min-w-[140px]"
@@ -849,6 +866,51 @@ export default function SantriIndex() {
                         </Button>
                     </div>
                 </form>
+            </Modal>
+
+            <Modal
+                open={showExportModal}
+                onClose={() => {
+                    setShowExportModal(false);
+                    setExportDaerah('');
+                }}
+                title="Export Validasi Data Santri"
+            >
+                <div className="space-y-4">
+                    <p className="text-sm text-muted-foreground">
+                        Data tiap asrama dipisahkan per halaman dengan kop surat
+                        agar bisa langsung diserahkan ke tiap asrama.
+                    </p>
+
+                    <div className="space-y-3">
+                        <label className="text-sm font-medium">
+                            Export Per Daerah
+                        </label>
+                        <Select
+                            value={exportDaerah}
+                            onChange={(e) => setExportDaerah(e.target.value)}
+                            placeholder="Pilih Daerah"
+                            options={daerah.map((d: any) => ({
+                                value: d.id,
+                                label: d.nama_daerah,
+                            }))}
+                        />
+                        <Button
+                            className="w-full"
+                            disabled={!exportDaerah}
+                            onClick={() => {
+                                if (!exportDaerah) return;
+                                setShowExportModal(false);
+                                const url = `/export/santri-validasi/pdf?daerah_id=${exportDaerah}`;
+                                window.open(url, '_blank');
+                                setExportDaerah('');
+                            }}
+                        >
+                            <Printer className="h-4 w-4" />
+                            Export
+                        </Button>
+                    </div>
+                </div>
             </Modal>
         </AppLayout>
     );

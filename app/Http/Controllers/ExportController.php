@@ -1,12 +1,17 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use App\Exports\LaporanExport;
+use App\Exports\LaporanLegacyExport;
+use App\Exports\LaporanSingleExport;
 use App\Http\Services\LaporanService;
+use App\Http\Services\SantriExportService;
 use App\Models\AuditLog;
 use App\Models\Pelanggaran;
 use App\Models\Pembinaan;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Excel as ExcelType;
@@ -15,7 +20,8 @@ use Maatwebsite\Excel\Facades\Excel;
 class ExportController extends Controller
 {
     public function __construct(
-        protected LaporanService $laporanService
+        protected LaporanService $laporanService,
+        protected SantriExportService $santriExportService
     ) {
         $this->middleware('permission:export_laporan');
     }
@@ -26,7 +32,7 @@ class ExportController extends Controller
         ini_set('memory_limit', '512M');
 
         $valid = ['per_daerah', 'per_asrama', 'per_jenis_pelanggaran', 'per_iksass', 'per_nama'];
-        if (!in_array($section, $valid)) {
+        if (! in_array($section, $valid)) {
             abort(404);
         }
 
@@ -50,18 +56,19 @@ class ExportController extends Controller
 
         try {
             $content = Excel::raw(
-                new \App\Exports\LaporanSingleExport($data, $periode, $section),
+                new LaporanSingleExport($data, $periode, $section),
                 ExcelType::XLSX
             );
         } catch (\Exception $e) {
-            Log::error('Gagal export Excel section: ' . $e->getMessage());
+            Log::error('Gagal export Excel section: '.$e->getMessage());
+
             return redirect()->back()->with('error', 'Gagal mengexport laporan. Data terlalu besar, coba dengan filter yang lebih spesifik.');
         }
 
         AuditLog::create([
             'user_id' => auth()->id(),
             'user_name' => auth()->user()->name,
-            'aktivitas' => 'mengexport laporan ' . str_replace('_', ' ', $section) . ' (Excel)',
+            'aktivitas' => 'mengexport laporan '.str_replace('_', ' ', $section).' (Excel)',
             'model_type' => null,
             'model_id' => null,
             'data' => ['section' => $section, 'periode' => $periode],
@@ -69,7 +76,7 @@ class ExportController extends Controller
 
         return response($content, 200)
             ->header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-            ->header('Content-Disposition', 'attachment; filename="laporan-' . $section . '.xlsx"');
+            ->header('Content-Disposition', 'attachment; filename="laporan-'.$section.'.xlsx"');
     }
 
     public function excelKomprehensif(Request $request)
@@ -101,7 +108,8 @@ class ExportController extends Controller
                 ExcelType::XLSX
             );
         } catch (\Exception $e) {
-            Log::error('Gagal export Excel komprehensif: ' . $e->getMessage());
+            Log::error('Gagal export Excel komprehensif: '.$e->getMessage());
+
             return redirect()->back()->with('error', 'Gagal mengexport laporan. Data terlalu besar, coba dengan filter yang lebih spesifik.');
         }
 
@@ -130,11 +138,12 @@ class ExportController extends Controller
 
         try {
             $content = Excel::raw(
-                new \App\Exports\LaporanLegacyExport($data, 'Laporan Bulanan', "Bulan {$bulan} Tahun {$tahun}"),
+                new LaporanLegacyExport($data, 'Laporan Bulanan', "Bulan {$bulan} Tahun {$tahun}"),
                 ExcelType::XLSX
             );
         } catch (\Exception $e) {
-            Log::error('Gagal export Excel bulanan: ' . $e->getMessage());
+            Log::error('Gagal export Excel bulanan: '.$e->getMessage());
+
             return redirect()->back()->with('error', 'Gagal mengexport laporan bulanan. Data terlalu besar.');
         }
 
@@ -162,11 +171,12 @@ class ExportController extends Controller
 
         try {
             $content = Excel::raw(
-                new \App\Exports\LaporanLegacyExport($data, 'Laporan Tahunan', "Tahun {$tahun}"),
+                new LaporanLegacyExport($data, 'Laporan Tahunan', "Tahun {$tahun}"),
                 ExcelType::XLSX
             );
         } catch (\Exception $e) {
-            Log::error('Gagal export Excel tahunan: ' . $e->getMessage());
+            Log::error('Gagal export Excel tahunan: '.$e->getMessage());
+
             return redirect()->back()->with('error', 'Gagal mengexport laporan tahunan. Data terlalu besar.');
         }
 
@@ -204,7 +214,8 @@ class ExportController extends Controller
         try {
             $content = $pdf->output();
         } catch (\Exception $e) {
-            Log::error('Gagal export PDF bulanan: ' . $e->getMessage());
+            Log::error('Gagal export PDF bulanan: '.$e->getMessage());
+
             return redirect()->back()->with('error', 'Gagal mengexport laporan bulanan. Data terlalu besar.');
         }
 
@@ -241,7 +252,8 @@ class ExportController extends Controller
         try {
             $content = $pdf->output();
         } catch (\Exception $e) {
-            Log::error('Gagal export PDF tahunan: ' . $e->getMessage());
+            Log::error('Gagal export PDF tahunan: '.$e->getMessage());
+
             return redirect()->back()->with('error', 'Gagal mengexport laporan tahunan. Data terlalu besar.');
         }
 
@@ -307,9 +319,10 @@ class ExportController extends Controller
 
         if ($tanggalMulai || $tanggalSelesai) {
             $pembinaans = $pembinaans->filter(function ($p) use ($pelanggaranBySantri, $anonPelanggaranByAsrama) {
-                if (!is_null($p->santri_id)) {
+                if (! is_null($p->santri_id)) {
                     return isset($pelanggaranBySantri[$p->santri_id]) && $pelanggaranBySantri[$p->santri_id]->count() > 0;
                 }
+
                 return isset($anonPelanggaranByAsrama[$p->asrama_id]) && $anonPelanggaranByAsrama[$p->asrama_id]->count() > 0;
             });
         }
@@ -322,6 +335,7 @@ class ExportController extends Controller
             if ((int) $p->shalawat_tertulis > 0) {
                 return 'sebagian';
             }
+
             return 'belum';
         };
         $warnaPelanggaran = function (Pelanggaran $pl): string {
@@ -333,31 +347,34 @@ class ExportController extends Controller
             if ($sisa >= $total) {
                 return 'belum';
             }
+
             return 'sebagian';
         };
 
         foreach ($pembinaans as $p) {
             $isAnon = is_null($p->santri_id);
-            $santriKey = $isAnon ? 'anon_' . $p->asrama_id : 'santri_' . $p->santri_id;
+            $santriKey = $isAnon ? 'anon_'.$p->asrama_id : 'santri_'.$p->santri_id;
             $daerahId = $p->santri?->asrama?->daerah_id ?? $p->asrama?->daerah_id;
             $daerah = $p->santri?->asrama?->daerah ?? $p->asrama?->daerah;
-            if (!$daerah) continue;
+            if (! $daerah) {
+                continue;
+            }
 
             $asrama = $p->santri?->asrama ?? $p->asrama;
             $asramaSort = $asrama?->nomor ?? 0;
 
-            if (!isset($daerahGroups[$daerahId])) {
+            if (! isset($daerahGroups[$daerahId])) {
                 $daerahGroups[$daerahId] = [
                     'daerah' => $daerah,
                     'santri' => [],
                 ];
             }
 
-            if (!isset($daerahGroups[$daerahId]['santri'][$santriKey])) {
+            if (! isset($daerahGroups[$daerahId]['santri'][$santriKey])) {
                 $asramaLabel = '-';
                 if ($asrama) {
                     $kode = $asrama->daerah?->kode ?? '';
-                    $asramaLabel = $kode ? substr($kode, 0, 1) . '.' . $asrama->nomor : (string) $asrama->nomor;
+                    $asramaLabel = $kode ? substr($kode, 0, 1).'.'.$asrama->nomor : (string) $asrama->nomor;
                 }
 
                 if ($isAnon) {
@@ -368,11 +385,12 @@ class ExportController extends Controller
                     }
                     $anonPels = $anonPels->map(function ($item) use ($warnaPelanggaran) {
                         $item->warna_status = $warnaPelanggaran($item);
+
                         return $item;
                     });
                     $daerahGroups[$daerahId]['santri'][$santriKey] = [
                         'is_anonymous' => true,
-                        'santri_nama' => $total . ' Tanpa Nama',
+                        'santri_nama' => $total.' Tanpa Nama',
                         'santri_nis' => '-',
                         'asrama_label' => $asramaLabel,
                         'asrama_sort' => $asramaSort,
@@ -386,6 +404,7 @@ class ExportController extends Controller
                     }
                     $pelanggarans = $pelanggarans->map(function ($item) use ($warnaPelanggaran) {
                         $item->warna_status = $warnaPelanggaran($item);
+
                         return $item;
                     });
 
@@ -405,7 +424,7 @@ class ExportController extends Controller
 
         foreach ($daerahGroups as &$group) {
             $santriArray = $group['santri'];
-            uasort($santriArray, fn($a, $b) => $a['asrama_sort'] <=> $b['asrama_sort']);
+            uasort($santriArray, fn ($a, $b) => $a['asrama_sort'] <=> $b['asrama_sort']);
             $group['santri'] = $santriArray;
         }
         unset($group);
@@ -421,7 +440,8 @@ class ExportController extends Controller
         try {
             $content = $pdf->output();
         } catch (\Exception $e) {
-            Log::error('Gagal export PDF pelanggaran full: ' . $e->getMessage());
+            Log::error('Gagal export PDF pelanggaran full: '.$e->getMessage());
+
             return redirect()->back()->with('error', 'Gagal mengexport laporan pelanggaran. Data terlalu besar.');
         }
 
@@ -436,23 +456,73 @@ class ExportController extends Controller
 
         return response($content, 200)
             ->header('Content-Type', 'application/pdf')
-            ->header('Content-Disposition', 'attachment; filename="export-pelanggaran-full-' . now()->format('Y-m-d') . '.pdf"');
+            ->header('Content-Disposition', 'attachment; filename="export-pelanggaran-full-'.now()->format('Y-m-d').'.pdf"');
+    }
+
+    /**
+     * PDF rekap data Santri untuk satu daerah, diserahkan ke asrama guna
+     * validasi. Satu daerah per permintaan supaya ukuran dokumen tetap kecil;
+     * mengexport seluruh daerah sekaligus berakhir dengan galat 500.
+     */
+    public function pdfValidasiSantri(Request $request)
+    {
+        set_time_limit(0);
+        ini_set('memory_limit', '512M');
+
+        $daerahId = $request->input('daerah_id');
+
+        if (! $this->santriExportService->daerahMemilikiSantri($daerahId)) {
+            return redirect()->back()->with(
+                'error',
+                'Pilih daerah yang datanya akan diexport. Data hanya bisa diexport satu daerah per permintaan.'
+            );
+        }
+
+        try {
+            $daerahGroups = $this->santriExportService->laporanValidasiSantri((int) $daerahId);
+
+            $content = Pdf::loadView('exports.validasi-santri', [
+                'daerahGroups' => $daerahGroups,
+                'tanggal_cetak' => now()->format('d/m/Y H:i'),
+                'user' => auth()->user()->name,
+            ])->output();
+        } catch (\Exception $e) {
+            Log::error('Gagal export PDF validasi Santri: '.$e->getMessage());
+
+            return redirect()->back()->with('error', 'Gagal membuat PDF validasi Santri. Data terlalu besar, coba lagi.');
+        }
+
+        AuditLog::create([
+            'user_id' => auth()->id(),
+            'user_name' => auth()->user()->name,
+            'aktivitas' => 'mengexport validasi data Santri (PDF)',
+            'model_type' => null,
+            'model_id' => null,
+            'data' => ['daerah_id' => (int) $daerahId],
+        ]);
+
+        return response($content, 200)
+            ->header('Content-Type', 'application/pdf')
+            ->header('Content-Disposition', 'attachment; filename="validasi-santri-daerah-'.$daerahId.'-'.now()->format('Y-m-d').'.pdf"');
     }
 
     protected function formatPeriode(?string $tanggalMulai, ?string $tanggalSelesai, $bulan, $tahun): string
     {
         if ($tanggalMulai && $tanggalSelesai) {
-            $d1 = \Carbon\Carbon::parse($tanggalMulai)->format('d/m/Y');
-            $d2 = \Carbon\Carbon::parse($tanggalSelesai)->format('d/m/Y');
+            $d1 = Carbon::parse($tanggalMulai)->format('d/m/Y');
+            $d2 = Carbon::parse($tanggalSelesai)->format('d/m/Y');
+
             return "{$d1} - {$d2}";
         }
         if ($bulan && $tahun) {
-            $namaBulan = \Carbon\Carbon::create()->month((int) $bulan)->format('F');
+            $namaBulan = Carbon::create()->month((int) $bulan)->format('F');
+
             return "{$namaBulan} {$tahun}";
         }
         if ($tahun) {
             return "Tahun {$tahun}";
         }
+
         return 'Semua Waktu';
     }
 }

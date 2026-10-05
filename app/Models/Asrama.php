@@ -1,15 +1,17 @@
 <?php
+
 namespace App\Models;
 
 use App\Traits\Auditable;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Asrama extends Model
 {
-    use Auditable, SoftDeletes, HasFactory;
+    use Auditable, HasFactory, SoftDeletes;
 
     protected $table = 'asrama';
 
@@ -18,21 +20,33 @@ class Asrama extends Model
         'nomor',
     ];
 
-    public function daerah()
+    /**
+     * @return BelongsTo<Daerah, $this>
+     */
+    public function daerah(): BelongsTo
     {
         return $this->belongsTo(Daerah::class);
     }
 
-    public function santri()
+    /**
+     * @return HasMany<Santri, $this>
+     */
+    public function santri(): HasMany
     {
         return $this->hasMany(Santri::class);
     }
 
-    public function pelanggaran()
+    /**
+     * @return HasMany<Pelanggaran, $this>
+     */
+    public function pelanggaran(): HasMany
     {
         return $this->hasMany(Pelanggaran::class);
     }
 
+    /**
+     * @return HasMany<SuratPanggilan, $this>
+     */
     public function suratPanggilan(): HasMany
     {
         return $this->hasMany(SuratPanggilan::class);

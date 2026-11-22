@@ -1,6 +1,8 @@
 <?php
+
 namespace Database\Seeders;
 
+use App\Models\Iksass;
 use App\Models\Santri;
 use Illuminate\Database\Seeder;
 
@@ -20,18 +22,21 @@ class SantriSeeder extends Seeder
             'Muhammad Siddiq', 'Ahmad Zaini', 'Muhammad Adib', 'Abdul Aziz',
         ];
 
+        $iksassIds = Iksass::pluck('id', 'nama_iksass');
+        $daftarIksass = ['Situbondo', 'Bondowoso', 'Jember', 'Banyuwangi', 'Probolinggo', 'Lumajang'];
+
         $santri = [];
         $nis = 1000;
         $index = 0;
         for ($asramaId = 1; $asramaId <= 15; $asramaId++) {
             for ($i = 0; $i < 2; $i++) {
+                $asal = $daftarIksass[array_rand($daftarIksass)];
+
                 $santri[] = [
                     'nama' => $namaSantri[$index % count($namaSantri)],
                     'nis' => (string) ($nis++),
-                    'iksass' => (function() {
-                        $asal = ['Situbondo', 'Bondowoso', 'Jember', 'Banyuwangi', 'Probolinggo', 'Lumajang'];
-                        return $asal[array_rand($asal)];
-                    })(),
+                    'iksass' => $asal,
+                    'iksass_id' => $iksassIds[$asal] ?? null,
                     'asrama_id' => $asramaId,
                     'status' => 'aktif',
                 ];

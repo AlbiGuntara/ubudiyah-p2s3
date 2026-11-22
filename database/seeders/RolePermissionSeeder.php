@@ -1,21 +1,25 @@
 <?php
+
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 class RolePermissionSeeder extends Seeder
 {
     public function run(): void
     {
         // Reset cached roles and permissions
-        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+        app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
         // Create permissions
         $permissions = [
             // Daerah
             'view_daerah', 'create_daerah', 'edit_daerah', 'delete_daerah',
+            // IKSASS
+            'view_iksass', 'create_iksass', 'edit_iksass', 'delete_iksass',
             // Asrama
             'view_asrama', 'create_asrama', 'edit_asrama', 'delete_asrama',
             // Santri
@@ -41,15 +45,15 @@ class RolePermissionSeeder extends Seeder
         ];
 
         foreach ($permissions as $permission) {
-            Permission::create(['name' => $permission]);
+            Permission::findOrCreate($permission, 'web');
         }
 
         // Create roles and assign permissions
-        $superAdmin = Role::create(['name' => 'super_admin']);
-        $superAdmin->givePermissionTo(Permission::all());
+        $superAdmin = Role::findOrCreate('super_admin', 'web');
+        $superAdmin->syncPermissions(Permission::all());
 
-        $petugas = Role::create(['name' => 'petugas']);
-        $petugas->givePermissionTo([
+        $petugas = Role::findOrCreate('petugas', 'web');
+        $petugas->syncPermissions([
             'view_dashboard',
             'view_santri',
             'view_asrama',
@@ -61,8 +65,8 @@ class RolePermissionSeeder extends Seeder
             'view_laporan',
         ]);
 
-        $pembina = Role::create(['name' => 'pembina']);
-        $pembina->givePermissionTo([
+        $pembina = Role::findOrCreate('pembina', 'web');
+        $pembina->syncPermissions([
             'view_dashboard',
             'view_santri',
             'view_asrama',

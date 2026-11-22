@@ -12,6 +12,7 @@ import {
     FileText,
     Shield,
     UserPlus,
+    Globe2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -39,6 +40,7 @@ const navGroups: NavGroup[] = [
         title: 'Master Data',
         items: [
             { label: 'Daerah', href: '/daerah', icon: Map, permissions: ['view_daerah'] },
+            { label: 'IKSASS', href: '/iksass', icon: Globe2, permissions: ['view_iksass'] },
             { label: 'Asrama', href: '/asrama', icon: Building2, permissions: ['view_asrama'] },
             { label: 'Santri', href: '/santri', icon: Users, permissions: ['view_santri'] },
             { label: 'Petugas', href: '/petugas', icon: UserCog, permissions: ['view_petugas'] },

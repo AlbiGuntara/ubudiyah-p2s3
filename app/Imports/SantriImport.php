@@ -1,16 +1,20 @@
 <?php
+
 namespace App\Imports;
 
-use App\Models\Santri;
 use App\Models\Asrama;
 use App\Models\Daerah;
+use App\Models\Iksass;
+use App\Models\Santri;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 
 class SantriImport implements ToModel, WithHeadingRow
 {
     private array $errors = [];
+
     private int $row = 1;
+
     private int $imported = 0;
 
     public function model(array $row)
@@ -24,30 +28,34 @@ class SantriImport implements ToModel, WithHeadingRow
         $daerahInput = trim($row['daerah'] ?? '');
         $status = strtolower(trim($row['status'] ?? ''));
 
-        if (!in_array($status, ['', 'aktif', 'tidak aktif', 'berhenti'])) {
+        if (! in_array($status, ['', 'aktif', 'tidak aktif', 'berhenti'])) {
             $this->errors[] = "Baris {$this->row}: Status \"{$status}\" tidak valid (harus aktif, tidak aktif, atau berhenti)";
+
             return null;
         }
 
         if (empty($nama)) {
             $this->errors[] = "Baris {$this->row}: Nama tidak boleh kosong";
+
             return null;
         }
 
         if (empty($asramaNomor)) {
             $this->errors[] = "Baris {$this->row}: Asrama tidak boleh kosong";
+
             return null;
         }
 
         $asramaQuery = Asrama::where('nomor', $asramaNomor);
 
-        if (!empty($daerahInput)) {
+        if (! empty($daerahInput)) {
             $daerah = Daerah::where('kode', $daerahInput)
                 ->orWhere('nama_daerah', $daerahInput)
                 ->first();
 
-            if (!$daerah) {
+            if (! $daerah) {
                 $this->errors[] = "Baris {$this->row}: Daerah \"{$daerahInput}\" tidak ditemukan";
+
                 return null;
             }
 
@@ -55,20 +63,29 @@ class SantriImport implements ToModel, WithHeadingRow
         }
 
         $asrama = $asramaQuery->first();
-        if (!$asrama) {
+        if (! $asrama) {
             $msg = "Baris {$this->row}: Asrama dengan nomor \"{$asramaNomor}\"";
-            if (!empty($daerahInput)) {
+            if (! empty($daerahInput)) {
                 $msg .= " di daerah \"{$daerahInput}\"";
             }
-            $msg .= " tidak ditemukan";
+            $msg .= ' tidak ditemukan';
             $this->errors[] = $msg;
+
             return null;
         }
 
-        if (!empty($nis)) {
+        $iksassMaster = null;
+        if (! empty($iksass)) {
+            $iksassMaster = Iksass::where('nama_iksass', $iksass)
+                ->orWhere('kode', $iksass)
+                ->first();
+        }
+
+        if (! empty($nis)) {
             $existing = Santri::where('nis', $nis)->whereNull('deleted_at')->first();
             if ($existing) {
                 $this->errors[] = "Baris {$this->row}: NIS \"{$nis}\" sudah terdaftar atas nama {$existing->nama}";
+
                 return null;
             }
         }
@@ -79,6 +96,7 @@ class SantriImport implements ToModel, WithHeadingRow
             'nama' => $nama,
             'nis' => $nis ?: null,
             'iksass' => $iksass ?: null,
+            'iksass_id' => $iksassMaster?->id,
             'status' => $status ?: 'aktif',
             'asrama_id' => $asrama->id,
         ]);

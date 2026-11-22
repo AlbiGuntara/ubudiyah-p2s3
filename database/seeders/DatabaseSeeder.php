@@ -1,4 +1,5 @@
 <?php
+
 namespace Database\Seeders;
 
 use App\Models\User;
@@ -43,6 +44,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             DaerahSeeder::class,
             AsramaSeeder::class,
+            IksassSeeder::class,
             SantriSeeder::class,
             PetugasSeeder::class,
             DaftarPelanggaranSeeder::class,

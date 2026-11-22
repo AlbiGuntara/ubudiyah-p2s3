@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Head, usePage, router, Link } from '@inertiajs/react';
 import { AppLayout } from '@/components/layout/app-layout';
 import { Button } from '@/components/ui/button';
@@ -25,6 +25,7 @@ export default function SantriIndex() {
         santri,
         daerah,
         asrama,
+        iksass: iksassMaster,
         filters,
         per_page,
         sort_column,
@@ -51,7 +52,7 @@ export default function SantriIndex() {
     const [form, setForm] = useState({
         nama: '',
         nis: '',
-        iksass: '',
+        iksass_id: '',
         nama_panggilan: '',
         status: 'aktif',
         foto: null as File | null,
@@ -65,12 +66,91 @@ export default function SantriIndex() {
     const [showFotoModal, setShowFotoModal] = useState(false);
     const [fotoModalSrc, setFotoModalSrc] = useState<string>('');
     const [fotoModalNama, setFotoModalNama] = useState<string>('');
+    const [showCamera, setShowCamera] = useState(false);
+    const [cameraReady, setCameraReady] = useState(false);
+    const [cameraError, setCameraError] = useState<string | null>(null);
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const streamRef = useRef<MediaStream | null>(null);
 
     useEffect(() => {
         if (!showModal) {
             setFotoPreview(null);
         }
     }, [showModal]);
+
+    useEffect(() => {
+        if (!showCamera) {
+            return;
+        }
+
+        let cancelled = false;
+
+        const mulaiKamera = async () => {
+            setCameraReady(false);
+            setCameraError(null);
+
+            if (!navigator.mediaDevices?.getUserMedia) {
+                setCameraError(
+                    'Peramban ini tidak mendukung kamera. Gunakan tombol Upload Foto.',
+                );
+
+                return;
+            }
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: { ideal: 'environment' },
+                        width: { ideal: 1280 },
+                        height: { ideal: 1280 },
+                    },
+                    audio: false,
+                });
+
+                if (cancelled) {
+                    stream.getTracks().forEach((track) => track.stop());
+
+                    return;
+                }
+
+                streamRef.current = stream;
+
+                if (videoRef.current) {
+                    videoRef.current.srcObject = stream;
+                    await videoRef.current.play().catch(() => undefined);
+                }
+
+                setCameraReady(true);
+            } catch (error) {
+                const nama = (error as DOMException)?.name;
+
+                if (nama === 'NotAllowedError' || nama === 'SecurityError') {
+                    setCameraError(
+                        'Akses kamera ditolak. Izinkan kamera pada pengaturan peramban lalu coba lagi.',
+                    );
+                } else if (
+                    nama === 'NotFoundError' ||
+                    nama === 'OverconstrainedError'
+                ) {
+                    setCameraError(
+                        'Kamera tidak ditemukan di perangkat ini. Gunakan tombol Upload Foto.',
+                    );
+                } else {
+                    setCameraError(
+                        'Kamera tidak bisa dibuka. Pastikan aplikasi diakses lewat HTTPS atau localhost.',
+                    );
+                }
+            }
+        };
+
+        mulaiKamera();
+
+        return () => {
+            cancelled = true;
+            streamRef.current?.getTracks().forEach((track) => track.stop());
+            streamRef.current = null;
+        };
+    }, [showCamera]);
 
     const filteredAsrama = asrama.filter((a: any) => {
         if (formDaerah) return String(a.daerah_id) === String(formDaerah);
@@ -87,7 +167,7 @@ export default function SantriIndex() {
         setForm({
             nama: '',
             nis: '',
-            iksass: '',
+            iksass_id: '',
             nama_panggilan: '',
             status: 'aktif',
             foto: null,
@@ -106,7 +186,7 @@ export default function SantriIndex() {
         setForm({
             nama: s.nama,
             nis: s.nis || '',
-            iksass: s.iksass || '',
+            iksass_id: s.iksass_id ? String(s.iksass_id) : '',
             nama_panggilan: s.nama_panggilan || '',
             status: s.status || 'aktif',
             foto: null,
@@ -117,16 +197,74 @@ export default function SantriIndex() {
         setShowModal(true);
     };
 
+    const pakaiFoto = (file: File) => {
+        setForm((prev) => ({ ...prev, foto: file }));
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            setFotoPreview(ev.target?.result as string);
+        };
+        reader.readAsDataURL(file);
+    };
+
     const handleFotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0] || null;
+
         if (file) {
-            setForm({ ...form, foto: file });
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                setFotoPreview(ev.target?.result as string);
-            };
-            reader.readAsDataURL(file);
+            pakaiFoto(file);
         }
+
+        e.target.value = '';
+    };
+
+    const ambilFoto = async () => {
+        const video = videoRef.current;
+
+        if (!video || !video.videoWidth || !video.videoHeight) {
+            setCameraError(
+                'Kamera belum siap. Tunggu sebentar lalu coba lagi.',
+            );
+
+            return;
+        }
+
+        // Batasi sisi terpanjang agar hasil bidikan tetap di bawah 2MB.
+        const maxSisi = 1280;
+        const skala = Math.min(
+            1,
+            maxSisi / Math.max(video.videoWidth, video.videoHeight),
+        );
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(video.videoWidth * skala);
+        canvas.height = Math.round(video.videoHeight * skala);
+
+        const context = canvas.getContext('2d');
+
+        if (!context) {
+            setCameraError(
+                'Gagal memproses gambar. Gunakan tombol Upload Foto.',
+            );
+
+            return;
+        }
+
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        const blob = await new Promise<Blob | null>((resolve) => {
+            canvas.toBlob(resolve, 'image/jpeg', 0.9);
+        });
+
+        if (!blob) {
+            setCameraError('Gagal mengambil foto. Coba lagi.');
+
+            return;
+        }
+
+        pakaiFoto(
+            new File([blob], `foto-santri-${Date.now()}.jpg`, {
+                type: 'image/jpeg',
+            }),
+        );
+        setShowCamera(false);
     };
 
     const removeFoto = () => {
@@ -158,7 +296,7 @@ export default function SantriIndex() {
         const formData = new FormData();
         formData.append('nama', form.nama);
         formData.append('nis', form.nis || '');
-        formData.append('iksass', form.iksass || '');
+        formData.append('iksass_id', form.iksass_id || '');
         formData.append('nama_panggilan', form.nama_panggilan || '');
         formData.append('status', form.status);
         formData.append('asrama_id', form.asrama_id);
@@ -610,12 +748,16 @@ export default function SantriIndex() {
                         <label className="text-sm font-medium">
                             Asal (IKSASS)
                         </label>
-                        <Input
-                            value={form.iksass}
+                        <Select
+                            value={form.iksass_id}
                             onChange={(e) =>
-                                setForm({ ...form, iksass: e.target.value })
+                                setForm({ ...form, iksass_id: e.target.value })
                             }
-                            placeholder="Contoh: Situbondo, Bondowoso"
+                            placeholder="Pilih IKSASS"
+                            options={(iksassMaster || []).map((i: any) => ({
+                                value: i.id,
+                                label: `${i.kode} - ${i.nama_iksass}`,
+                            }))}
                         />
                     </div>
 
@@ -624,7 +766,7 @@ export default function SantriIndex() {
                         <label className="text-sm font-medium">
                             Foto Santri
                         </label>
-                        <div className="flex items-center gap-4">
+                        <div className="flex flex-wrap items-center gap-4">
                             {fotoPreview ? (
                                 <div className="relative">
                                     <img
@@ -647,7 +789,7 @@ export default function SantriIndex() {
                             )}
                             <label className="cursor-pointer">
                                 <span className="inline-flex items-center gap-2 text-sm text-primary hover:underline">
-                                    <Camera className="h-4 w-4" />
+                                    <Upload className="h-4 w-4" />
                                     {fotoPreview ? 'Ganti Foto' : 'Upload Foto'}
                                 </span>
                                 <input
@@ -657,6 +799,14 @@ export default function SantriIndex() {
                                     className="hidden"
                                 />
                             </label>
+                            <button
+                                type="button"
+                                onClick={() => setShowCamera(true)}
+                                className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
+                            >
+                                <Camera className="h-4 w-4" />
+                                Ambil Foto
+                            </button>
                         </div>
                         <p className="text-xs text-muted-foreground">
                             Format: JPG/PNG, maks. 2MB
@@ -796,6 +946,62 @@ export default function SantriIndex() {
                         alt={fotoModalNama}
                         className="max-h-[70vh] w-auto rounded-lg object-contain shadow-lg"
                     />
+                </div>
+            </Modal>
+
+            {/* Ambil Foto dengan Kamera */}
+            <Modal
+                open={showCamera}
+                onClose={() => setShowCamera(false)}
+                title="Ambil Foto Santri"
+                description="Posisikan santri di tengah bingkai, lalu tekan Ambil Foto."
+                maxWidth="lg"
+                footer={
+                    <>
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowCamera(false)}
+                        >
+                            Batal
+                        </Button>
+                        <Button
+                            onClick={ambilFoto}
+                            disabled={!cameraReady || !!cameraError}
+                        >
+                            <Camera className="h-4 w-4" />
+                            Ambil Foto
+                        </Button>
+                    </>
+                }
+            >
+                <div className="space-y-3">
+                    {cameraError && (
+                        <p className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                            {cameraError}
+                        </p>
+                    )}
+                    <div className="relative overflow-hidden rounded-lg bg-black">
+                        <video
+                            ref={videoRef}
+                            autoPlay
+                            playsInline
+                            muted
+                            className={
+                                cameraReady
+                                    ? 'max-h-[60vh] w-full object-contain'
+                                    : 'h-48 w-full object-contain opacity-0'
+                            }
+                        />
+                        {!cameraReady && !cameraError && (
+                            <p className="absolute inset-0 flex items-center justify-center text-sm text-white/80">
+                                Membuka kamera...
+                            </p>
+                        )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                        Foto diambil dari kamera perangkat dan disimpan sebagai
+                        JPG. Anda tetap bisa memilih file lewat Upload Foto.
+                    </p>
                 </div>
             </Modal>
 

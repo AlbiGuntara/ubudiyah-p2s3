@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -245,37 +246,99 @@ class PembinaanController extends Controller
     }
 
     /**
-     * Pemutihan: multiply sisa_sanksi by a multiplier
+     * Pemutihan: multiply sisa_sanksi by a multiplier, optionally only for
+     * pelanggaran inside a selected date or month range.
      */
     public function pemutihan(Request $request): RedirectResponse
     {
         $validated = $request->validate([
             'multiplier' => 'required|integer|min:1',
+            'mode' => 'nullable|in:semua,tanggal,bulan',
+            'tanggal_awal' => 'nullable|required_if:mode,tanggal|date',
+            'tanggal_akhir' => 'nullable|required_if:mode,tanggal|date|after_or_equal:tanggal_awal',
+            'bulan_awal' => 'nullable|required_if:mode,bulan|date_format:Y-m',
+            'bulan_akhir' => 'nullable|required_if:mode,bulan|date_format:Y-m|after_or_equal:bulan_awal',
         ]);
 
         $multiplier = (int) $validated['multiplier'];
+        $mode = $validated['mode'] ?? 'semua';
 
-        // Multiply all sisa_sanksi records
-        Pembinaan::where('sisa_sanksi', '>', 0)->chunkById(100, function ($pembinaans) use ($multiplier) {
-            foreach ($pembinaans as $pembinaan) {
-                $pembinaan->sisa_sanksi = $pembinaan->sisa_sanksi * $multiplier;
-                $pembinaan->save();
+        $query = Pelanggaran::where('sisa_sanksi', '>', 0);
 
-                $query = Pelanggaran::where('sisa_sanksi', '>', 0);
-                if ($pembinaan->santri_id) {
-                    $query->where('santri_id', $pembinaan->santri_id);
-                } else {
-                    $query->whereNull('santri_id')->where('asrama_id', $pembinaan->asrama_id);
-                }
+        if ($mode === 'tanggal') {
+            $query->whereDate('tanggal', '>=', $validated['tanggal_awal'])
+                ->whereDate('tanggal', '<=', $validated['tanggal_akhir']);
+        } elseif ($mode === 'bulan') {
+            $awal = Carbon::createFromFormat('Y-m', $validated['bulan_awal'])->startOfMonth()->toDateString();
+            $akhir = Carbon::createFromFormat('Y-m', $validated['bulan_akhir'])->endOfMonth()->toDateString();
+            $query->whereDate('tanggal', '>=', $awal)
+                ->whereDate('tanggal', '<=', $akhir);
+        }
 
-                $query->get()->each(function ($pelanggaran) use ($multiplier) {
-                    $pelanggaran->sisa_sanksi = $pelanggaran->sisa_sanksi * $multiplier;
-                    $pelanggaran->save();
-                });
+        // Catat tambahan sanksi per santri / asrama anonim agar total
+        // pembinaan naik sebesar bagian yang benar-benar dikalikan saja.
+        $penambahan = [];
+        $jumlahPelanggaran = 0;
+
+        $query->chunkById(200, function ($pelanggarans) use ($multiplier, &$penambahan, &$jumlahPelanggaran) {
+            foreach ($pelanggarans as $pelanggaran) {
+                $sisaLama = (int) $pelanggaran->sisa_sanksi;
+                $pelanggaran->sisa_sanksi = $sisaLama * $multiplier;
+                $pelanggaran->save();
+                $jumlahPelanggaran++;
+
+                $key = $pelanggaran->santri_id
+                    ? 'santri_'.$pelanggaran->santri_id
+                    : 'asrama_'.$pelanggaran->asrama_id;
+
+                $penambahan[$key] ??= [
+                    'santri_id' => $pelanggaran->santri_id,
+                    'asrama_id' => $pelanggaran->asrama_id,
+                    'jumlah' => 0,
+                ];
+                $penambahan[$key]['jumlah'] += $sisaLama * ($multiplier - 1);
             }
         });
 
-        return redirect()->back()->with('success', "Pemutihan berhasil! Semua sisa sanksi dikalikan {$multiplier}.");
+        if ($jumlahPelanggaran === 0) {
+            return redirect()->back()->with('error', 'Tidak ada pelanggaran dengan sisa sanksi pada rentang waktu tersebut.');
+        }
+
+        foreach ($penambahan as $item) {
+            if ($item['jumlah'] <= 0) {
+                continue;
+            }
+
+            $pembinaan = Pembinaan::query()
+                ->when(
+                    $item['santri_id'],
+                    fn ($q) => $q->where('santri_id', $item['santri_id']),
+                    fn ($q) => $q->whereNull('santri_id')->where('asrama_id', $item['asrama_id']),
+                )
+                ->first();
+
+            if ($pembinaan) {
+                $pembinaan->sisa_sanksi += $item['jumlah'];
+                $pembinaan->save();
+            }
+        }
+
+        $rentang = match ($mode) {
+            'tanggal' => ' tanggal '
+                .Carbon::parse($validated['tanggal_awal'])->format('d/m/Y')
+                .' - '
+                .Carbon::parse($validated['tanggal_akhir'])->format('d/m/Y'),
+            'bulan' => ' bulan '
+                .Carbon::createFromFormat('Y-m', $validated['bulan_awal'])->translatedFormat('F Y')
+                .' - '
+                .Carbon::createFromFormat('Y-m', $validated['bulan_akhir'])->translatedFormat('F Y'),
+            default => '',
+        };
+
+        return redirect()->back()->with(
+            'success',
+            "Pemutihan berhasil! {$jumlahPelanggaran} pelanggaran{$rentang} dikalikan {$multiplier}."
+        );
     }
 
     /**

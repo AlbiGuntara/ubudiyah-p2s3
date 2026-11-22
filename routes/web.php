@@ -7,6 +7,8 @@ use App\Http\Controllers\DaerahController;
 use App\Http\Controllers\DaftarPelanggaranController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExportController;
+use App\Http\Controllers\FeedbackController;
+use App\Http\Controllers\IksassController;
 use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\PelanggaranController;
 use App\Http\Controllers\PembinaanController;
@@ -30,6 +32,9 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::post('logout', [AuthController::class, 'logout'])->name('logout');
     Route::post('appearance', [AuthController::class, 'toggleAppearance'])->name('appearance.toggle');
+    Route::post('feedback', [FeedbackController::class, 'store'])
+        ->middleware('throttle:5,1')
+        ->name('feedback.store');
 
     // Dashboard
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
@@ -37,6 +42,8 @@ Route::middleware('auth')->group(function () {
     // Master Data
     Route::resource('daerah', DaerahController::class)->except(['show', 'create', 'edit']);
     Route::post('daerah/bulk-delete', [DaerahController::class, 'bulkDelete'])->name('daerah.bulk-delete');
+    Route::resource('iksass', IksassController::class)->except(['show', 'create', 'edit']);
+    Route::post('iksass/bulk-delete', [IksassController::class, 'bulkDelete'])->name('iksass.bulk-delete');
     Route::resource('asrama', AsramaController::class)->except(['show', 'create', 'edit']);
     Route::post('asrama/bulk-delete', [AsramaController::class, 'bulkDelete'])->name('asrama.bulk-delete');
     Route::get('santri/cek-nis', [SantriController::class, 'cekNis'])->name('santri.cek-nis');

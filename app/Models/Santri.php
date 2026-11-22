@@ -19,6 +19,7 @@ class Santri extends Model
         'nama',
         'nis',
         'iksass',
+        'iksass_id',
         'foto',
         'nama_panggilan',
         'status',
@@ -30,11 +31,36 @@ class Santri extends Model
     ];
 
     /**
+     * Simpan nama IKSASS pada kolom lama setiap kali relasi master berubah,
+     * supaya laporan, export, dan pencarian teks yang sudah ada tetap jalan.
+     */
+    protected static function booted(): void
+    {
+        static::saving(function (Santri $santri) {
+            if (! $santri->isDirty('iksass_id')) {
+                return;
+            }
+
+            $santri->iksass = $santri->iksass_id
+                ? Iksass::withTrashed()->find($santri->iksass_id)?->nama_iksass
+                : null;
+        });
+    }
+
+    /**
      * @return BelongsTo<Asrama, $this>
      */
     public function asrama(): BelongsTo
     {
         return $this->belongsTo(Asrama::class);
+    }
+
+    /**
+     * @return BelongsTo<Iksass, $this>
+     */
+    public function iksassMaster(): BelongsTo
+    {
+        return $this->belongsTo(Iksass::class, 'iksass_id');
     }
 
     /**

@@ -63,6 +63,7 @@ return [
 
         'resend' => [
             'transport' => 'resend',
+            'key' => env('RESEND_API_KEY'),
         ],
 
         'sendmail' => [
@@ -109,6 +110,17 @@ return [
     | used globally for all emails that are sent by your application.
     |
     */
+
+    /*
+    |--------------------------------------------------------------------------
+    | Feedback Recipient
+    |--------------------------------------------------------------------------
+    |
+    | Alamat email tujuan untuk formulir feedback di navbar aplikasi.
+    |
+    */
+
+    'feedback_to' => env('MAIL_FEEDBACK_TO', 'albiguntara394@gmail.com'),
 
     'from' => [
         'address' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),

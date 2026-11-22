@@ -39,6 +39,13 @@ export default function PembinaanIndex() {
         new Date().toISOString().split('T')[0],
     );
     const [multiplier, setMultiplier] = useState('');
+    const [pemutihanMode, setPemutihanMode] = useState<
+        'semua' | 'tanggal' | 'bulan'
+    >('semua');
+    const [tanggalAwal, setTanggalAwal] = useState('');
+    const [tanggalAkhir, setTanggalAkhir] = useState('');
+    const [bulanAwal, setBulanAwal] = useState('');
+    const [bulanAkhir, setBulanAkhir] = useState('');
     const [showCetakModal, setShowCetakModal] = useState(false);
     const [cetakDaerahId, setCetakDaerahId] = useState('');
     const [search, setSearch] = useState(initialFilters?.search || '');
@@ -74,6 +81,11 @@ export default function PembinaanIndex() {
 
     const openPemutihan = () => {
         setMultiplier('');
+        setPemutihanMode('semua');
+        setTanggalAwal('');
+        setTanggalAkhir('');
+        setBulanAwal('');
+        setBulanAkhir('');
         setShowPemutihanModal(true);
     };
 
@@ -143,11 +155,34 @@ export default function PembinaanIndex() {
         );
     };
 
+    const rentangPemutihanLengkap =
+        pemutihanMode === 'semua' ||
+        (pemutihanMode === 'tanggal' &&
+            tanggalAwal !== '' &&
+            tanggalAkhir !== '' &&
+            tanggalAwal <= tanggalAkhir) ||
+        (pemutihanMode === 'bulan' &&
+            bulanAwal !== '' &&
+            bulanAkhir !== '' &&
+            bulanAwal <= bulanAkhir);
+
     const lakukanPemutihan = () => {
-        if (!multiplier) return;
+        if (!multiplier || !rentangPemutihanLengkap) {
+            return;
+        }
+
         router.post(
             '/pembinaan/pemutihan',
-            { multiplier },
+            {
+                multiplier,
+                mode: pemutihanMode,
+                tanggal_awal:
+                    pemutihanMode === 'tanggal' ? tanggalAwal : undefined,
+                tanggal_akhir:
+                    pemutihanMode === 'tanggal' ? tanggalAkhir : undefined,
+                bulan_awal: pemutihanMode === 'bulan' ? bulanAwal : undefined,
+                bulan_akhir: pemutihanMode === 'bulan' ? bulanAkhir : undefined,
+            },
             {
                 onSuccess: () => {
                     setShowPemutihanModal(false);
@@ -791,7 +826,7 @@ export default function PembinaanIndex() {
                 open={showPemutihanModal}
                 onClose={() => setShowPemutihanModal(false)}
                 title="Lakukan Pemutihan"
-                description="Masukkan angka pengali untuk melipatgandakan sisa sanksi semua santri."
+                description="Masukkan angka pengali, lalu pilih pelanggaran mana yang sanksinya dilipatgandakan."
             >
                 <div className="space-y-4">
                     <div className="space-y-2">
@@ -806,6 +841,99 @@ export default function PembinaanIndex() {
                             placeholder="Contoh: 3"
                         />
                     </div>
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium">
+                            Rentang Pelanggaran
+                        </label>
+                        <Select
+                            value={pemutihanMode}
+                            onChange={(e) =>
+                                setPemutihanMode(
+                                    e.target.value as
+                                        | 'semua'
+                                        | 'tanggal'
+                                        | 'bulan',
+                                )
+                            }
+                            options={[
+                                {
+                                    value: 'semua',
+                                    label: 'Semua pelanggaran',
+                                },
+                                {
+                                    value: 'tanggal',
+                                    label: 'Rentang tanggal',
+                                },
+                                { value: 'bulan', label: 'Rentang bulan' },
+                            ]}
+                        />
+                    </div>
+                    {pemutihanMode === 'tanggal' && (
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">
+                                    Tanggal Awal
+                                </label>
+                                <Input
+                                    type="date"
+                                    value={tanggalAwal}
+                                    onChange={(e) =>
+                                        setTanggalAwal(e.target.value)
+                                    }
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">
+                                    Tanggal Akhir
+                                </label>
+                                <Input
+                                    type="date"
+                                    value={tanggalAkhir}
+                                    onChange={(e) =>
+                                        setTanggalAkhir(e.target.value)
+                                    }
+                                />
+                            </div>
+                        </div>
+                    )}
+                    {pemutihanMode === 'bulan' && (
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">
+                                    Bulan Awal
+                                </label>
+                                <Input
+                                    type="month"
+                                    value={bulanAwal}
+                                    onChange={(e) =>
+                                        setBulanAwal(e.target.value)
+                                    }
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">
+                                    Bulan Akhir
+                                </label>
+                                <Input
+                                    type="month"
+                                    value={bulanAkhir}
+                                    onChange={(e) =>
+                                        setBulanAkhir(e.target.value)
+                                    }
+                                />
+                            </div>
+                        </div>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                        Hanya pelanggaran yang masih memiliki sisa sanksi pada
+                        rentang ini yang dikalikan. Sanksi di luar rentang tidak
+                        berubah.
+                    </p>
+                    {!rentangPemutihanLengkap && (
+                        <p className="text-sm text-destructive">
+                            Lengkapi rentang tanggal/bulan terlebih dahulu.
+                        </p>
+                    )}
                     <div className="flex justify-end gap-3 pt-2">
                         <Button
                             variant="outline"
@@ -813,7 +941,10 @@ export default function PembinaanIndex() {
                         >
                             Batal
                         </Button>
-                        <Button onClick={lakukanPemutihan}>
+                        <Button
+                            onClick={lakukanPemutihan}
+                            disabled={!multiplier || !rentangPemutihanLengkap}
+                        >
                             Konfirmasi Pemutihan
                         </Button>
                     </div>

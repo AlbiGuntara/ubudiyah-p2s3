@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Link, usePage, router } from '@inertiajs/react';
+import { Link, usePage, router, useForm } from '@inertiajs/react';
 import {
     Search,
     Moon,
@@ -8,9 +8,12 @@ import {
     Menu,
     PanelLeftClose,
     PanelLeft,
+    MessageSquare,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Modal } from '@/components/ui/modal';
+import { Select } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 
 export function Navbar({
@@ -28,6 +31,12 @@ export function Navbar({
     const [searchResults, setSearchResults] = useState<any[]>([]);
     const [showSearch, setShowSearch] = useState(false);
     const [showProfile, setShowProfile] = useState(false);
+    const [showFeedback, setShowFeedback] = useState(false);
+    const feedbackForm = useForm({
+        kategori: 'saran',
+        pesan: '',
+        halaman: '',
+    });
     const searchRef = useRef<HTMLDivElement>(null);
     const profileRef = useRef<HTMLDivElement>(null);
 
@@ -71,9 +80,27 @@ export function Navbar({
         });
     };
 
+    const openFeedback = () => {
+        feedbackForm.reset();
+        feedbackForm.setData('halaman', window.location.pathname);
+        setShowFeedback(true);
+    };
+
+    const submitFeedback = (e: React.FormEvent) => {
+        e.preventDefault();
+        feedbackForm.post('/feedback', {
+            preserveScroll: true,
+            onSuccess: () => {
+                setShowFeedback(false);
+                feedbackForm.reset();
+            },
+        });
+    };
+
     if (!user) return null;
 
     return (
+        <>
         <header className="sticky top-0 z-30 h-16 border-b border-border/50 bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
             <div className="flex items-center justify-between h-full px-3 lg:px-5 gap-2">
                 <div className="flex items-center gap-1.5">
@@ -135,6 +162,16 @@ export function Navbar({
                         {appearance === 'dark' ? <Sun className="h-[18px] w-[18px]" /> : <Moon className="h-[18px] w-[18px]" />}
                     </Button>
 
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={openFeedback}
+                        title="Kirim Feedback"
+                        className="h-9 w-9"
+                    >
+                        <MessageSquare className="h-[18px] w-[18px]" />
+                    </Button>
+
                     <div ref={profileRef} className="relative">
                         <Button
                             variant="ghost"
@@ -177,6 +214,77 @@ export function Navbar({
                 </div>
             </div>
         </header>
+
+        <Modal
+            open={showFeedback}
+            onClose={() => setShowFeedback(false)}
+            title="Kirim Feedback"
+            description="Masukan, saran, atau laporan bug untuk pengelola aplikasi."
+        >
+            <form onSubmit={submitFeedback} className="space-y-4">
+                <div className="space-y-2">
+                    <label className="text-sm font-medium">Kategori</label>
+                    <Select
+                        value={feedbackForm.data.kategori}
+                        onChange={(e) =>
+                            feedbackForm.setData('kategori', e.target.value)
+                        }
+                        options={[
+                            { value: 'saran', label: 'Saran Perbaikan' },
+                            { value: 'bug', label: 'Laporan Bug' },
+                            { value: 'lainnya', label: 'Lainnya' },
+                        ]}
+                    />
+                    {feedbackForm.errors.kategori && (
+                        <p className="text-sm text-destructive">
+                            {feedbackForm.errors.kategori}
+                        </p>
+                    )}
+                </div>
+                <div className="space-y-2">
+                    <label className="text-sm font-medium">Pesan</label>
+                    <textarea
+                        rows={5}
+                        maxLength={3000}
+                        value={feedbackForm.data.pesan}
+                        onChange={(e) =>
+                            feedbackForm.setData('pesan', e.target.value)
+                        }
+                        placeholder="Tuliskan masukan Anda (minimal 10 karakter)..."
+                        className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
+                    />
+                    {feedbackForm.errors.pesan && (
+                        <p className="text-sm text-destructive">
+                            {feedbackForm.errors.pesan}
+                        </p>
+                    )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                    Dikirim atas nama {user.name} ({user.email || user.username}).
+                </p>
+                <div className="flex justify-end gap-3 pt-2">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setShowFeedback(false)}
+                    >
+                        Batal
+                    </Button>
+                    <Button
+                        type="submit"
+                        disabled={
+                            feedbackForm.processing ||
+                            feedbackForm.data.pesan.trim().length < 10
+                        }
+                    >
+                        {feedbackForm.processing
+                            ? 'Mengirim...'
+                            : 'Kirim Feedback'}
+                    </Button>
+                </div>
+            </form>
+        </Modal>
+        </>
     );
 }
 

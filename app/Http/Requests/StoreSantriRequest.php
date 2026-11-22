@@ -19,6 +19,7 @@ class StoreSantriRequest extends FormRequest
             'nama' => 'required|string|max:100',
             'nis' => 'nullable|string|max:50',
             'iksass' => 'nullable|string|max:20',
+            'iksass_id' => 'nullable|integer|exists:iksass,id',
             'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'nama_panggilan' => 'nullable|string|max:50',
             'status' => 'nullable|string|in:aktif,tidak aktif,berhenti',

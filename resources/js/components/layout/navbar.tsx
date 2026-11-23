@@ -179,8 +179,16 @@ export function Navbar({
                             onClick={() => setShowProfile(!showProfile)}
                             className="gap-2 h-9"
                         >
-                            <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">
-                                {user.name.charAt(0)}
+                            <div className="w-7 h-7 rounded-full overflow-hidden bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold shrink-0">
+                                {user.foto ? (
+                                    <img
+                                        src={`/storage/${user.foto}`}
+                                        alt={user.name}
+                                        className="h-full w-full object-cover"
+                                    />
+                                ) : (
+                                    user.name.charAt(0)
+                                )}
                             </div>
                             <span className="hidden md:inline text-sm">{user.name}</span>
                         </Button>

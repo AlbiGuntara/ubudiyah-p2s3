@@ -203,8 +203,16 @@ export function Sidebar({
                 <div className={cn('border-t border-sidebar-border shrink-0 px-3 py-3', collapsed && 'text-center')}>
                     {!collapsed ? (
                         <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-sidebar-primary flex items-center justify-center text-sidebar-primary-foreground text-xs font-bold shrink-0">
-                                {user.name.charAt(0)}
+                            <div className="w-8 h-8 rounded-full overflow-hidden bg-sidebar-primary flex items-center justify-center text-sidebar-primary-foreground text-xs font-bold shrink-0">
+                                {user.foto ? (
+                                    <img
+                                        src={`/storage/${user.foto}`}
+                                        alt={user.name}
+                                        className="h-full w-full object-cover"
+                                    />
+                                ) : (
+                                    user.name.charAt(0)
+                                )}
                             </div>
                             <div className="min-w-0 text-xs text-sidebar-foreground/60">
                                 <p className="font-medium text-sidebar-foreground truncate">{user.name}</p>
@@ -217,8 +225,16 @@ export function Sidebar({
                             onMouseEnter={(e) => showTooltip(user.name, e)}
                             onMouseLeave={hideTooltip}
                         >
-                            <div className="w-9 h-9 rounded-full bg-sidebar-primary flex items-center justify-center text-sidebar-primary-foreground text-xs font-bold mx-auto cursor-default">
-                                {user.name.charAt(0)}
+                            <div className="w-9 h-9 rounded-full overflow-hidden bg-sidebar-primary flex items-center justify-center text-sidebar-primary-foreground text-xs font-bold mx-auto cursor-default">
+                                {user.foto ? (
+                                    <img
+                                        src={`/storage/${user.foto}`}
+                                        alt={user.name}
+                                        className="h-full w-full object-cover"
+                                    />
+                                ) : (
+                                    user.name.charAt(0)
+                                )}
                             </div>
                         </div>
                     )}

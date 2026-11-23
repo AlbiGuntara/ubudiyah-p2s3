@@ -13,6 +13,7 @@ interface Daerah {
     kode: string;
     nama_daerah: string;
     asrama_count: number;
+    santri_count: number;
 }
 
 export default function DaerahIndex() {
@@ -88,6 +89,7 @@ export default function DaerahIndex() {
         { key: 'kode', label: 'Kode', sortable: true },
         { key: 'nama_daerah', label: 'Nama Daerah', sortable: true },
         { key: 'asrama_count', label: 'Jumlah Asrama', sortable: true, className: 'text-center' },
+        { key: 'santri_count', label: 'Jumlah Santri Aktif', sortable: true, className: 'text-center' },
         {
             key: 'aksi',
             label: 'Aksi',

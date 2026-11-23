@@ -23,7 +23,9 @@ class AsramaController extends Controller
 
     public function index(Request $request): Response
     {
-        $query = Asrama::with('daerah')->withCount('santri');
+        $query = Asrama::with('daerah')->withCount([
+            'santri as santri_count' => fn ($q) => $q->where('status', 'aktif'),
+        ]);
 
         if ($request->filled('search')) {
             $search = $request->search;

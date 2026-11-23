@@ -6,6 +6,7 @@ use App\Traits\Auditable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Daerah extends Model
@@ -25,5 +26,13 @@ class Daerah extends Model
     public function asrama(): HasMany
     {
         return $this->hasMany(Asrama::class);
+    }
+
+    /**
+     * @return HasManyThrough<Santri, Asrama>
+     */
+    public function santri(): HasManyThrough
+    {
+        return $this->hasManyThrough(Santri::class, Asrama::class);
     }
 }

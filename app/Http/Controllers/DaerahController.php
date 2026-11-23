@@ -22,7 +22,9 @@ class DaerahController extends Controller
 
     public function index(Request $request): Response
     {
-        $query = Daerah::withCount('asrama');
+        $query = Daerah::withCount('asrama')->withCount([
+            'santri as santri_count' => fn ($q) => $q->where('santri.status', 'aktif'),
+        ]);
 
         if ($request->filled('search')) {
             $search = $request->search;
@@ -34,7 +36,7 @@ class DaerahController extends Controller
 
         $sortColumn = $request->input('sort_column', 'created_at');
         $sortDirection = $request->input('sort_direction', 'desc');
-        $allowedSorts = ['kode', 'nama_daerah', 'asrama_count'];
+        $allowedSorts = ['kode', 'nama_daerah', 'asrama_count', 'santri_count'];
         if (in_array($sortColumn, $allowedSorts)) {
             $query->orderBy($sortColumn, $sortDirection === 'asc' ? 'asc' : 'desc');
         } else {

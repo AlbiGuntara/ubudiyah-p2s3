@@ -98,7 +98,7 @@ class LaporanService
             ->join('asrama', 'santri.asrama_id', '=', 'asrama.id')
             ->join('daerah', 'asrama.daerah_id', '=', 'daerah.id')
             ->select('daerah.id', DB::raw('COUNT(*) as total_santri'))
-            ->whereIn('santri.status', ['aktif', 'tidak aktif'])
+            ->where('santri.status', 'aktif')
             ->groupBy('daerah.id')
             ->pluck('total_santri', 'id');
 
@@ -149,7 +149,7 @@ class LaporanService
 
         $totalSantriPerAsrama = DB::table('santri')
             ->select('asrama_id', DB::raw('COUNT(*) as total_santri'))
-            ->whereIn('status', ['aktif', 'tidak aktif'])
+            ->where('status', 'aktif')
             ->groupBy('asrama_id')
             ->pluck('total_santri', 'asrama_id');
 
@@ -324,7 +324,7 @@ class LaporanService
 
         $totalSantriPerIksass = DB::table('santri')
             ->whereNotNull('iksass')
-            ->whereIn('status', ['aktif', 'tidak aktif'])
+            ->where('status', 'aktif')
             ->select('iksass', DB::raw('COUNT(*) as total_santri'))
             ->groupBy('iksass')
             ->pluck('total_santri', 'iksass');
@@ -523,7 +523,7 @@ class LaporanService
 
         $totalSantriPerAsrama = DB::table('santri')
             ->select('asrama_id', DB::raw('COUNT(*) as total_santri'))
-            ->whereIn('status', ['aktif', 'tidak aktif'])
+            ->where('status', 'aktif')
             ->groupBy('asrama_id')
             ->pluck('total_santri', 'asrama_id');
 

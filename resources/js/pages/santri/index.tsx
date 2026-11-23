@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Modal } from '@/components/ui/modal';
 import { DataTable, type Column } from '@/components/shared/data-table';
+import { statusSantriTextClass } from '@/lib/utils';
 import {
     Edit2,
     Trash2,
@@ -452,7 +453,7 @@ export default function SantriIndex() {
             key: 'aksi',
             label: 'Aksi',
             headClassName: 'text-right',
-            className: 'text-right',
+            className: 'text-right text-foreground',
             render: (s) => (
                 <div className="flex justify-end gap-2">
                     <Link href={`/santri/${s.id}`}>
@@ -523,6 +524,7 @@ export default function SantriIndex() {
                     data={santri.data}
                     meta={santri}
                     keyExtractor={(s) => s.id}
+                    rowClassName={(s) => statusSantriTextClass(s.status)}
                     onPageChange={(page) =>
                         router.get(
                             '/santri',

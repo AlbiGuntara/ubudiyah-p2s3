@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { DataTable, type Column } from '@/components/shared/data-table';
 import { Select } from '@/components/ui/select';
 import { BookOpen, PlusCircle, Printer, Clock, Undo2 } from 'lucide-react';
+import { statusSantriTextClass } from '@/lib/utils';
 
 export default function PembinaanIndex() {
     const {
@@ -342,7 +343,7 @@ export default function PembinaanIndex() {
             key: 'aksi',
             label: 'Aksi',
             headClassName: 'text-right',
-            className: 'text-right',
+            className: 'text-right text-foreground',
             render: (p) => (
                 <div className="flex justify-end gap-2">
                     <Button
@@ -421,6 +422,9 @@ export default function PembinaanIndex() {
                     data={pembinaan.data}
                     meta={pembinaan}
                     keyExtractor={(p) => p.id}
+                    rowClassName={(p) =>
+                        statusSantriTextClass(p.santri?.status)
+                    }
                     onPageChange={(page) =>
                         router.get(
                             '/pembinaan',

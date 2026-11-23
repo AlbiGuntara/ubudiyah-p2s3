@@ -11,7 +11,7 @@ import type {
     KandidatSantri,
     VoiceEntry,
 } from '@/components/voice-draft-table';
-import { cn } from '@/lib/utils';
+import { cn, statusSantriTextClass } from '@/lib/utils';
 import {
     Edit2,
     Trash2,
@@ -935,7 +935,7 @@ export default function PelanggaranIndex() {
             key: 'aksi',
             label: 'Aksi',
             headClassName: 'text-right',
-            className: 'text-right',
+            className: 'text-right text-foreground',
             render: (p) => (
                 <div className="flex justify-end gap-2">
                     <Button
@@ -1048,6 +1048,9 @@ export default function PelanggaranIndex() {
                     data={pelanggaran.data}
                     meta={pelanggaran}
                     keyExtractor={(p) => p.id}
+                    rowClassName={(p) =>
+                        statusSantriTextClass(p.santri?.status)
+                    }
                     onPageChange={(page) =>
                         router.get(
                             '/pelanggaran',

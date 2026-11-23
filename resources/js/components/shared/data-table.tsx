@@ -40,6 +40,7 @@ interface DataTableProps<T> {
     data: T[];
     meta: PaginationMeta;
     keyExtractor: (item: T) => string | number;
+    rowClassName?: (item: T, index: number) => string | undefined;
     onPageChange: (page: number) => void;
     search?: string;
     onSearchChange?: (search: string) => void;
@@ -62,6 +63,7 @@ function DataTable<T>({
     data,
     meta,
     keyExtractor,
+    rowClassName,
     onPageChange,
     search: externalSearch,
     onSearchChange,
@@ -315,7 +317,7 @@ function DataTable<T>({
                             data.map((item, idx) => {
                                 const id = keyExtractor(item);
                                 return (
-                                    <TableRow key={id} className={cn(idx % 2 === 1 && 'bg-muted/20')}>
+                                    <TableRow key={id} className={cn(idx % 2 === 1 && 'bg-muted/20', rowClassName?.(item, idx))}>
                                         {onSelectionChange && (
                                             <TableCell className="pl-6">
                                                 <input

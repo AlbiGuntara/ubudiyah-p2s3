@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Modal } from '@/components/ui/modal';
 import { Pagination } from '@/components/ui/pagination';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { cn, statusSantriTextClass } from '@/lib/utils';
 import {
     FileDown,
     Filter,
@@ -419,6 +420,9 @@ export default function LaporanIndex() {
                         )}
                         exportSection="per_nama"
                         filters={currentFilters}
+                        rowClassNames={(data?.per_nama || []).map((d: any) =>
+                            statusSantriTextClass(d.status),
+                        )}
                     />
                 )}
             </div>
@@ -493,12 +497,14 @@ function SectionTable({
     rows,
     exportSection,
     filters,
+    rowClassNames,
 }: {
     title: string;
     headers: string[];
     rows: React.ReactNode[][];
     exportSection: string;
     filters: any;
+    rowClassNames?: (string | undefined)[];
 }) {
     const [page, setPage] = useState(1);
     const [perPage, setPerPage] = useState(10);
@@ -509,6 +515,10 @@ function SectionTable({
     const from = total === 0 ? 0 : (safePage - 1) * perPage + 1;
     const to = Math.min(safePage * perPage, total);
     const pagedRows = rows.slice((safePage - 1) * perPage, safePage * perPage);
+    const pagedRowClassNames = rowClassNames?.slice(
+        (safePage - 1) * perPage,
+        safePage * perPage,
+    );
 
     return (
         <Card>
@@ -557,7 +567,10 @@ function SectionTable({
                                 pagedRows.map((row, ri) => (
                                     <tr
                                         key={ri}
-                                        className="border-b last:border-0 hover:bg-muted/30"
+                                        className={cn(
+                                            'border-b last:border-0 hover:bg-muted/30',
+                                            pagedRowClassNames?.[ri],
+                                        )}
                                     >
                                         {row.map((cell, ci) => (
                                             <td

@@ -360,6 +360,7 @@ class LaporanService
                 'santri.nama',
                 'santri.nis',
                 'santri.iksass',
+                'santri.status',
                 'asrama.nomor as asrama_nomor',
                 'daerah.kode as daerah_kode',
                 DB::raw("SUM(CASE WHEN pelanggaran.santri_id IS NULL THEN pelanggaran.jumlah ELSE 1 END) as jumlah_pelanggaran")
@@ -371,7 +372,7 @@ class LaporanService
             ->when($daerahId, fn($q) => $q->where('asrama.daerah_id', $daerahId))
             ->when($asramaId, fn($q) => $q->where('pelanggaran.asrama_id', $asramaId))
             ->when($sumberPencatatan, fn($q) => $q->where('pelanggaran.sumber_pencatatan', $sumberPencatatan))
-            ->groupBy('santri.id', 'santri.nama', 'santri.nis', 'santri.iksass', 'asrama.nomor', 'daerah.kode')
+            ->groupBy('santri.id', 'santri.nama', 'santri.nis', 'santri.iksass', 'santri.status', 'asrama.nomor', 'daerah.kode')
             ->orderByDesc('jumlah_pelanggaran')
             ->limit(10)
             ->get()
@@ -380,6 +381,7 @@ class LaporanService
                 'nama' => $item->nama,
                 'nis' => $item->nis,
                 'iksass' => $item->iksass,
+                'status' => $item->status,
                 'asrama' => $item->daerah_kode
                     ? substr($item->daerah_kode, 0, 1) . '.' . $item->asrama_nomor
                     : $item->asrama_nomor,

@@ -36,6 +36,7 @@ export interface VoiceEntry {
 export interface KandidatSantri {
     id: number;
     nama: string;
+    nama_panggilan?: string | null;
     nis: string;
     asrama_id: number | null;
 }
@@ -50,6 +51,7 @@ export interface AsramaOpsi {
 export interface SantriOpsi {
     id: number;
     nama: string;
+    nama_panggilan?: string | null;
     nis: string;
     asrama_id: number | null;
 }
@@ -182,6 +184,9 @@ export default function VoiceDraftTable({
                       (s) =>
                           diAsrama(s) &&
                           (s.nama.toLowerCase().includes(cari) ||
+                              String(s.nama_panggilan ?? '')
+                                  .toLowerCase()
+                                  .includes(cari) ||
                               String(s.nis ?? '')
                                   .toLowerCase()
                                   .includes(cari) ||
@@ -190,6 +195,7 @@ export default function VoiceDraftTable({
                   .map((s) => ({
                       id: s.id,
                       nama: s.nama,
+                      nama_panggilan: s.nama_panggilan,
                       nis: s.nis,
                       asrama_id: s.asrama_id,
                   }))
@@ -418,6 +424,11 @@ export default function VoiceDraftTable({
                                                                             {
                                                                                 k.nama
                                                                             }
+                                                                            {k.nama_panggilan && (
+                                                                                <span className="ml-1 text-muted-foreground">
+                                                                                    {`(${k.nama_panggilan})`}
+                                                                                </span>
+                                                                            )}
                                                                         </span>
                                                                         <span className="shrink-0 text-muted-foreground">
                                                                             {asramaTerpilih[

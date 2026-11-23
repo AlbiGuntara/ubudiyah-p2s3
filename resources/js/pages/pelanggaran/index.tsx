@@ -166,6 +166,7 @@ export default function PelanggaranIndex() {
             uid: number;
             santri_id: number;
             nama: string;
+            nama_panggilan: string;
             daftar_pelanggaran_id: string;
             tanggal: string;
         }[]
@@ -233,8 +234,10 @@ export default function PelanggaranIndex() {
     const filteredSantriBySearch = useMemo(() => {
         if (!pendingSantriSearch) return filteredSantri;
         const q = pendingSantriSearch.toLowerCase();
-        return filteredSantri.filter((s: any) =>
-            s.nama.toLowerCase().includes(q),
+        return filteredSantri.filter(
+            (s: any) =>
+                s.nama.toLowerCase().includes(q) ||
+                (s.nama_panggilan || '').toLowerCase().includes(q),
         );
     }, [filteredSantri, pendingSantriSearch]);
 
@@ -318,6 +321,7 @@ export default function PelanggaranIndex() {
                     uid: nextSantriId,
                     santri_id: s.id,
                     nama: s.nama,
+                    nama_panggilan: s.nama_panggilan || '',
                     daftar_pelanggaran_id: pendingPelanggaranId,
                     tanggal: new Date().toISOString().split('T')[0],
                 },
@@ -903,6 +907,11 @@ export default function PelanggaranIndex() {
             render: (p) => (
                 <span className="font-medium">
                     {p.santri?.nama || `${p.jumlah} Orang`}
+                    {p.santri?.nama_panggilan && (
+                        <span className="ml-1.5 text-xs font-normal text-muted-foreground">
+                            ({p.santri.nama_panggilan})
+                        </span>
+                    )}
                 </span>
             ),
         },
@@ -1898,6 +1907,11 @@ export default function PelanggaranIndex() {
                                                 <div className="flex items-center justify-between">
                                                     <span className="text-sm font-medium">
                                                         {s.nama}
+                                                        {s.nama_panggilan && (
+                                                            <span className="ml-1.5 text-xs font-normal text-muted-foreground">
+                                                                {`(${s.nama_panggilan})`}
+                                                            </span>
+                                                        )}
                                                     </span>
                                                     {!editing && (
                                                         <button
@@ -2021,9 +2035,16 @@ export default function PelanggaranIndex() {
                                                                                 );
                                                                             }}
                                                                         >
-                                                                            {
-                                                                                s.nama
-                                                                            }
+                                                                            <span>
+                                                                                {
+                                                                                    s.nama
+                                                                                }
+                                                                            </span>
+                                                                            {s.nama_panggilan && (
+                                                                                <span className="ml-1.5 text-xs text-muted-foreground">
+                                                                                    {`(${s.nama_panggilan})`}
+                                                                                </span>
+                                                                            )}
                                                                         </button>
                                                                     ),
                                                                 )

@@ -284,7 +284,16 @@ export default function PembinaanIndex() {
             key: 'santri',
             label: 'Santri',
             sortable: true,
-            render: (p) => <span className="font-medium">{getNama(p)}</span>,
+            render: (p) => (
+                <span className="font-medium">
+                    {getNama(p)}
+                    {p.santri?.nama_panggilan && (
+                        <span className="ml-1.5 text-xs font-normal text-muted-foreground">
+                            ({p.santri.nama_panggilan})
+                        </span>
+                    )}
+                </span>
+            ),
         },
         {
             key: 'asrama',

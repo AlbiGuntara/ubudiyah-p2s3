@@ -46,7 +46,6 @@ class DatabaseSeeder extends Seeder
             AsramaSeeder::class,
             IksassSeeder::class,
             SantriSeeder::class,
-            PetugasSeeder::class,
             DaftarPelanggaranSeeder::class,
             PelanggaranSeeder::class,
             PembinaanSeeder::class,

@@ -153,7 +153,7 @@ export default function PelanggaranIndex() {
 
     const [form, setForm] = useState({
         asrama_id: '',
-        petugas_id: '',
+        user_id: '',
         sumber_pencatatan: 'petugas',
         tanggal: new Date().toISOString().split('T')[0],
         keterangan: '',
@@ -271,7 +271,7 @@ export default function PelanggaranIndex() {
         setEditing(null);
         setForm({
             asrama_id: '',
-            petugas_id: '',
+            user_id: '',
             sumber_pencatatan: 'petugas',
             tanggal: new Date().toISOString().split('T')[0],
             keterangan: '',
@@ -415,7 +415,7 @@ export default function PelanggaranIndex() {
                 tanggal: a.tanggal,
             })),
             asrama_id: form.asrama_id,
-            petugas_id: form.petugas_id || null,
+            user_id: form.user_id || null,
             sumber_pencatatan: form.sumber_pencatatan,
             keterangan: form.keterangan,
         };

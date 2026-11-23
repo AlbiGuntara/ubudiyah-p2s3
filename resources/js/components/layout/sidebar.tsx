@@ -11,7 +11,6 @@ import {
     GraduationCap,
     FileText,
     Shield,
-    UserPlus,
     Globe2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -40,10 +39,10 @@ const navGroups: NavGroup[] = [
         title: 'Master Data',
         items: [
             { label: 'Daerah', href: '/daerah', icon: Map, permissions: ['view_daerah'] },
-            { label: 'IKSASS', href: '/iksass', icon: Globe2, permissions: ['view_iksass'] },
             { label: 'Asrama', href: '/asrama', icon: Building2, permissions: ['view_asrama'] },
+            { label: 'IKSASS', href: '/iksass', icon: Globe2, permissions: ['view_iksass'] },
             { label: 'Santri', href: '/santri', icon: Users, permissions: ['view_santri'] },
-            { label: 'Petugas', href: '/petugas', icon: UserCog, permissions: ['view_petugas'] },
+            { label: 'Petugas', href: '/petugas', icon: UserCog, roles: ['super_admin'] },
             { label: 'Jenis Pelanggaran', href: '/daftar-pelanggaran', icon: BookOpen, permissions: ['view_daftar_pelanggaran'] },
         ],
     },
@@ -64,7 +63,6 @@ const navGroups: NavGroup[] = [
         title: 'Pengaturan',
         items: [
             { label: 'Audit Log', href: '/audit', icon: Shield, permissions: ['view_audit'] },
-            { label: 'Pengguna', href: '/users', icon: UserPlus, roles: ['super_admin'] },
         ],
     },
 ];

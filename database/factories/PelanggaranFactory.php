@@ -14,7 +14,7 @@ class PelanggaranFactory extends Factory
             'santri_id' => \App\Models\Santri::factory(),
             'asrama_id' => \App\Models\Asrama::factory(),
             'daftar_pelanggaran_id' => \App\Models\DaftarPelanggaran::factory(),
-            'petugas_id' => \App\Models\Petugas::factory(),
+            'user_id' => \App\Models\User::factory(),
             'jumlah' => 1,
             'sumber_pencatatan' => 'petugas',
             'tanggal' => fake()->date(),

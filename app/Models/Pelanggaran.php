@@ -17,7 +17,7 @@ class Pelanggaran extends Model
         'santri_id',
         'asrama_id',
         'daftar_pelanggaran_id',
-        'petugas_id',
+        'user_id',
         'jumlah',
         'sisa_sanksi',
         'sumber_pencatatan',
@@ -49,9 +49,9 @@ class Pelanggaran extends Model
         return $this->belongsTo(DaftarPelanggaran::class);
     }
 
-    public function petugas()
+    public function user()
     {
-        return $this->belongsTo(Petugas::class);
+        return $this->belongsTo(User::class);
     }
 
     public function suratPanggilan(): BelongsToMany

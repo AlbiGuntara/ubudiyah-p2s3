@@ -13,7 +13,6 @@ use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\PelanggaranController;
 use App\Http\Controllers\PembinaanController;
 use App\Http\Controllers\PermissionController;
-use App\Http\Controllers\PetugasController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SantriController;
 use App\Http\Controllers\SearchController;
@@ -50,10 +49,6 @@ Route::middleware('auth')->group(function () {
     Route::resource('santri', SantriController::class)->except(['create', 'edit']);
     Route::post('santri/import', [SantriController::class, 'import'])->name('santri.import');
     Route::post('santri/bulk-delete', [SantriController::class, 'bulkDelete'])->name('santri.bulk-delete');
-    Route::resource('petugas', PetugasController::class)
-        ->parameters(['petugas' => 'petugas'])
-        ->except(['show', 'create', 'edit']);
-    Route::post('petugas/bulk-delete', [PetugasController::class, 'bulkDelete'])->name('petugas.bulk-delete');
     Route::resource('daftar-pelanggaran', DaftarPelanggaranController::class)->except(['show', 'create', 'edit']);
     Route::post('daftar-pelanggaran/bulk-delete', [DaftarPelanggaranController::class, 'bulkDelete'])->name('daftar-pelanggaran.bulk-delete');
 
@@ -111,8 +106,10 @@ Route::middleware('auth')->group(function () {
 
     // User Management (super_admin only)
     Route::middleware('super_admin')->group(function () {
-        Route::resource('users', UserController::class)->except(['show', 'create', 'edit']);
-        Route::post('users/bulk-delete', [UserController::class, 'bulkDelete'])->name('users.bulk-delete');
+        Route::resource('petugas', UserController::class)
+            ->parameters(['petugas' => 'user'])
+            ->except(['show', 'create', 'edit']);
+        Route::post('petugas/bulk-delete', [UserController::class, 'bulkDelete'])->name('petugas.bulk-delete');
         Route::resource('roles', RoleController::class)->except(['show', 'create', 'edit']);
         Route::resource('permissions', PermissionController::class)->except(['show', 'create', 'edit']);
     });

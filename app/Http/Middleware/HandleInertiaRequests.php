@@ -4,7 +4,6 @@ namespace App\Http\Middleware;
 
 use Illuminate\Http\Request;
 use Inertia\Middleware;
-use App\Models\Petugas;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -19,11 +18,6 @@ class HandleInertiaRequests extends Middleware
             $appearance = $request->cookie('appearance');
         }
 
-        $petugas = null;
-        if ($user && $user->isPetugas()) {
-            $petugas = Petugas::where('user_id', $user->id)->first();
-        }
-
         return [
             ...parent::share($request),
             'name' => config('app.name'),
@@ -34,12 +28,14 @@ class HandleInertiaRequests extends Middleware
                     'username' => $user->username,
                     'email' => $user->email,
                     'role' => $user->role,
+                    'foto' => $user->foto,
+                    'jabatan' => $user->jabatan,
+                    'tugas' => $user->tugas,
                     'is_super_admin' => $user->isSuperAdmin(),
                     'is_petugas' => $user->isPetugas(),
                     'is_pembina' => $user->isPembina(),
                     'permissions' => $user->getAllPermissions()->pluck('name'),
                 ] : null,
-                'petugas' => $petugas,
             ],
             'appearance' => $appearance,
             'flash' => [

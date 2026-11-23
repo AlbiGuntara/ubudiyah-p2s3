@@ -22,6 +22,9 @@ class StoreUserRequest extends FormRequest
             'email' => 'nullable|email|max:255|unique:users,email',
             'password' => 'required|string|min:8',
             'role' => 'required|string|in:'.$roleNames,
+            'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'jabatan' => 'nullable|string|max:100',
+            'tugas' => 'nullable|string|max:100',
         ];
     }
 }

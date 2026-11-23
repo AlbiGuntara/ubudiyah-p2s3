@@ -5,7 +5,6 @@ use App\Models\Pelanggaran;
 use App\Models\Daerah;
 use App\Models\Asrama;
 use App\Models\DaftarPelanggaran;
-use App\Models\Petugas;
 use Illuminate\Support\Facades\DB;
 
 class LaporanService
@@ -249,23 +248,23 @@ class LaporanService
 
         // Per Petugas
         $perPetugas = DB::table('pelanggaran')
-            ->join('petugas', 'pelanggaran.petugas_id', '=', 'petugas.id')
+            ->join('users', 'pelanggaran.user_id', '=', 'users.id')
             ->select(
-                'petugas.id',
-                'petugas.jabatan',
-                'petugas.tugas',
-                DB::raw('COALESCE(petugas.nama, "Petugas Tanpa Nama") as nama_petugas'),
+                'users.id',
+                'users.jabatan',
+                'users.tugas',
+                DB::raw('COALESCE(users.name, "Petugas Tanpa Nama") as nama_petugas'),
                 DB::raw("SUM(CASE WHEN pelanggaran.santri_id IS NULL THEN pelanggaran.jumlah ELSE 1 END) as jumlah_pelanggaran"),
                 DB::raw('COUNT(DISTINCT pelanggaran.santri_id) as jumlah_santri_dicatat')
             )
-            ->whereNotNull('pelanggaran.petugas_id')
+            ->whereNotNull('pelanggaran.user_id')
             ->when($tanggalMulai && $tanggalSelesai, fn($q) => $q->whereBetween('pelanggaran.tanggal', [$tanggalMulai, $tanggalSelesai]))
             ->when($bulan && $tahun, fn($q) => $q->whereMonth('pelanggaran.tanggal', $bulan)->whereYear('pelanggaran.tanggal', $tahun))
             ->when($tahun && !$bulan, fn($q) => $q->whereYear('pelanggaran.tanggal', $tahun))
             ->when($daerahId, fn($q) => $q->whereHas('asrama', fn($q2) => $q2->where('daerah_id', $daerahId)))
             ->when($asramaId, fn($q) => $q->where('pelanggaran.asrama_id', $asramaId))
             ->when($sumberPencatatan, fn($q) => $q->where('pelanggaran.sumber_pencatatan', $sumberPencatatan))
-            ->groupBy('petugas.id', 'petugas.jabatan', 'petugas.tugas', 'petugas.nama')
+            ->groupBy('users.id', 'users.jabatan', 'users.tugas', 'users.name')
             ->orderByDesc('jumlah_pelanggaran')
             ->get();
 
@@ -274,7 +273,7 @@ class LaporanService
             'asrama.daerah',
             'santri',
             'daftarPelanggaran',
-            'petugas',
+            'user',
         ])
             ->when($tanggalMulai && $tanggalSelesai, fn($q) => $q->whereBetween('tanggal', [$tanggalMulai, $tanggalSelesai]))
             ->when($bulan && $tahun, fn($q) => $q->whereMonth('tanggal', $bulan)->whereYear('tanggal', $tahun))
@@ -298,7 +297,7 @@ class LaporanService
                 'jenis_pelanggaran' => $p->daftarPelanggaran?->nama_pelanggaran ?? '-',
                 'jumlah' => $p->jumlah ?? 1,
                 'sumber' => $p->sumber_pencatatan === 'petugas' ? 'Petugas' : 'Ketua Kamar',
-                'petugas' => $p->petugas?->nama ?? ($p->petugas_id ? 'Petugas #' . $p->petugas_id : '-'),
+                'petugas' => $p->user?->name ?? ($p->user_id ? 'Petugas #' . $p->user_id : '-'),
                 'keterangan' => $p->keterangan ?? '',
             ]);
 

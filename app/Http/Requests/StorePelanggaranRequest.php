@@ -44,7 +44,7 @@ class StorePelanggaranRequest extends FormRequest
 
             'asrama_id' => 'required|exists:asrama,id',
             'daftar_pelanggaran_id' => 'required_without_all:santri_pelanggaran,anonymous_entries|exists:daftar_pelanggaran,id',
-            'petugas_id' => 'nullable|exists:petugas,id',
+            'user_id' => 'nullable|exists:users,id',
             'jumlah' => 'nullable|integer|min:1',
             'sumber_pencatatan' => 'required|in:petugas,ketua_kamar',
             'keterangan' => 'nullable|string',

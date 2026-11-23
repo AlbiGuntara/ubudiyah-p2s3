@@ -1,98 +1,129 @@
-import { useState, useMemo, useRef } from 'react';
-import { Head, usePage, router } from '@inertiajs/react';
+import { useRef, useState } from 'react';
+import { Head, router, usePage } from '@inertiajs/react';
+import { Camera, Edit2, Plus, Shield, Trash2 } from 'lucide-react';
 import { AppLayout } from '@/components/layout/app-layout';
+import { DataTable } from '@/components/shared/data-table';
+import type { Column } from '@/components/shared/data-table';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
 import { Modal } from '@/components/ui/modal';
-import { DataTable, type Column } from '@/components/shared/data-table';
-import { Edit2, Trash2, Plus, Camera } from 'lucide-react';
+import { Select } from '@/components/ui/select';
+
+interface Petugas {
+    id: number;
+    name: string;
+    username: string;
+    email: string | null;
+    role: string;
+    foto: string | null;
+    jabatan: string | null;
+    tugas: string | null;
+}
+
+interface PageProps extends Record<string, unknown> {
+    users: {
+        data: Petugas[];
+        current_page: number;
+        last_page: number;
+        total: number;
+        from: number;
+        to: number;
+    };
+    roles: { id: number; name: string }[];
+    per_page?: string;
+    sort_column?: string;
+    sort_direction?: string;
+}
+
+const kosong = {
+    name: '',
+    username: '',
+    email: '',
+    password: '',
+    password_confirmation: '',
+    role: 'petugas',
+    jabatan: '',
+    tugas: '',
+};
 
 export default function PetugasIndex() {
-    const { petugas, daerah, asrama, search: searchParam, per_page, sort_column, sort_direction } = usePage<any>().props;
-    const [perPage, setPerPage] = useState(parseInt(per_page) || 10);
+    const { users, roles, per_page, sort_column, sort_direction } =
+        usePage<PageProps>().props;
+    const [perPage, setPerPage] = useState(parseInt(per_page || '') || 10);
     const [showModal, setShowModal] = useState(false);
-    const [editing, setEditing] = useState<any>(null);
-    const [search, setSearch] = useState(searchParam || '');
+    const [editing, setEditing] = useState<Petugas | null>(null);
     const [sortColumn, setSortColumn] = useState(sort_column || '');
-    const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | 'none'>((sort_direction as any) || 'none');
+    const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | 'none'>(
+        (sort_direction as 'asc' | 'desc' | 'none') || 'none',
+    );
     const [selectedIds, setSelectedIds] = useState<(string | number)[]>([]);
+    const [foto, setFoto] = useState<File | null>(null);
     const [fotoPreview, setFotoPreview] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const [form, setForm] = useState({
-        nama: '',
-        foto: null as File | null,
-        daerah_id: '',
-        asrama_id: '',
-        jabatan: '',
-        tugas: '',
-    });
 
-    const filteredAsrama = useMemo(() => {
-        return form.daerah_id
-            ? asrama.filter((a: any) => String(a.daerah_id) === String(form.daerah_id))
-            : [];
-    }, [asrama, form.daerah_id]);
+    const [form, setForm] = useState(kosong);
 
     const openCreate = () => {
         setEditing(null);
-        setForm({
-            nama: '',
-            foto: null,
-            daerah_id: '',
-            asrama_id: '',
-            jabatan: '',
-            tugas: '',
-        });
+        setForm(kosong);
+        setFoto(null);
         setFotoPreview(null);
         setShowModal(true);
     };
 
-    const openEdit = (p: any) => {
-        setEditing(p);
+    const openEdit = (u: Petugas) => {
+        setEditing(u);
         setForm({
-            nama: p.nama || '',
-            foto: null,
-            daerah_id: String(p.daerah_id || ''),
-            asrama_id: String(p.asrama_id || ''),
-            jabatan: p.jabatan || '',
-            tugas: p.tugas || '',
+            name: u.name,
+            username: u.username,
+            email: u.email || '',
+            password: '',
+            password_confirmation: '',
+            role: u.role,
+            jabatan: u.jabatan || '',
+            tugas: u.tugas || '',
         });
-        setFotoPreview(p.foto ? `/storage/${p.foto}` : null);
+        setFoto(null);
+        setFotoPreview(u.foto ? `/storage/${u.foto}` : null);
         setShowModal(true);
     };
 
     const handleFotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
-            setForm({ ...form, foto: file });
+            setFoto(file);
             setFotoPreview(URL.createObjectURL(file));
         }
     };
 
     const submit = () => {
         const data = new FormData();
-        data.append('nama', form.nama);
-        if (form.foto) data.append('foto', form.foto);
-        if (form.daerah_id) data.append('daerah_id', form.daerah_id);
-        if (form.asrama_id) data.append('asrama_id', form.asrama_id);
+        data.append('name', form.name);
+        data.append('username', form.username);
+        data.append('email', form.email);
+        data.append('role', form.role);
         data.append('jabatan', form.jabatan);
         data.append('tugas', form.tugas);
+        if (form.password) {
+            data.append('password', form.password);
+            data.append('password_confirmation', form.password_confirmation);
+        }
+        if (foto) {
+            data.append('foto', foto);
+        }
 
-        const onFinish = () => {
+        const onSuccess = () => {
             setShowModal(false);
+            setFoto(null);
             setFotoPreview(null);
         };
 
         if (editing) {
             data.append('_method', 'PUT');
-            router.post(`/petugas/${editing.id}`, data, {
-                onSuccess: onFinish,
-            });
+            router.post(`/petugas/${editing.id}`, data, { onSuccess });
         } else {
-            router.post('/petugas', data, {
-                onSuccess: onFinish,
-            });
+            router.post('/petugas', data, { onSuccess });
         }
     };
 
@@ -104,77 +135,121 @@ export default function PetugasIndex() {
 
     const bulkDelete = () => {
         if (confirm(`Yakin ingin menghapus ${selectedIds.length} petugas?`)) {
-            router.post('/petugas/bulk-delete', { ids: selectedIds }, {
-                onSuccess: () => setSelectedIds([]),
-            });
+            router.post(
+                '/petugas/bulk-delete',
+                { ids: selectedIds },
+                {
+                    onSuccess: () => setSelectedIds([]),
+                },
+            );
         }
     };
 
     const handleSort = (column: string) => {
-        const sortMap: Record<string, string> = { petugas: 'nama' };
         let nextDir: 'asc' | 'desc' | 'none' = 'asc';
         if (sortColumn === column) {
-            nextDir = sortDirection === 'none' ? 'asc' : sortDirection === 'asc' ? 'desc' : 'none';
+            nextDir =
+                sortDirection === 'none'
+                    ? 'asc'
+                    : sortDirection === 'asc'
+                      ? 'desc'
+                      : 'none';
         }
         setSortColumn(nextDir === 'none' ? '' : column);
         setSortDirection(nextDir);
-        const serverSort = sortMap[column] || column;
-        router.get('/petugas', {
-            sort_column: nextDir === 'none' ? undefined : serverSort,
-            sort_direction: nextDir === 'none' ? undefined : nextDir,
-            search: search || undefined,
-            per_page: perPage,
-        }, { preserveState: true, preserveScroll: true });
+        router.get(
+            '/petugas',
+            {
+                sort_column: nextDir === 'none' ? undefined : column,
+                sort_direction: nextDir === 'none' ? undefined : nextDir,
+                per_page: perPage,
+            },
+            { preserveState: true, preserveScroll: true },
+        );
     };
 
-    const handleSearchChange = (q: string) => {
-        setSearch(q);
-        router.get('/petugas', {
-            search: q || undefined,
-            page: 1,
-            per_page: perPage,
-            sort_column: sortColumn || undefined,
-            sort_direction: sortDirection === 'none' ? undefined : sortDirection,
-        }, { preserveState: true, preserveScroll: true });
-    };
+    const roleBadge = (role: string) => (
+        <Badge
+            variant={
+                (role === 'super_admin' ? 'destructive' : 'default') as any
+            }
+        >
+            {role.replace('_', ' ')}
+        </Badge>
+    );
 
-    const columns: Column<any>[] = [
-        { key: 'no', label: '#', render: (_p: any, idx: number) => <span>{petugas.from + idx}</span>, className: 'text-muted-foreground text-xs w-10' },
+    const columns: Column<Petugas>[] = [
         {
-            key: 'petugas',
+            key: 'no',
+            label: '#',
+            render: (_u: Petugas, idx: number) => (
+                <span>{users.from + idx}</span>
+            ),
+            className: 'text-muted-foreground text-xs w-10',
+        },
+        {
+            key: 'name',
             label: 'Petugas',
             sortable: true,
-            render: (p) => (
+            render: (u) => (
                 <div className="flex items-center gap-3">
-                    {p.foto ? (
+                    {u.foto ? (
                         <img
-                            src={`/storage/${p.foto}`}
-                            alt={p.nama || 'Petugas'}
-                            className="h-9 w-9 rounded-full object-cover border"
+                            src={`/storage/${u.foto}`}
+                            alt={u.name}
+                            className="h-9 w-9 rounded-full border object-cover"
                         />
                     ) : (
-                        <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-muted">
                             <Camera className="h-4 w-4 text-muted-foreground" />
                         </div>
                     )}
-                    <span className="font-medium">{p.nama || '-'}</span>
+                    <span className="font-medium">{u.name}</span>
                 </div>
             ),
         },
-        { key: 'asrama', label: 'Asrama', render: (p) => p.asrama?.daerah?.kode ? `${p.asrama.daerah.kode.charAt(0)}.${p.asrama.nomor}` : p.asrama?.nomor || '-' },
-        { key: 'jabatan', label: 'Jabatan', sortable: true },
-        { key: 'tugas', label: 'Tugas' },
+        { key: 'username', label: 'Username', sortable: true },
+        {
+            key: 'jabatan',
+            label: 'Jabatan',
+            sortable: true,
+            render: (u) => u.jabatan || '-',
+        },
+        {
+            key: 'tugas',
+            label: 'Tugas',
+            render: (u) => u.tugas || '-',
+        },
+        {
+            key: 'email',
+            label: 'Email',
+            render: (u) => u.email || '-',
+        },
+        {
+            key: 'role',
+            label: 'Role',
+            sortable: true,
+            render: (u) => roleBadge(u.role),
+        },
         {
             key: 'aksi',
             label: 'Aksi',
             headClassName: 'text-right',
             className: 'text-right',
-            render: (p) => (
+            render: (u) => (
                 <div className="flex justify-end gap-2">
-                    <Button variant="ghost" size="sm" onClick={() => openEdit(p)}>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openEdit(u)}
+                    >
                         <Edit2 className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="sm" onClick={() => destroy(p.id)}>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => destroy(u.id)}
+                    >
                         <Trash2 className="h-4 w-4 text-red-500" />
                     </Button>
                 </div>
@@ -188,32 +263,48 @@ export default function PetugasIndex() {
             <div className="space-y-6">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold tracking-tight">Petugas</h1>
-                        <p className="text-muted-foreground">Kelola data petugas ubudiyah</p>
+                        <h1 className="text-2xl font-bold tracking-tight">
+                            Petugas
+                        </h1>
+                        <p className="text-muted-foreground">
+                            Kelola data petugas ubudiyah
+                        </p>
                     </div>
-                    <Button onClick={openCreate}>
-                        <Plus className="h-4 w-4" />
-                        Tambah Petugas
-                    </Button>
+                    <div className="flex flex-wrap justify-end gap-2">
+                        <Button
+                            variant="outline"
+                            onClick={() => router.get('/roles')}
+                        >
+                            <Shield className="h-4 w-4" />
+                            Roles
+                        </Button>
+                        <Button onClick={openCreate}>
+                            <Plus className="h-4 w-4" />
+                            Tambah Petugas
+                        </Button>
+                    </div>
                 </div>
 
                 <DataTable
                     columns={columns}
-                    data={petugas.data}
-                    meta={petugas}
-                    keyExtractor={(p) => p.id}
+                    data={users.data}
+                    meta={users}
+                    keyExtractor={(u) => u.id}
                     onPageChange={(page) =>
-                        router.get('/petugas', {
-                            page,
-                            search: search || undefined,
-                            sort_column: sortColumn || undefined,
-                            sort_direction: sortDirection === 'none' ? undefined : sortDirection,
-                            per_page: perPage,
-                        }, { preserveState: true, preserveScroll: true })
+                        router.get(
+                            '/petugas',
+                            {
+                                page,
+                                sort_column: sortColumn || undefined,
+                                sort_direction:
+                                    sortDirection === 'none'
+                                        ? undefined
+                                        : sortDirection,
+                                per_page: perPage,
+                            },
+                            { preserveState: true, preserveScroll: true },
+                        )
                     }
-                    search={search}
-                    onSearchChange={handleSearchChange}
-                    searchPlaceholder="Cari nama petugas..."
                     sortColumn={sortColumn}
                     sortDirection={sortDirection}
                     onSort={handleSort}
@@ -221,19 +312,29 @@ export default function PetugasIndex() {
                     onPerPageChange={(p) => {
                         setPerPage(p);
                         if (p !== perPage) {
-                            router.get('/petugas', {
-                                per_page: p,
-                                page: 1,
-                                search: search || undefined,
-                                sort_column: sortColumn || undefined,
-                                sort_direction: sortDirection === 'none' ? undefined : sortDirection,
-                            }, { preserveState: true, preserveScroll: true });
+                            router.get(
+                                '/petugas',
+                                {
+                                    per_page: p,
+                                    page: 1,
+                                    sort_column: sortColumn || undefined,
+                                    sort_direction:
+                                        sortDirection === 'none'
+                                            ? undefined
+                                            : sortDirection,
+                                },
+                                { preserveState: true, preserveScroll: true },
+                            );
                         }
                     }}
                     onSelectionChange={setSelectedIds}
                     bulkActions={
                         selectedIds.length > 0 && (
-                            <Button variant="destructive" size="sm" onClick={bulkDelete}>
+                            <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={bulkDelete}
+                            >
                                 <Trash2 className="h-4 w-4" />
                                 Hapus ({selectedIds.length})
                             </Button>
@@ -248,19 +349,6 @@ export default function PetugasIndex() {
                 title={editing ? 'Edit Petugas' : 'Tambah Petugas'}
             >
                 <div className="space-y-4">
-                    {/* Nama */}
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium">
-                            Nama Petugas <span className="text-destructive">*</span>
-                        </label>
-                        <Input
-                            value={form.nama}
-                            onChange={(e) => setForm({ ...form, nama: e.target.value })}
-                            placeholder="Nama petugas"
-                        />
-                    </div>
-
-                    {/* Foto */}
                     <div className="space-y-2">
                         <label className="text-sm font-medium">Foto</label>
                         <div className="flex items-center gap-4">
@@ -268,10 +356,10 @@ export default function PetugasIndex() {
                                 <img
                                     src={fotoPreview}
                                     alt="Preview"
-                                    className="h-16 w-16 rounded-full object-cover border"
+                                    className="h-16 w-16 rounded-full border object-cover"
                                 />
                             ) : (
-                                <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center">
+                                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
                                     <Camera className="h-6 w-6 text-muted-foreground" />
                                 </div>
                             )}
@@ -280,7 +368,9 @@ export default function PetugasIndex() {
                                     type="button"
                                     variant="outline"
                                     size="sm"
-                                    onClick={() => fileInputRef.current?.click()}
+                                    onClick={() =>
+                                        fileInputRef.current?.click()
+                                    }
                                 >
                                     {fotoPreview ? 'Ganti Foto' : 'Pilih Foto'}
                                 </Button>
@@ -291,71 +381,151 @@ export default function PetugasIndex() {
                                     className="hidden"
                                     onChange={handleFotoChange}
                                 />
-                                <p className="text-xs text-muted-foreground mt-1">Format: JPEG/PNG, Maks: 2MB</p>
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                    Format: JPEG/PNG, Maks: 2MB
+                                </p>
                             </div>
                         </div>
                     </div>
 
-                    {/* Daerah */}
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">Nama</label>
+                            <Input
+                                value={form.name}
+                                onChange={(e) =>
+                                    setForm({ ...form, name: e.target.value })
+                                }
+                                placeholder="Nama lengkap"
+                                required
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">
+                                Username
+                            </label>
+                            <Input
+                                value={form.username}
+                                onChange={(e) =>
+                                    setForm({
+                                        ...form,
+                                        username: e.target.value,
+                                    })
+                                }
+                                placeholder="Username"
+                                required
+                            />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">
+                                Jabatan
+                            </label>
+                            <Input
+                                value={form.jabatan}
+                                onChange={(e) =>
+                                    setForm({
+                                        ...form,
+                                        jabatan: e.target.value,
+                                    })
+                                }
+                                placeholder="Jabatan"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">Tugas</label>
+                            <Input
+                                value={form.tugas}
+                                onChange={(e) =>
+                                    setForm({ ...form, tugas: e.target.value })
+                                }
+                                placeholder="Tugas"
+                            />
+                        </div>
+                    </div>
+
                     <div className="space-y-2">
-                        <label className="text-sm font-medium">Daerah</label>
-                        <Select
-                            value={form.daerah_id}
+                        <label className="text-sm font-medium">Email</label>
+                        <Input
+                            type="email"
+                            value={form.email}
                             onChange={(e) =>
-                                setForm({ ...form, daerah_id: e.target.value, asrama_id: '' })
+                                setForm({ ...form, email: e.target.value })
                             }
-                            placeholder="Pilih Daerah"
-                            options={daerah.map((d: any) => ({
-                                value: d.id,
-                                label: d.nama_daerah,
-                            }))}
+                            placeholder="Email (opsional)"
                         />
                     </div>
 
-                    {/* Asrama (filtered by daerah) */}
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">
+                                Password{' '}
+                                {editing && '(kosongkan jika tidak diubah)'}
+                            </label>
+                            <Input
+                                type="password"
+                                value={form.password}
+                                onChange={(e) =>
+                                    setForm({
+                                        ...form,
+                                        password: e.target.value,
+                                    })
+                                }
+                                placeholder={
+                                    editing ? 'Biarkan kosong' : 'Password'
+                                }
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">
+                                Konfirmasi Password
+                            </label>
+                            <Input
+                                type="password"
+                                value={form.password_confirmation}
+                                onChange={(e) =>
+                                    setForm({
+                                        ...form,
+                                        password_confirmation: e.target.value,
+                                    })
+                                }
+                                placeholder="Konfirmasi password"
+                            />
+                        </div>
+                    </div>
+
                     <div className="space-y-2">
-                        <label className="text-sm font-medium">Asrama</label>
+                        <label className="text-sm font-medium">Role</label>
                         <Select
-                            value={form.asrama_id}
-                            onChange={(e) => setForm({ ...form, asrama_id: e.target.value })}
-                            placeholder={
-                                form.daerah_id ? 'Pilih Asrama' : 'Pilih daerah terlebih dahulu'
+                            value={form.role}
+                            onChange={(e) =>
+                                setForm({ ...form, role: e.target.value })
                             }
-                            disabled={!form.daerah_id}
-                            options={filteredAsrama.map((a: any) => ({
-                                value: a.id,
-                                label: `${a.daerah?.kode?.charAt(0)}.${a.nomor}`,
-                            }))}
-                        />
-                    </div>
-
-                    {/* Jabatan */}
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium">
-                            Jabatan <span className="text-destructive">*</span>
-                        </label>
-                        <Input
-                            value={form.jabatan}
-                            onChange={(e) => setForm({ ...form, jabatan: e.target.value })}
-                            placeholder="Jabatan"
-                        />
-                    </div>
-
-                    {/* Tugas */}
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium">
-                            Tugas <span className="text-destructive">*</span>
-                        </label>
-                        <Input
-                            value={form.tugas}
-                            onChange={(e) => setForm({ ...form, tugas: e.target.value })}
-                            placeholder="Tugas"
-                        />
+                        >
+                            {roles.map((r) => (
+                                <option key={r.id} value={r.name}>
+                                    {r.name
+                                        .replace('_', ' ')
+                                        .replace(/\b\w/g, (c: string) =>
+                                            c.toUpperCase(),
+                                        )}
+                                </option>
+                            ))}
+                        </Select>
                     </div>
 
                     <div className="flex justify-end gap-3 pt-2">
-                        <Button variant="outline" onClick={() => setShowModal(false)}>Batal</Button>
-                        <Button onClick={submit}>{editing ? 'Simpan' : 'Tambah'}</Button>
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowModal(false)}
+                        >
+                            Batal
+                        </Button>
+                        <Button onClick={submit}>
+                            {editing ? 'Simpan' : 'Tambah'}
+                        </Button>
                     </div>
                 </div>
             </Modal>

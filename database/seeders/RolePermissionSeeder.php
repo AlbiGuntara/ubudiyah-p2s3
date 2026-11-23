@@ -24,8 +24,6 @@ class RolePermissionSeeder extends Seeder
             'view_asrama', 'create_asrama', 'edit_asrama', 'delete_asrama',
             // Santri
             'view_santri', 'create_santri', 'edit_santri', 'delete_santri', 'import_santri',
-            // Petugas
-            'view_petugas', 'create_petugas', 'edit_petugas', 'delete_petugas',
             // Daftar Pelanggaran
             'view_daftar_pelanggaran', 'create_daftar_pelanggaran', 'edit_daftar_pelanggaran', 'delete_daftar_pelanggaran',
             // Pelanggaran

@@ -4,7 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Asrama;
 use App\Models\Pelanggaran;
-use App\Models\Petugas;
+use App\Models\User;
 use App\Models\Santri;
 use Illuminate\Database\Seeder;
 
@@ -14,7 +14,7 @@ class PelanggaranSeeder extends Seeder
     {
         $santriIds = Santri::pluck('id')->toArray();
         $asramaIds = Asrama::pluck('id')->toArray();
-        $petugasIds = Petugas::pluck('id')->toArray();
+        $userIds = User::pluck('id')->toArray();
 
         // Individual violations from petugas
         for ($i = 0; $i < 50; $i++) {
@@ -22,7 +22,7 @@ class PelanggaranSeeder extends Seeder
                 'santri_id' => $santriIds[array_rand($santriIds)],
                 'asrama_id' => $asramaIds[array_rand($asramaIds)],
                 'daftar_pelanggaran_id' => rand(1, 10),
-                'petugas_id' => $petugasIds[array_rand($petugasIds)],
+                'user_id' => $userIds ? $userIds[array_rand($userIds)] : null,
                 'jumlah' => 1,
                 'sisa_sanksi' => 100,
                 'sumber_pencatatan' => 'petugas',
@@ -36,7 +36,7 @@ class PelanggaranSeeder extends Seeder
                 'santri_id' => $santriIds[array_rand($santriIds)],
                 'asrama_id' => $asramaIds[array_rand($asramaIds)],
                 'daftar_pelanggaran_id' => rand(1, 10),
-                'petugas_id' => $petugasIds[array_rand($petugasIds)],
+                'user_id' => $userIds ? $userIds[array_rand($userIds)] : null,
                 'jumlah' => 1,
                 'sisa_sanksi' => 100,
                 'sumber_pencatatan' => 'ketua_kamar',
@@ -51,7 +51,7 @@ class PelanggaranSeeder extends Seeder
                 'santri_id' => null,
                 'asrama_id' => $asramaIds[array_rand($asramaIds)],
                 'daftar_pelanggaran_id' => rand(1, 10),
-                'petugas_id' => $petugasIds[array_rand($petugasIds)],
+                'user_id' => $userIds ? $userIds[array_rand($userIds)] : null,
                 'jumlah' => $jumlah,
                 'sisa_sanksi' => $jumlah * 100,
                 'sumber_pencatatan' => 'petugas',

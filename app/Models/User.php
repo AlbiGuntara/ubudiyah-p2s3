@@ -17,6 +17,9 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
+        'foto',
+        'jabatan',
+        'tugas',
     ];
 
     protected $hidden = [
@@ -45,10 +48,5 @@ class User extends Authenticatable
     public function isPembina(): bool
     {
         return $this->role === 'pembina';
-    }
-
-    public function petugas()
-    {
-        return $this->hasOne(Petugas::class, 'user_id');
     }
 }

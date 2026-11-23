@@ -108,7 +108,7 @@ export default function RolesIndex() {
             <div className="space-y-6">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        <Button variant="ghost" size="sm" onClick={() => router.get('/users')}>
+                        <Button variant="ghost" size="sm" onClick={() => router.get('/petugas')}>
                             <ArrowLeft className="h-4 w-4" />
                         </Button>
                         <div>

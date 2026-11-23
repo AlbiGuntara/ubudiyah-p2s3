@@ -28,7 +28,7 @@ class PelanggaranController extends Controller
 
     public function index(Request $request): Response
     {
-        $query = Pelanggaran::with(['santri', 'asrama.daerah', 'daftarPelanggaran', 'petugas']);
+        $query = Pelanggaran::with(['santri', 'asrama.daerah', 'daftarPelanggaran', 'user']);
 
         if ($request->filled('tanggal')) {
             $query->whereDate('tanggal', $request->tanggal);
@@ -54,8 +54,8 @@ class PelanggaranController extends Controller
             $query->whereHas('santri', fn ($q) => $q->where('iksass', 'like', "%{$request->iksass}%"));
         }
 
-        if ($request->filled('petugas_id')) {
-            $query->where('petugas_id', $request->petugas_id);
+        if ($request->filled('user_id')) {
+            $query->where('user_id', $request->user_id);
         }
 
         if ($request->filled('search')) {
@@ -106,7 +106,7 @@ class PelanggaranController extends Controller
             'asrama' => $asrama,
             'daerah' => $daerah,
             'daftarPelanggaran' => $daftarPelanggaran,
-            'filters' => $request->only(['search', 'tanggal', 'tanggal_mulai', 'tanggal_selesai', 'daerah_id', 'asrama_id', 'iksass', 'petugas_id', 'per_page', 'sort_column', 'sort_direction']),
+            'filters' => $request->only(['search', 'tanggal', 'tanggal_mulai', 'tanggal_selesai', 'daerah_id', 'asrama_id', 'iksass', 'user_id', 'per_page', 'sort_column', 'sort_direction']),
             'voice' => [
                 'enabled' => (bool) config('voice.enabled'),
                 'max_duration' => (int) config('voice.recording.max_duration'),
@@ -119,8 +119,7 @@ class PelanggaranController extends Controller
         $data = $request->validated();
         $santriPelanggaran = $data['santri_pelanggaran'] ?? [];
 
-        $petugas = auth()->user()?->petugas;
-        $petugasId = $petugas?->id ?? $data['petugas_id'] ?? null;
+        $userId = auth()->id() ?? $data['user_id'] ?? null;
 
         // Create individual records for each selected santri with their own violation type and date
         if (! empty($santriPelanggaran)) {
@@ -129,7 +128,7 @@ class PelanggaranController extends Controller
                     'santri_id' => $item['santri_id'],
                     'asrama_id' => $item['asrama_id'] ?? $data['asrama_id'],
                     'daftar_pelanggaran_id' => $item['daftar_pelanggaran_id'],
-                    'petugas_id' => $petugasId,
+                    'user_id' => $userId,
                     'jumlah' => 1,
                     'sisa_sanksi' => 100,
                     'sumber_pencatatan' => $item['sumber_pencatatan'] ?? $data['sumber_pencatatan'],
@@ -157,7 +156,7 @@ class PelanggaranController extends Controller
                         'santri_id' => null,
                         'asrama_id' => $asramaId,
                         'daftar_pelanggaran_id' => $entry['daftar_pelanggaran_id'],
-                        'petugas_id' => $petugasId,
+                        'user_id' => $userId,
                         'jumlah' => $jumlah,
                         'sisa_sanksi' => $jumlah * 100,
                         'sumber_pencatatan' => $entry['sumber_pencatatan'] ?? $data['sumber_pencatatan'],
@@ -175,7 +174,7 @@ class PelanggaranController extends Controller
         // Fallback for single santri (edit case / backward compat)
         if (empty($santriPelanggaran) && empty($anonymousEntries) && ! empty($data['santri_id'])) {
             $record = $data;
-            $record['petugas_id'] = $petugasId;
+            $record['user_id'] = $userId;
             $record['sisa_sanksi'] = ($record['jumlah'] ?? 1) * 100;
             Pelanggaran::create($record);
             $this->syncPembinaan((int) $data['santri_id']);
@@ -188,7 +187,7 @@ class PelanggaranController extends Controller
     {
         $this->authorize('update', $pelanggaran);
         $data = $request->validated();
-        $data['petugas_id'] = $data['petugas_id'] ?? $pelanggaran->petugas_id;
+        $data['user_id'] = $data['user_id'] ?? $pelanggaran->user_id;
         $pelanggaran->update($data);
 
         return redirect()->back()->with('success', 'Pelanggaran berhasil diubah.');

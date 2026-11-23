@@ -118,6 +118,18 @@ body {
     color: var(--foreground);
 }
 
+/* Sembunyikan scrollbar halaman utama tanpa mematikan scroll. */
+html,
+body {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+    display: none;
+}
+
 .sidebar-scroll::-webkit-scrollbar {
     width: 4px;
 }

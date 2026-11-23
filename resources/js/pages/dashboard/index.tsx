@@ -14,6 +14,8 @@ import {
 import {
     BarChart,
     Bar,
+    LineChart,
+    Line,
     XAxis,
     YAxis,
     CartesianGrid,
@@ -201,7 +203,7 @@ function PieChartCard({
     );
 }
 
-function SimpleBarCard({
+function LineChartCard({
     title,
     labels,
     data,
@@ -212,42 +214,67 @@ function SimpleBarCard({
     data: number[];
     color?: string;
 }) {
-    const max = Math.max(...data, 1);
+    const chartData = labels.map((label, i) => ({
+        name: label,
+        value: data[i],
+    }));
+
     return (
         <Card>
             <CardHeader>
                 <CardTitle className="text-base">{title}</CardTitle>
             </CardHeader>
             <CardContent>
-                <div className="flex h-40 items-end gap-2">
-                    {labels.map((label, i) => (
-                        <div
-                            key={i}
-                            className="flex flex-1 flex-col items-center gap-1"
-                        >
-                            <span className="text-xs font-medium">
-                                {data[i]}
-                            </span>
-                            <div
-                                className="w-full rounded-t-md transition-all"
-                                style={{
-                                    height: `${(data[i] / max) * 100}%`,
-                                    minHeight: data[i] > 0 ? '4px' : '0',
-                                    backgroundColor: color,
-                                }}
-                            />
-                            <span className="w-full truncate text-center text-[10px] text-muted-foreground">
-                                {label.length > 8
-                                    ? label.slice(0, 8) + '...'
-                                    : label}
-                            </span>
-                        </div>
-                    ))}
-                </div>
-                {data.length === 0 && (
+                {chartData.length === 0 ? (
                     <p className="py-8 text-center text-sm text-muted-foreground">
                         Belum ada data
                     </p>
+                ) : (
+                    <ResponsiveContainer width="100%" height={250}>
+                        <LineChart
+                            data={chartData}
+                            margin={{ top: 8, right: 16, left: -12, bottom: 0 }}
+                        >
+                            <CartesianGrid
+                                strokeDasharray="3 3"
+                                stroke="#e5e7eb"
+                                vertical={false}
+                            />
+                            <XAxis
+                                dataKey="name"
+                                tick={{ fontSize: 12, fill: '#6b7280' }}
+                                axisLine={{ stroke: '#e5e7eb' }}
+                                tickLine={false}
+                            />
+                            <YAxis
+                                tick={{ fontSize: 12, fill: '#6b7280' }}
+                                axisLine={false}
+                                tickLine={false}
+                                allowDecimals={false}
+                            />
+                            <Tooltip
+                                contentStyle={{
+                                    backgroundColor: '#fff',
+                                    border: '1px solid #e5e7eb',
+                                    borderRadius: '8px',
+                                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                                }}
+                            />
+                            <Line
+                                type="monotone"
+                                dataKey="value"
+                                stroke={color}
+                                strokeWidth={2.5}
+                                dot={{
+                                    r: 4,
+                                    fill: color,
+                                    strokeWidth: 2,
+                                    stroke: '#fff',
+                                }}
+                                activeDot={{ r: 6 }}
+                            />
+                        </LineChart>
+                    </ResponsiveContainer>
                 )}
             </CardContent>
         </Card>
@@ -385,7 +412,7 @@ export default function Dashboard(props: PageProps) {
 
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                     <div className="lg:col-span-2">
-                        <SimpleBarCard
+                        <LineChartCard
                             title="Pelanggaran Berdasarkan Daerah"
                             labels={props.daerahChart.labels}
                             data={props.daerahChart.data}

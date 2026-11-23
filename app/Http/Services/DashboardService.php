@@ -99,12 +99,12 @@ class DashboardService
         $result = DB::table('pelanggaran')
             ->join('asrama', 'pelanggaran.asrama_id', '=', 'asrama.id')
             ->join('daerah', 'asrama.daerah_id', '=', 'daerah.id')
-            ->select('daerah.nama_daerah', DB::raw('count(*) as total'))
-            ->groupBy('daerah.id', 'daerah.nama_daerah')
+            ->select('daerah.kode', DB::raw('count(*) as total'))
+            ->groupBy('daerah.id', 'daerah.kode')
             ->get();
 
         return [
-            'labels' => $result->pluck('nama_daerah'),
+            'labels' => $result->pluck('kode'),
             'data' => $result->pluck('total'),
         ];
     }
